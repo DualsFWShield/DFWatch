@@ -16,6 +16,10 @@ db.version(2).stores({
     movies: '++id, uuid, tmdb_id, name, status, release_date, is_favorited, user_rating'
 });
 
+db.version(3).stores({
+    recommendation_feedback: 'tmdb_id, type, feedback_value'
+});
+
 // Delete legacy DB if it exists
 Dexie.exists("DFWatchDB").then(exists => {
     if (exists) {

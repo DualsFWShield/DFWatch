@@ -135,7 +135,7 @@
     }
 
     // ---- Search tabs ----
-    let currentSearchType = 'multi';
+    let currentSearchType = 'foryou';
     document.querySelectorAll('.search-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
@@ -206,12 +206,19 @@
     async function loadRecommendations() {
         searchResults.innerHTML = '<div class="empty-state"><p>Génération de vos recommandations...</p></div>';
         
-        // 1. Get user top rated
+        // 1. Get user top rated and feedback
         const topShows = await db.shows.where('user_rating').above(3).limit(4).toArray();
         const topMovies = await db.movies.where('user_rating').above(3).limit(4).toArray();
+        const feedback = await db.recommendation_feedback.toArray();
+        
+        const likedIds = feedback.filter(f => f.feedback_value === 1).map(f => f.tmdb_id);
+        const dislikedIds = new Set(feedback.filter(f => f.feedback_value === -1).map(f => f.tmdb_id));
+        
+        // Add liked items as seeds (simulating a mock object with tmdb_id)
+        const extraSeeds = likedIds.slice(0, 4).map(id => ({ tmdb_id: id }));
         
         // If not enough rated, fallback to recently added
-        if (topShows.length === 0 && topMovies.length === 0) {
+        if (topShows.length === 0 && topMovies.length === 0 && extraSeeds.length === 0) {
             const allShows = await db.shows.limit(2).toArray();
             const allMovies = await db.movies.limit(2).toArray();
             topShows.push(...allShows);
@@ -219,26 +226,26 @@
         }
         
         let allResults = [];
+        const seeds = [...topShows, ...topMovies, ...extraSeeds];
         
         // 2. Fetch TMDB Recommendations
-        for (const s of topShows) {
+        for (const s of seeds) {
             if (s.tmdb_id) {
-                const recs = await TMDB.getRecommendations(s.tmdb_id, 'tv');
-                allResults.push(...recs);
-            }
-        }
-        for (const m of topMovies) {
-            if (m.tmdb_id) {
-                const recs = await TMDB.getRecommendations(m.tmdb_id, 'movie');
+                const recs = await TMDB.getRecommendations(s.tmdb_id, s.type || 'tv'); // fallback to tv for unknown type
                 allResults.push(...recs);
             }
         }
         
-        // 3. Deduplicate
+        // Get all local tmdb_ids to filter out already watched/followed items
+        const localShows = await db.shows.toArray();
+        const localMovies = await db.movies.toArray();
+        const localTmdbIds = new Set([...localShows.map(s => s.tmdb_id), ...localMovies.map(m => m.tmdb_id)].filter(id => id));
+        
+        // 3. Deduplicate and filter
         const unique = [];
         const seen = new Set();
         for (const r of allResults) {
-            if (!seen.has(r.id)) {
+            if (!seen.has(r.id) && !localTmdbIds.has(r.id) && !dislikedIds.has(r.id)) {
                 seen.add(r.id);
                 unique.push(r);
             }
@@ -261,7 +268,7 @@
         searchResults.appendChild(header);
         
         finalResults.forEach(item => {
-            const card = createPosterCard(item);
+            const card = createPosterCard(item, true); // pass isRecommendation = true
             searchResults.appendChild(card);
         });
     }
@@ -280,7 +287,7 @@
         });
     }
 
-    function createPosterCard(item) {
+    function createPosterCard(item, isRecommendation = false) {
         const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
         const title = item.name || item.title || 'Sans titre';
         const year = (item.first_air_date || item.release_date || '').split('-')[0];
@@ -291,6 +298,36 @@
         div.innerHTML = posterUrl
             ? `<img src="${posterUrl}" alt="${title}" loading="lazy"><div class="poster-overlay"><div>${title}</div><div class="poster-year">${year}</div></div>`
             : `<div class="poster-placeholder">${title}</div>`;
+            
+        if (isRecommendation) {
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'recommendation-actions';
+            actionsDiv.innerHTML = `
+                <button class="thumb-btn thumb-down" title="Ne plus me recommander" aria-label="Pouce en bas">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+                </button>
+                <button class="thumb-btn thumb-up" title="J'aime ce genre" aria-label="Pouce en l'air">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4.33A2.31 2.31 0 0 1 2 20V13a2.31 2.31 0 0 1 2.33-2H7"></path></svg>
+                </button>
+            `;
+            
+            actionsDiv.querySelector('.thumb-down').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await db.recommendation_feedback.put({ tmdb_id: item.id, type: mediaType, feedback_value: -1 });
+                div.remove();
+            });
+            
+            actionsDiv.querySelector('.thumb-up').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await db.recommendation_feedback.put({ tmdb_id: item.id, type: mediaType, feedback_value: 1 });
+                const btn = e.currentTarget;
+                btn.style.color = '#4ade80';
+                btn.style.background = 'rgba(74, 222, 128, 0.2)';
+            });
+            
+            div.appendChild(actionsDiv);
+        }
+
         div.addEventListener('click', () => openDetail(item, mediaType));
         return div;
     }
@@ -674,7 +711,7 @@
             }
 
             if (totalEps > 0) {
-                const shouldBeFinished = doneEps === totalEps;
+                const shouldBeFinished = doneEps >= totalEps;
                 const currentFinished = existingShow.is_finished === 1;
                 
                 if (currentFinished !== shouldBeFinished) {
@@ -1047,7 +1084,11 @@
         const upcomingList = document.getElementById('series-upcoming-list');
         
         const sortVal = document.getElementById('series-sort').value;
+        const searchQuery = (document.getElementById('series-local-search').value || '').trim().toLowerCase();
         let shows = await db.shows.where('is_followed').equals(1).toArray();
+        if (searchQuery) {
+            shows = shows.filter(s => s.name.toLowerCase().includes(searchQuery));
+        }
         
         // Basic sort
         shows.sort((a, b) => {
@@ -1098,7 +1139,7 @@
                             if (details) {
                                 const total = details.number_of_episodes || 0;
                                 const nextAir = details.next_episode_to_air ? details.next_episode_to_air.air_date : null;
-                                const shouldBeFinished = doneEps === total && total > 0;
+                                const shouldBeFinished = doneEps >= total && total > 0;
                                 const genres = details.genres ? details.genres.map(g => g.name) : [];
                                 
                                 await db.shows.update(show.id, { 
@@ -1120,7 +1161,7 @@
             } else {
                 // Auto-correct is_finished if we have nb_episodes_total cached
                 if (show.nb_episodes_total > 0) {
-                    const shouldBeFinished = doneEps === show.nb_episodes_total;
+                    const shouldBeFinished = doneEps >= show.nb_episodes_total;
                     if ((show.is_finished === 1) !== shouldBeFinished) {
                         show.is_finished = shouldBeFinished ? 1 : 0;
                         db.shows.update(show.id, { is_finished: show.is_finished }); // fire and forget
@@ -1145,6 +1186,8 @@
                 releaseDateLabel = new Date(show.first_air_date).toLocaleDateString();
             }
 
+            const displayName = show.name === 'Série inconnue' && show.tvtime_id ? 'Inconnue (ID: ' + show.tvtime_id + ')' : show.name;
+
             // Create card
             const card = document.createElement('div');
             
@@ -1155,11 +1198,46 @@
                         if (details) { openDetail(details, 'tv'); return; }
                     }
                     const result = await TMDB.findShowByName(show.name);
+                    let shouldAutoLink = true;
+
                     if (result) {
+                        // Verification to prevent bad automatic matching
+                        const details = await TMDB.getShowDetails(result.id);
+                        if (details) {
+                            const totalEps = details.number_of_episodes || 0;
+                            const totalSeasons = details.number_of_seasons || 0;
+                            
+                            // Check for mismatch (user watched more seasons than exist, or significantly more episodes)
+                            if ((totalSeasons > 0 && lastSeason > totalSeasons) || (totalEps > 0 && doneEps > totalEps + 5)) {
+                                shouldAutoLink = false;
+                                const msg = `Nous avons trouvé "${details.name}" mais votre historique (${doneEps} eps vus jusqu'à la saison ${lastSeason}) ne correspond pas à cette série (${totalSeasons} saisons, ${totalEps} eps).\n\nLier quand même ?`;
+                                const answer = await window.customConfirm(msg, "Incohérence détectée", "Lier quand même", "Rechercher la bonne");
+                                if (answer) {
+                                    shouldAutoLink = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (result && shouldAutoLink) {
                         await db.shows.update(show.id, { tmdb_id: result.id, poster_path: result.poster_path, backdrop_path: result.backdrop_path });
                         openDetail(result, 'tv');
                     } else {
-                    showToast(window.I18n ? window.I18n.get('toast.not_found') : 'Série non trouvée sur TMDB');
+                        const manualResult = await openTmdbFixModal(displayName, 'tv');
+                        if (manualResult) {
+                            await db.shows.update(show.id, { 
+                                tmdb_id: manualResult.id, 
+                                poster_path: manualResult.poster_path, 
+                                backdrop_path: manualResult.backdrop_path, 
+                                name: manualResult.name || manualResult.title 
+                            });
+                            show.tmdb_id = manualResult.id;
+                            show.name = manualResult.name || manualResult.title;
+                            show.poster_path = manualResult.poster_path;
+                            refreshSeriesList();
+                            const finalDetails = await TMDB.getShowDetails(show.tmdb_id);
+                            if (finalDetails) openDetail(finalDetails, 'tv');
+                        }
                     }
                 });
             };
@@ -1168,8 +1246,8 @@
                 card.className = 'poster-card';
                 const badgeHtml = category === 'upcoming' && releaseDateLabel ? `<div class="poster-badge">${releaseDateLabel}</div>` : '';
                 card.innerHTML = posterUrl
-                    ? `<img src="${posterUrl}" alt="${show.name}" loading="lazy"><div class="poster-overlay"><div>${show.name}</div></div>${badgeHtml}`
-                    : `<div class="poster-placeholder">${show.name}</div>${badgeHtml}`;
+                    ? `<img src="${posterUrl}" alt="${displayName}" loading="lazy"><div class="poster-overlay"><div>${displayName}</div></div>${badgeHtml}`
+                    : `<div class="poster-placeholder">${displayName}</div>${badgeHtml}`;
                 
                 attachClickListener(card);
                 
@@ -1183,9 +1261,9 @@
             } else {
                 card.className = 'episode-card';
                 card.innerHTML = `
-                    ${posterUrl ? `<img class="ep-poster" src="${posterUrl}" alt="${show.name}" loading="lazy">` : `<div class="ep-poster" style="display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted);text-align:center;">${show.name.substring(0, 20)}</div>`}
+                    ${posterUrl ? `<img class="ep-poster" src="${posterUrl}" alt="${displayName}" loading="lazy">` : `<div class="ep-poster" style="display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted);text-align:center;word-break:break-all;">${displayName.substring(0, 30)}</div>`}
                     <div class="ep-info" style="cursor:pointer;">
-                        <div class="ep-show-name">${show.name} ›</div>
+                        <div class="ep-show-name">${displayName} ›</div>
                         <div class="ep-episode">S${String(nextSeason).padStart(2, '0')} | E${String(nextEp).padStart(2, '0')} <span class="ep-remaining">${remaining}</span></div>
                     </div>
                     <div class="ep-check" data-show-id="${show.id}">
@@ -1223,8 +1301,21 @@
         if (upcomingCount === 0) upcomingList.innerHTML = `<div class="empty-state"><h3>${window.I18n ? window.I18n.get('series.empty_upcoming') : 'Rien à venir'}</h3></div>`;
     }
 
-    // Attach sort listener
+    // Attach sort and search listeners
     document.getElementById('series-sort').addEventListener('change', refreshSeriesList);
+    const btnSearchSeries = document.getElementById('btn-search-series');
+    if (btnSearchSeries) {
+        btnSearchSeries.addEventListener('click', () => {
+            const container = document.getElementById('series-search-container');
+            container.classList.toggle('hidden');
+            if (!container.classList.contains('hidden')) document.getElementById('series-local-search').focus();
+            else { document.getElementById('series-local-search').value = ''; refreshSeriesList(); }
+        });
+    }
+    const seriesSearchInput = document.getElementById('series-local-search');
+    if (seriesSearchInput) {
+        seriesSearchInput.addEventListener('input', () => refreshSeriesList());
+    }
 
     // ---- Films list ----
     async function refreshFilmsList() {
@@ -1233,7 +1324,11 @@
         const upcomingList = document.getElementById('films-upcoming-list');
         
         const sortVal = document.getElementById('films-sort').value;
+        const searchQuery = (document.getElementById('films-local-search').value || '').trim().toLowerCase();
         let movies = await db.movies.toArray();
+        if (searchQuery) {
+            movies = movies.filter(m => m.name.toLowerCase().includes(searchQuery));
+        }
         
         movies.sort((a, b) => {
             if (sortVal === 'name_asc') return a.name.localeCompare(b.name);
@@ -1272,6 +1367,22 @@
                 if (result) {
                     await db.movies.update(movie.id, { tmdb_id: result.id, poster_path: result.poster_path, backdrop_path: result.backdrop_path });
                     openDetail(result, 'movie');
+                } else {
+                    const manualResult = await openTmdbFixModal(movie.name, 'movie');
+                    if (manualResult) {
+                        await db.movies.update(movie.id, { 
+                            tmdb_id: manualResult.id, 
+                            poster_path: manualResult.poster_path, 
+                            backdrop_path: manualResult.backdrop_path, 
+                            name: manualResult.name || manualResult.title 
+                        });
+                        movie.tmdb_id = manualResult.id;
+                        movie.name = manualResult.name || manualResult.title;
+                        movie.poster_path = manualResult.poster_path;
+                        refreshFilmsList();
+                        const details = await TMDB.getMovieDetails(movie.tmdb_id);
+                        if (details) openDetail(details, 'movie');
+                    }
                 }
             });
             
@@ -1285,8 +1396,21 @@
         if (upCount === 0) upcomingList.innerHTML = `<div class="empty-state"><h3>${window.I18n ? window.I18n.get('movies.empty_upcoming') : 'Rien à venir'}</h3></div>`;
     }
     
-    // Attach sort listener
+    // Attach sort and search listeners
     document.getElementById('films-sort').addEventListener('change', refreshFilmsList);
+    const btnSearchFilms = document.getElementById('btn-search-films');
+    if (btnSearchFilms) {
+        btnSearchFilms.addEventListener('click', () => {
+            const container = document.getElementById('films-search-container');
+            container.classList.toggle('hidden');
+            if (!container.classList.contains('hidden')) document.getElementById('films-local-search').focus();
+            else { document.getElementById('films-local-search').value = ''; refreshFilmsList(); }
+        });
+    }
+    const filmsSearchInput = document.getElementById('films-local-search');
+    if (filmsSearchInput) {
+        filmsSearchInput.addEventListener('input', () => refreshFilmsList());
+    }
 
     // ---- Profile ----
     async function refreshProfile() {
@@ -1474,7 +1598,7 @@
                         const totalEps = details.number_of_episodes || 0;
                         
                         if (totalEps > 0) {
-                            const shouldBeFinished = doneEps === totalEps;
+                            const shouldBeFinished = doneEps >= totalEps;
                             if ((show.is_finished === 1) !== shouldBeFinished) {
                                 await db.shows.update(show.id, { is_finished: shouldBeFinished ? 1 : 0 });
                             }
@@ -1656,8 +1780,34 @@
         e.target.value = '';
     });
 
+    document.getElementById('btn-force-update').addEventListener('click', async () => {
+        const confirmed = await window.customConfirm("Cela va vider le cache de l'application et forcer le téléchargement de la dernière version. Continuer ?");
+        if (confirmed) {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    for (let key of keys) {
+                        await caches.delete(key);
+                    }
+                }
+                // Hard reload
+                window.location.href = window.location.href.split('?')[0] + '?update=' + new Date().getTime();
+            } catch (err) {
+                console.error('Erreur de maj', err);
+                showToast('Erreur lors du vidage du cache');
+            }
+        }
+    });
+
     document.getElementById('btn-clear').addEventListener('click', async () => {
-        if (confirm('⚠️ Effacer TOUTES vos données ? Cette action est irréversible.')) {
+        const confirmed = await window.customConfirm('⚠️ Effacer TOUTES vos données ? Cette action est irréversible.');
+        if (confirmed) {
             await DB.clearAll();
             showToast('Données effacées');
             refreshSeriesList();
@@ -1751,17 +1901,46 @@
         });
     }
 
+    // ---- Custom Confirm ----
+    window.customConfirm = function(message, title = "Confirmation", okText = "Confirmer", cancelText = "Annuler") {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('custom-confirm-modal');
+            document.getElementById('custom-confirm-title').textContent = title;
+            document.getElementById('custom-confirm-message').textContent = message;
+            
+            const btnOk = document.getElementById('custom-confirm-ok');
+            const btnCancel = document.getElementById('custom-confirm-cancel');
+            
+            btnOk.textContent = okText;
+            btnCancel.textContent = cancelText;
+
+            modal.classList.remove('hidden');
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                btnOk.removeEventListener('click', onOk);
+                btnCancel.removeEventListener('click', onCancel);
+            };
+
+            const onOk = () => { cleanup(); resolve(true); };
+            const onCancel = () => { cleanup(); resolve(false); };
+
+            btnOk.addEventListener('click', onOk);
+            btnCancel.addEventListener('click', onCancel);
+        });
+    };
+
     // ---- Toast ----
-    function showToast(msg) {
+    window.showToast = function(msg, duration = 3000) {
         const toast = document.getElementById('toast');
-        toast.textContent = msg;
+        toast.innerHTML = msg; // allow HTML for the update button
         toast.classList.remove('hidden');
         toast.classList.add('show');
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.classList.add('hidden'), 300);
-        }, 2500);
-    }
+        }, duration);
+    };
 
     // ---- Update sidebar mini-stats ----
     async function updateSidebarStats() {

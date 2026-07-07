@@ -7,7 +7,9 @@
     <meta name="description" content="DFWatch — Suivez vos séries et films, découvrez des statistiques et débloquez des succès.">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#13131a" id="meta-theme-color">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="logo/DFWatch-bbg.png">
+    <link rel="icon" type="image/png" href="logo/DFWatch-bbg.png">
+    <meta name="mobile-web-app-capable" content="yes">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,13 +22,7 @@
         <!-- ===== SIDEBAR (desktop/tablet) ===== -->
         <aside id="sidebar">
             <div class="sidebar-brand">
-                <div class="brand-icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#grad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient></defs>
-                        <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                    </svg>
-                </div>
-                <span class="brand-name">DFWatch</span>
+                <div class="brand-logo" aria-label="DFWatch Logo"></div>
             </div>
             <nav class="sidebar-nav">
                 <button class="sidebar-btn active" data-page="series">
@@ -117,14 +113,22 @@
                 <div class="page-inner">
                     <header class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
                         <h1 data-i18n="nav.series">Séries</h1>
-                        <select id="series-sort" class="sort-select">
-                            <option value="added_desc" data-i18n="sort.added_desc">Date d'ajout (Récent)</option>
-                            <option value="added_asc" data-i18n="sort.added_asc">Date d'ajout (Ancien)</option>
-                            <option value="name_asc" data-i18n="sort.name_asc">A-Z</option>
-                            <option value="name_desc" data-i18n="sort.name_desc">Z-A</option>
-                            <option value="rating_desc" data-i18n="sort.rating_desc">Mieux notées</option>
-                        </select>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button id="btn-search-series" class="icon-btn" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:20px;padding:4px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </button>
+                            <select id="series-sort" class="sort-select">
+                                <option value="added_desc" data-i18n="sort.added_desc">Date d'ajout (Récent)</option>
+                                <option value="added_asc" data-i18n="sort.added_asc">Date d'ajout (Ancien)</option>
+                                <option value="name_asc" data-i18n="sort.name_asc">A-Z</option>
+                                <option value="name_desc" data-i18n="sort.name_desc">Z-A</option>
+                                <option value="rating_desc" data-i18n="sort.rating_desc">Mieux notées</option>
+                            </select>
+                        </div>
                     </header>
+                    <div id="series-search-container" class="hidden" style="margin-bottom: 16px;">
+                        <input type="text" id="series-local-search" class="form-input" placeholder="Rechercher dans vos séries..." style="width:100%;">
+                    </div>
                     <div class="tab-bar">
                         <button class="tab active" data-tab="series-watching" data-i18n="series.watching">À voir</button>
                         <button class="tab" data-tab="series-finished" data-i18n="series.finished">Terminées</button>
@@ -165,15 +169,23 @@
                 <div class="page-inner">
                     <header class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
                         <h1 data-i18n="nav.movies">Films</h1>
-                        <select id="films-sort" class="sort-select">
-                            <option value="added_desc" data-i18n="sort.added_desc">Date d'ajout (Récent)</option>
-                            <option value="added_asc" data-i18n="sort.added_asc">Date d'ajout (Ancien)</option>
-                            <option value="name_asc" data-i18n="sort.name_asc">A-Z</option>
-                            <option value="name_desc" data-i18n="sort.name_desc">Z-A</option>
-                            <option value="rating_desc" data-i18n="sort.rating_desc">Mieux notées</option>
-                            <option value="release_desc" data-i18n="sort.release_desc">Date de sortie</option>
-                        </select>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button id="btn-search-films" class="icon-btn" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:20px;padding:4px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </button>
+                            <select id="films-sort" class="sort-select">
+                                <option value="added_desc" data-i18n="sort.added_desc">Date d'ajout (Récent)</option>
+                                <option value="added_asc" data-i18n="sort.added_asc">Date d'ajout (Ancien)</option>
+                                <option value="name_asc" data-i18n="sort.name_asc">A-Z</option>
+                                <option value="name_desc" data-i18n="sort.name_desc">Z-A</option>
+                                <option value="rating_desc" data-i18n="sort.rating_desc">Mieux notées</option>
+                                <option value="release_desc" data-i18n="sort.release_desc">Date de sortie</option>
+                            </select>
+                        </div>
                     </header>
+                    <div id="films-search-container" class="hidden" style="margin-bottom: 16px;">
+                        <input type="text" id="films-local-search" class="form-input" placeholder="Rechercher dans vos films..." style="width:100%;">
+                    </div>
                     <div class="tab-bar">
                         <button class="tab active" data-tab="films-watchlist" data-i18n="movies.watchlist">À voir</button>
                         <button class="tab" data-tab="films-watched" data-i18n="movies.watched">Vus</button>
@@ -401,6 +413,7 @@
                                     <button id="btn-import-cache" class="action-btn secondary" style="flex:1; font-size:12px;" onclick="document.getElementById('cache-file-input').click()">Charger cache</button>
                                     <input type="file" id="cache-file-input" accept=".json" style="display:none;">
                                 </div>
+                                <button id="btn-force-update" class="action-btn" style="width:100%; margin-bottom:12px; background:var(--iris-400); color:white; border:none; font-size:13px;">Forcer la mise à jour (Vider le cache PWA)</button>
                                 <button id="btn-sync-finished" class="action-btn secondary" style="width:100%; font-size:12px;">Recalculer statuts des séries</button>
                                 
                                 <hr class="divider" style="margin:20px 0;">
@@ -505,6 +518,18 @@
 
     <div id="toast" class="toast hidden"></div>
 
+    <!-- CUSTOM CONFIRM MODAL -->
+    <div id="custom-confirm-modal" class="detail-overlay custom-modal hidden">
+        <div class="settings-card glass-panel" style="max-width: 400px; width: 90%; text-align: center; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 18px;" id="custom-confirm-title">Confirmation</h3>
+            <p style="margin-bottom: 24px; color: var(--text-secondary);" id="custom-confirm-message"></p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="custom-confirm-cancel" class="action-btn secondary" style="flex: 1;">Annuler</button>
+                <button id="custom-confirm-ok" class="action-btn danger" style="flex: 1;">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app/js/db.js"></script>
     <script src="app/js/tmdb.js"></script>
     <script src="app/js/achievements.js"></script>
@@ -512,12 +537,36 @@
     <script src="app/js/i18n.js"></script>
     <script src="app/js/app.js"></script>
     <script>
+        let refreshing = false;
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
                     console.log('Service Worker registered', reg);
+                    
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Show update toast
+                                if (window.showToast) {
+                                    const updateHtml = `Une mise à jour est disponible ! <button onclick="window.updateApp()" style="margin-left:12px; background:var(--iris-400); color:white; border:none; padding:4px 10px; border-radius:6px; font-weight:600; cursor:pointer;">Mettre à jour</button>`;
+                                    window.showToast(updateHtml, 15000);
+                                    window.updateApp = () => {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                    };
+                                }
+                            }
+                        });
+                    });
                 }).catch(err => {
                     console.warn('Service Worker registration failed', err);
+                });
+
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        window.location.reload();
+                        refreshing = true;
+                    }
                 });
             });
         }

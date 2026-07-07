@@ -221,6 +221,7 @@ const TMDB = {
     },
 
     async getShowDetails(id) {
+        if (!id || id === 'null') return null;
         const tmdb = await _TMDB.getShowDetails(id);
         if (tmdb) return tmdb;
         console.log('TMDB show details failed, trying TheTVDB');
@@ -228,6 +229,7 @@ const TMDB = {
     },
 
     async getMovieDetails(id) {
+        if (!id || id === 'null') return null;
         const tmdb = await _TMDB.getMovieDetails(id);
         if (tmdb) return tmdb;
         console.log('TMDB movie details failed, trying TheTVDB');
@@ -235,6 +237,7 @@ const TMDB = {
     },
 
     async getSeasonDetails(showId, seasonNumber) {
+        if (!showId || showId === 'null') return null;
         const tmdb = await _TMDB.getSeasonDetails(showId, seasonNumber);
         if (tmdb) return tmdb;
         console.log('TMDB season details failed, trying TheTVDB');

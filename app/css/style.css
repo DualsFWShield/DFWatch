@@ -5,6 +5,8 @@
 
 /* ── 0. DESIGN TOKENS ──────────────────────────────────────── */
 :root {
+    /* ✨ Surfaces ✨ */
+    --app-logo: url('../../logo/DFWatch-wnobg.png');
     /* ─ Surfaces ─ */
     --void:          #08080f;
     --surface-1:     #0e0e18;
@@ -94,6 +96,7 @@
 
 /* Light Mode */
 [data-theme="light"] {
+    --app-logo: url('../../logo/DFWatch-bnobg.png');
     --void:          #f8fafc;
     --surface-1:     #f1f5f9;
     --surface-2:     #e2e8f0;
@@ -359,27 +362,14 @@ img { display: block; max-width: 100%; }
     padding: 4px 12px 32px;
 }
 
-.brand-icon {
-    width: 36px; height: 36px;
-    background: linear-gradient(135deg, var(--iris-500), var(--iris-700));
-    border-radius: var(--r-12);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 16px var(--iris-glow), var(--shadow-sm);
-    animation: logoPulse 4s ease-in-out infinite;
-}
-@keyframes logoPulse {
-    0%, 100% { box-shadow: 0 0 16px var(--iris-glow), var(--shadow-sm); }
-    50% { box-shadow: 0 0 24px var(--iris-glow), 0 0 40px rgba(139,92,246,0.12), var(--shadow-sm); }
-}
-
-.brand-name {
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--iris-200), var(--cyan-400));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.brand-logo {
+    width: 160px;
+    height: 48px;
+    flex-shrink: 0;
+    background-image: var(--app-logo);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: left center;
 }
 
 .sidebar-nav {
@@ -1803,6 +1793,17 @@ img { display: block; max-width: 100%; }
     opacity: 0;
     pointer-events: none;
 }
+
+.custom-modal {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.8);
+    z-index: 10000;
+}
+.custom-modal.hidden {
+    display: none !important;
+}
 .modal-content {
     background: var(--bg-body);
     border: 1px solid var(--border-subtle);
@@ -2013,3 +2014,35 @@ img { display: block; max-width: 100%; }
 .page.active .poster-card:nth-child(7) { animation-delay: 240ms; }
 .page.active .poster-card:nth-child(8) { animation-delay: 280ms; }
 .page.active .poster-card:nth-child(n+9) { animation-delay: 300ms; }
+
+/* Thumbs up/down */
+.recommendation-actions {
+    position: absolute;
+    top: 8px; right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+}
+.thumb-btn {
+    background: rgba(0,0,0,0.6);
+    border: none;
+    color: #fff;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+.thumb-btn:hover {
+    background: rgba(0,0,0,0.8);
+    transform: scale(1.1);
+}
+.thumb-down:hover { color: #f87171; }
+.thumb-up:hover { color: #4ade80; }
+
+.hidden { display: none !important; }
+
