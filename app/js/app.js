@@ -1731,23 +1731,18 @@
                     const w = parseInt(progressBar.style.width) || 10;
                     progressBar.style.width = Math.min(w + 25, 90) + '%';
                 });
+                progressBar.style.width = '100%';
+                importStatus.textContent = `✓ Import terminé — ${total} éléments importés.`;
+                importStatus.className = 'status-msg success';
+                showToast('Import réussi ! 🎉');
+                refreshSeriesList();
+                refreshFilmsList();
+                refreshProfile();
+                enrichAllMedia();
             } else {
-                total = await Importer.importDFWatch(selectedFiles, msg => {
-                    importStatus.textContent = msg;
-                });
+                // For DFWatch backup, show the import modal to pick what to restore
+                document.getElementById('import-modal').classList.remove('hidden');
             }
-            progressBar.style.width = '100%';
-            importStatus.textContent = `✓ Import terminé — ${total} éléments importés.`;
-            importStatus.className = 'status-msg success';
-            showToast('Import réussi ! 🎉');
-
-            // Refresh all pages
-            refreshSeriesList();
-            refreshFilmsList();
-            refreshProfile();
-
-            // Now try to fetch posters from TMDB for imported shows (in background)
-            enrichAllMedia();
         } catch (err) {
             importStatus.textContent = `Erreur: ${err.message}`;
             importStatus.className = 'status-msg error';
@@ -1755,30 +1750,69 @@
         }
     });
 
-    document.getElementById('btn-export').addEventListener('click', async () => {
-        await Importer.exportDFWatch();
+    // Handle Import Confirmation from Modal
+    document.getElementById('btn-import-cancel').addEventListener('click', () => {
+        document.getElementById('import-modal').classList.add('hidden');
+    });
+
+    document.getElementById('btn-import-confirm').addEventListener('click', async () => {
+        document.getElementById('import-modal').classList.add('hidden');
+        const options = {
+            data: document.getElementById('import-chk-data').checked,
+            settings: document.getElementById('import-chk-settings').checked,
+            cache: document.getElementById('import-chk-cache').checked
+        };
+        
+        const progressBar = document.getElementById('import-progress-bar');
+        const progressContainer = document.getElementById('import-progress');
+        progressContainer.classList.remove('hidden');
+        
+        try {
+            const total = await Importer.importDFWatch(selectedFiles, options, msg => {
+                importStatus.textContent = msg;
+            });
+            progressBar.style.width = '100%';
+            importStatus.textContent = `✓ Import terminé — ${total} éléments importés.`;
+            importStatus.className = 'status-msg success';
+            showToast('Import réussi ! 🎉');
+            
+            // Reload page to apply settings/data if necessary, or just refresh
+            refreshSeriesList();
+            refreshFilmsList();
+            refreshProfile();
+            if (options.data || options.cache) {
+                enrichAllMedia();
+            }
+            if (options.settings) {
+                location.reload(); // Hard refresh to apply theme and lang instantly
+            }
+        } catch (err) {
+            importStatus.textContent = `Erreur: ${err.message}`;
+            importStatus.className = 'status-msg error';
+            progressBar.style.width = '0%';
+        }
+    });
+
+    document.getElementById('btn-export').addEventListener('click', () => {
+        document.getElementById('export-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-export-cancel').addEventListener('click', () => {
+        document.getElementById('export-modal').classList.add('hidden');
+    });
+
+    document.getElementById('btn-export-confirm').addEventListener('click', async () => {
+        document.getElementById('export-modal').classList.add('hidden');
+        const options = {
+            data: document.getElementById('export-chk-data').checked,
+            settings: document.getElementById('export-chk-settings').checked,
+            cache: document.getElementById('export-chk-cache').checked
+        };
+        await Importer.exportDFWatch(options);
         localStorage.setItem('dfwatch_has_exported', '1');
         showToast(window.I18n ? window.I18n.get('toast.export') : 'Export téléchargé !');
     });
 
-    document.getElementById('btn-export-cache').addEventListener('click', async () => {
-        showToast('Préparation de l\'export cache...');
-        await exportPosterCache();
-    });
-
-    document.getElementById('cache-file-input').addEventListener('change', async (e) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-        showToast('Import du cache en cours...');
-        const success = await importPosterCache(e.target.files[0]);
-        if (success) {
-            showToast('Cache importé avec succès !');
-            refreshSeriesList();
-            refreshFilmsList();
-        } else {
-            showToast('Erreur lors de l\'import du cache');
-        }
-        e.target.value = '';
-    });
 
     document.getElementById('btn-force-update').addEventListener('click', async () => {
         const confirmed = await window.customConfirm("Cela va vider le cache de l'application et forcer le téléchargement de la dernière version. Continuer ?");
@@ -1852,54 +1886,7 @@
         refreshFilmsList();
     }
 
-    async function exportPosterCache() {
-        const shows = await db.shows.filter(s => !!s.tmdb_id).toArray();
-        const movies = await db.movies.filter(m => !!m.tmdb_id).toArray();
-        const cache = {
-            shows: shows.map(s => ({ name: s.name, tvtime_id: s.tvtime_id, tmdb_id: s.tmdb_id, poster_path: s.poster_path, backdrop_path: s.backdrop_path })),
-            movies: movies.map(m => ({ name: m.name, uuid: m.uuid, tmdb_id: m.tmdb_id, poster_path: m.poster_path, backdrop_path: m.backdrop_path }))
-        };
-        const blob = new Blob([JSON.stringify(cache, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `dfwatch-posters-cache.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
 
-    async function importPosterCache(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const cache = JSON.parse(e.target.result);
-                    if (cache.shows) {
-                        for (const s of cache.shows) {
-                            if (!s.tmdb_id) continue;
-                            const existing = await db.shows.where('name').equals(s.name).first();
-                            if (existing && !existing.tmdb_id) {
-                                await db.shows.update(existing.id, { tmdb_id: s.tmdb_id, poster_path: s.poster_path, backdrop_path: s.backdrop_path });
-                            }
-                        }
-                    }
-                    if (cache.movies) {
-                        for (const m of cache.movies) {
-                            if (!m.tmdb_id) continue;
-                            const existing = await db.movies.where('name').equals(m.name).first();
-                            if (existing && !existing.tmdb_id) {
-                                await db.movies.update(existing.id, { tmdb_id: m.tmdb_id, poster_path: m.poster_path, backdrop_path: m.backdrop_path });
-                            }
-                        }
-                    }
-                    resolve(true);
-                } catch(err) {
-                    resolve(false);
-                }
-            };
-            reader.readAsText(file);
-        });
-    }
 
     // ---- Custom Confirm ----
     window.customConfirm = function(message, title = "Confirmation", okText = "Confirmer", cancelText = "Annuler") {

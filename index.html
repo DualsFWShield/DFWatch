@@ -390,8 +390,8 @@
                                 </div>
                                 <div class="file-drop" id="file-drop-zone" style="margin-bottom:12px; padding:20px;">
                                     <div class="file-drop-icon" style="font-size:24px;">📁</div>
-                                    <p style="font-size:13px;" data-i18n="profile.drop">Glissez vos CSV ici ou <strong>cliquez</strong></p>
-                                    <input type="file" id="csv-file-input" accept=".csv" multiple>
+                                    <p style="font-size:13px;" data-i18n="profile.drop">Glissez vos fichiers (CSV ou JSON) ici ou <strong>cliquez</strong></p>
+                                    <input type="file" id="csv-file-input" accept=".csv,.json" multiple>
                                 </div>
                                 <div id="import-file-names" class="file-names" style="margin-bottom:12px;"></div>
                                 
@@ -407,12 +407,7 @@
                                 
                                 <hr class="divider" style="margin:20px 0;">
                                 
-                                <h3 style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Maintenance & Cache</h3>
-                                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                                    <button id="btn-export-cache" class="action-btn secondary" style="flex:1; font-size:12px;">Sauvegarder cache</button>
-                                    <button id="btn-import-cache" class="action-btn secondary" style="flex:1; font-size:12px;" onclick="document.getElementById('cache-file-input').click()">Charger cache</button>
-                                    <input type="file" id="cache-file-input" accept=".json" style="display:none;">
-                                </div>
+                                <h3 style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Maintenance</h3>
                                 <button id="btn-force-update" class="action-btn" style="width:100%; margin-bottom:12px; background:var(--iris-400); color:white; border:none; font-size:13px;">Forcer la mise à jour (Vider le cache PWA)</button>
                                 <button id="btn-sync-finished" class="action-btn secondary" style="width:100%; font-size:12px;">Recalculer statuts des séries</button>
                                 
@@ -517,6 +512,57 @@
     </div>
 
     <div id="toast" class="toast hidden"></div>
+
+    <!-- EXPORT MODAL -->
+    <div id="export-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom:16px;">Exporter la sauvegarde</h2>
+            <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="export-chk-data" checked>
+                    <span>Données (Historique, Listes, Statistiques)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="export-chk-settings" checked>
+                    <span>Paramètres (Thème, Profil, Top 10)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="export-chk-cache" checked>
+                    <span>Cache (TMDB IDs et affiches préchargées)</span>
+                </label>
+            </div>
+            <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
+                <button class="action-btn secondary" id="btn-export-cancel">Annuler</button>
+                <button class="action-btn primary" id="btn-export-confirm">Générer le fichier</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORT MODAL -->
+    <div id="import-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom:16px;">Importer une sauvegarde</h2>
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">Sélectionnez ce que vous souhaitez restaurer :</p>
+            <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="import-chk-data" checked>
+                    <span>Données (Historique, Listes)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="import-chk-settings" checked>
+                    <span>Paramètres (Écrasera les paramètres actuels)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="import-chk-cache" checked>
+                    <span>Cache (Mise à jour des affiches)</span>
+                </label>
+            </div>
+            <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
+                <button class="action-btn secondary" id="btn-import-cancel">Annuler</button>
+                <button class="action-btn primary" id="btn-import-confirm">Lancer la restauration</button>
+            </div>
+        </div>
+    </div>
 
     <!-- CUSTOM CONFIRM MODAL -->
     <div id="custom-confirm-modal" class="detail-overlay custom-modal hidden">
