@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFWatch — Séries & Films Tracker</title>
+    <meta name="description" content="DFWatch — Suivez vos séries et films, découvrez des statistiques et débloquez des succès.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#13131a" id="meta-theme-color">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="app/js/vendor/papaparse.min.js"></script>
+    <script src="app/js/vendor/dexie.js"></script>
+    <link rel="stylesheet" href="app/css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <!-- ===== SIDEBAR (desktop/tablet) ===== -->
+        <aside id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#grad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient></defs>
+                        <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                    </svg>
+                </div>
+                <span class="brand-name">DFWatch</span>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="sidebar-btn active" data-page="series">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                    <span>Séries</span>
+                </button>
+                <button class="sidebar-btn" data-page="films">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                    <span>Films</span>
+                </button>
+                <button class="sidebar-btn" data-page="search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Explorer</span>
+                </button>
+                <button class="sidebar-btn" data-page="stats">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                    <span>Stats</span>
+                </button>
+                <button class="sidebar-btn" data-page="favoris">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <span>Favoris</span>
+                </button>
+                <button class="sidebar-btn" data-page="profile">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>Profil</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-mini-stats">
+                    <div><span id="sidebar-stat-ep">0</span> épisodes</div>
+                    <div><span id="sidebar-stat-film">0</span> films</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ===== MOBILE BOTTOM NAV ===== -->
+        <nav id="bottom-nav">
+            <button class="nav-btn active" data-page="series">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                <span>Séries</span>
+            </button>
+            <button class="nav-btn" data-page="films">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                <span>Films</span>
+            </button>
+            <button class="nav-btn" data-page="search">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span>Explorer</span>
+            </button>
+            <button class="nav-btn" data-page="stats">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                <span>Stats</span>
+            </button>
+            <button class="nav-btn" data-page="favoris">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                <span>Favoris</span>
+            </button>
+            <button class="nav-btn" data-page="profile">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Profil</span>
+            </button>
+        </nav>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main id="app">
+
+            <!-- FAVORIS -->
+            <section id="page-favoris" class="page">
+                <div class="page-inner">
+                    <header class="page-header">
+                        <h1>Favoris</h1>
+                    </header>
+                    <div class="tab-bar">
+                        <button class="tab active" data-tab="favoris-series">Séries</button>
+                        <button class="tab" data-tab="favoris-films">Films</button>
+                    </div>
+                    <div id="tab-favoris-series" class="tab-content active">
+                        <div id="favoris-series-list" class="poster-grid"></div>
+                    </div>
+                    <div id="tab-favoris-films" class="tab-content">
+                        <div id="favoris-films-list" class="poster-grid"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SERIES -->
+            <section id="page-series" class="page active">
+                <div class="page-inner">
+                    <header class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h1>Séries</h1>
+                        <select id="series-sort" class="sort-select">
+                            <option value="added_desc">Date d'ajout (Récent)</option>
+                            <option value="added_asc">Date d'ajout (Ancien)</option>
+                            <option value="name_asc">A-Z</option>
+                            <option value="name_desc">Z-A</option>
+                            <option value="rating_desc">Mieux notées</option>
+                        </select>
+                    </header>
+                    <div class="tab-bar">
+                        <button class="tab active" data-tab="series-watching">À voir</button>
+                        <button class="tab" data-tab="series-finished">Terminées</button>
+                        <button class="tab" data-tab="series-upcoming">À venir</button>
+                    </div>
+                    <div id="tab-series-watching" class="tab-content active">
+                        <div id="series-list" class="episode-list">
+                            <div class="empty-state">
+                                <div class="empty-icon">📺</div>
+                                <h3>Aucune série suivie</h3>
+                                <p>Importez vos données TVTime ou recherchez une série pour commencer.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-series-finished" class="tab-content">
+                        <div id="series-finished-list" class="poster-grid">
+                            <div class="empty-state">
+                                <div class="empty-icon">🏆</div>
+                                <h3>Aucune série terminée</h3>
+                                <p>Regardez tous les épisodes d'une série pour la voir apparaître ici.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-series-upcoming" class="tab-content">
+                        <div id="series-upcoming-list" class="poster-grid">
+                            <div class="empty-state">
+                                <div class="empty-icon">📅</div>
+                                <h3>Rien à venir</h3>
+                                <p>Pré-enregistrez des séries avant leur sortie.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FILMS -->
+            <section id="page-films" class="page">
+                <div class="page-inner">
+                    <header class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h1>Films</h1>
+                        <select id="films-sort" class="sort-select">
+                            <option value="added_desc">Date d'ajout (Récent)</option>
+                            <option value="added_asc">Date d'ajout (Ancien)</option>
+                            <option value="name_asc">A-Z</option>
+                            <option value="name_desc">Z-A</option>
+                            <option value="rating_desc">Mieux notées</option>
+                            <option value="release_desc">Date de sortie</option>
+                        </select>
+                    </header>
+                    <div class="tab-bar">
+                        <button class="tab active" data-tab="films-watchlist">À voir</button>
+                        <button class="tab" data-tab="films-watched">Vus</button>
+                        <button class="tab" data-tab="films-upcoming">À venir</button>
+                    </div>
+                    <div id="tab-films-watchlist" class="tab-content active">
+                        <div id="films-watchlist-list" class="poster-grid">
+                            <div class="empty-state">
+                                <div class="empty-icon">🍿</div>
+                                <h3>Rien à voir</h3>
+                                <p>Ajoutez des films à votre liste.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-films-watched" class="tab-content">
+                        <div id="films-list" class="poster-grid">
+                            <div class="empty-state">
+                                <div class="empty-icon">🎬</div>
+                                <h3>Aucun film</h3>
+                                <p>Importez vos données ou ajoutez des films depuis la recherche.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-films-upcoming" class="tab-content">
+                        <div id="films-upcoming-list" class="poster-grid">
+                            <div class="empty-state">
+                                <div class="empty-icon">📅</div>
+                                <h3>Rien à venir</h3>
+                                <p>Pré-enregistrez des films avant leur sortie.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEARCH -->
+            <section id="page-search" class="page">
+                <div class="page-inner">
+                    <header class="page-header">
+                        <h1>Explorer</h1>
+                    </header>
+                    <div class="search-wrapper">
+                        <div class="search-box">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="search-input" placeholder="Rechercher un film ou une série..." autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="search-tabs">
+                        <button class="search-tab active" data-search-type="foryou">Pour vous</button>
+                        <button class="search-tab" data-search-type="multi">Tendances</button>
+                        <button class="search-tab" data-search-type="tv">Séries</button>
+                        <button class="search-tab" data-search-type="movie">Films</button>
+                    </div>
+                    <div id="search-results" class="poster-grid"></div>
+                </div>
+            </section>
+
+            <!-- STATS & SUCCESS -->
+            <section id="page-stats" class="page">
+                <div class="page-inner">
+                    <header class="page-header">
+                        <h1>Stats & Succès</h1>
+                    </header>
+
+                    <!-- Advanced Stats -->
+                    <div class="profile-section">
+                        <div class="stats-grid">
+                            <div class="stat-card gradient-purple">
+                                <div class="stat-card-icon">📺</div>
+                                <p class="stat-label">Temps devant des séries</p>
+                                <div class="stat-big-numbers" id="stat-series-time">
+                                    <div class="stat-num"><span class="big">0</span><span class="unit">M</span></div>
+                                    <div class="stat-num"><span class="big">0</span><span class="unit">J</span></div>
+                                    <div class="stat-num"><span class="big">0</span><span class="unit">H</span></div>
+                                </div>
+                                <div class="stat-raw-hours" id="stat-series-hours" style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">Total : 0 heures</div>
+                            </div>
+                            <div class="stat-card gradient-blue">
+                                <div class="stat-card-icon">✅</div>
+                                <p class="stat-label">Épisodes vus</p>
+                                <div class="stat-single-big" id="stat-episodes-count">0</div>
+                            </div>
+                            <div class="stat-card gradient-teal">
+                                <div class="stat-card-icon">🎬</div>
+                                <p class="stat-label">Temps devant des films</p>
+                                <div class="stat-big-numbers" id="stat-films-time">
+                                    <div class="stat-num"><span class="big">0</span><span class="unit">M</span></div>
+                                    <div class="stat-num"><span class="big">0</span><span class="unit">J</span></div>
+                                    <div class="stat-num"><span class="big">0</span><span class="unit">H</span></div>
+                                </div>
+                                <div class="stat-raw-hours" id="stat-films-hours" style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">Total : 0 heures</div>
+                            </div>
+                            <div class="stat-card gradient-pink">
+                                <div class="stat-card-icon">🎞️</div>
+                                <p class="stat-label">Films vus</p>
+                                <div class="stat-single-big" id="stat-films-count">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Achievements -->
+                    <div class="profile-section">
+                        <div class="section-header-row">
+                            <h2 class="section-title">Succès (<span id="achievements-progress-text">0/0</span>)</h2>
+                            <div class="achievements-progress-bar">
+                                <div class="progress-fill" id="achievements-progress-fill"></div>
+                            </div>
+                        </div>
+                        <div id="achievements-container" class="achievements-grid"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PROFILE -->
+            <section id="page-profile" class="page">
+                <div class="page-inner">
+                    <header class="page-header">
+                        <h1>Mon Profil</h1>
+                    </header>
+
+                    <!-- Series carousel -->
+                    <div class="profile-section">
+                        <h2 class="section-title">Mes Séries</h2>
+                        <div class="horizontal-scroll" id="profile-series-scroll"></div>
+                    </div>
+                    <!-- Personal Info -->
+                    <div class="profile-section">
+                        <h2 class="section-title">Informations Personnelles</h2>
+                        <div class="settings-block" id="profile-info-form">
+                            <div class="setting-row">
+                                <label for="profile-firstname">Prénom</label>
+                                <input type="text" id="profile-firstname" placeholder="Ex: John" class="form-input">
+                            </div>
+                            <div class="setting-row">
+                                <label for="profile-lastname">Nom</label>
+                                <input type="text" id="profile-lastname" placeholder="Ex: Doe" class="form-input">
+                            </div>
+                            <div class="setting-row">
+                                <label for="profile-age">Âge</label>
+                                <input type="number" id="profile-age" placeholder="Ex: 25" min="1" max="120" class="form-input">
+                            </div>
+                            <div class="setting-row" style="align-items:flex-start; flex-direction:column; gap:12px;">
+                                <label>Genres de prédilection</label>
+                                <div class="genres-grid" id="profile-genres">
+                                    <label class="genre-checkbox"><input type="checkbox" value="Action"> Action</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Aventure"> Aventure</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Animation"> Animation</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Comédie"> Comédie</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Drame"> Drame</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Fantastique"> Fantastique</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Horreur"> Horreur</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Science-Fiction"> Science-Fiction</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Thriller"> Thriller</label>
+                                    <label class="genre-checkbox"><input type="checkbox" value="Romance"> Romance</label>
+                                </div>
+                            </div>
+                            <button id="btn-save-profile" class="action-btn primary" style="margin-top:10px; width:100%;">Enregistrer mes infos</button>
+                        </div>
+                    </div>
+
+                    <!-- Theme Settings -->
+                    <div class="profile-section">
+                        <h2 class="section-title">Personnalisation</h2>
+                        <div class="settings-block">
+                            <div class="setting-row">
+                                <label for="theme-select">Thème de l'application</label>
+                                <select id="theme-select" class="sort-select">
+                                    <option value="default">Cinematic Void (Défaut)</option>
+                                    <option value="light">Light Mode</option>
+                                    <option value="neon">Neon</option>
+                                    <option value="forest">Forest</option>
+                                    <option value="blood">Blood</option>
+                                    <option value="ocean">Ocean</option>
+                                    <option value="sunset">Sunset</option>
+                                    <option value="cyberpunk">Cyberpunk</option>
+                                    <option value="matrix">Matrix</option>
+                                    <option value="gold">Gold</option>
+                                    <option value="retro">Retro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data management -->
+                    <div class="profile-section">
+                        <h2 class="section-title">Gestion des données</h2>
+                        <div class="settings-block">
+                            <div class="setting-row">
+                                <label for="import-type">Format d'import</label>
+                                <select id="import-type">
+                                    <option value="tvtime">TV Time</option>
+                                    <option value="dfwatch">DFWatch Backup</option>
+                                </select>
+                            </div>
+                            <div class="file-drop" id="file-drop-zone">
+                                <div class="file-drop-icon">📁</div>
+                                <p>Glissez vos fichiers CSV ici ou <strong>cliquez pour parcourir</strong></p>
+                                <input type="file" id="csv-file-input" accept=".csv" multiple>
+                            </div>
+                            <div id="import-file-names" class="file-names"></div>
+                            <button id="btn-import" class="action-btn primary">Importer les données</button>
+                            <div id="import-progress" class="progress-bar-container hidden">
+                                <div class="progress-bar" id="import-progress-bar"></div>
+                            </div>
+                            <p id="import-status" class="status-msg"></p>
+                            <hr class="divider">
+                            <button id="btn-export" class="action-btn secondary">Exporter (DFWatch)</button>
+                            <hr class="divider">
+                            <h3 style="margin: 1.5rem 0 0.5rem; font-size: 1rem; color: var(--text-muted);">Cache des Posters</h3>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button id="btn-export-cache" class="action-btn secondary" style="flex:1;">Sauvegarder cache</button>
+                                <button id="btn-import-cache" class="action-btn secondary" style="flex:1;" onclick="document.getElementById('cache-file-input').click()">Charger cache</button>
+                                <input type="file" id="cache-file-input" accept=".json" style="display:none;">
+                            </div>
+                            <hr class="divider">
+                            <button id="btn-clear" class="action-btn danger">Effacer toutes les données</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SHOW DETAIL OVERLAY -->
+            <div id="show-detail-overlay" class="detail-overlay hidden">
+                <div class="detail-content">
+                    <button class="detail-back" id="detail-back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div class="detail-backdrop" id="detail-backdrop"></div>
+                    <div class="detail-body" id="detail-body"></div>
+                </div>
+            </div>
+
+            <!-- ACHIEVEMENTS OVERLAY -->
+            <div id="achievements-overlay" class="detail-overlay hidden">
+                <div class="detail-content">
+                    <button class="detail-back" id="achievements-back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div class="detail-body" style="padding-top:60px;">
+                        <h2 style="margin-bottom:24px;">Tous les succès</h2>
+                        <div id="achievements-full-list" class="achievements-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app/js/db.js"></script>
+    <script src="app/js/tmdb.js"></script>
+    <script src="app/js/achievements.js"></script>
+    <script src="app/js/import.js"></script>
+    <script src="app/js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('Service Worker registered', reg);
+                }).catch(err => {
+                    console.warn('Service Worker registration failed', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

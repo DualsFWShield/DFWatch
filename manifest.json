@@ -1,0 +1,21 @@
+{
+  "name": "DFWatch",
+  "short_name": "DFWatch",
+  "description": "Suivez vos séries et films, découvrez des statistiques et débloquez des succès.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#13131a",
+  "theme_color": "#13131a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
