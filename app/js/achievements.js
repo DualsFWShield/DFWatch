@@ -261,7 +261,8 @@ const Achievements = {
         const postersCount = allShows.filter(s => s.poster_path).length + allMovies.filter(m => m.poster_path).length;
 
         // Completed shows (nb_episodes_seen > 0 and marked as such)
-        const completedShows = allShows.filter(s => s.status === 'completed' || (s.nb_episodes_seen && s.nb_episodes_seen > 0 && s.is_followed === 0)).length;
+        const allDbShows = await db.shows.toArray();
+        const completedShows = allDbShows.filter(s => s.is_finished === 1 || s.status === 'completed').length;
 
         // Has exported
         const hasExported = !!localStorage.getItem('dfwatch_has_exported');

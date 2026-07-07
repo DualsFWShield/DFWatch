@@ -1,0 +1,6 @@
+{
+  "appId": "io.github.noah.dfwatch",
+  "appName": "DFWatch",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

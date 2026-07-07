@@ -241,6 +241,10 @@ const TMDB = {
         return _TVDB.getSeasonDetails(showId, seasonNumber);
     },
 
+    async getRecommendations(id, type = 'movie') {
+        return _TMDB.getRecommendations(id, type);
+    },
+
     async findShowByName(name) {
         const tmdb = await _TMDB.findShowByName(name);
         if (tmdb) return tmdb;

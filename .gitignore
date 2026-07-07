@@ -1,2 +1,6 @@
 /gdpr-data
 /TVTime
+node_modules/
+dist/
+
+.capacitor/
