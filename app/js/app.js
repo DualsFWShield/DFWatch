@@ -1452,37 +1452,19 @@
         });
 
         // --- 2. Calculate Stats ---
-        const shows = await db.shows.where('is_followed').equals(1).toArray();
-        const movies = await db.movies.toArray();
+        const seriesStats = await DB.getSeriesStats();
+        const movieStats = await DB.getMovieStats();
         
-        let completedSeriesCount = 0;
-        let totalRuntimeMinutes = 0;
-        
-        // Calculate Movies time (assuming average 120min if runtime not in DB)
-        movies.forEach(m => {
-            if (m.status === 'watched') {
-                totalRuntimeMinutes += m.runtime || 120; // Approximation for movies
-            }
-        });
-        
-        // Calculate Series time
-        shows.forEach(show => {
-            if (show.is_finished === 1) completedSeriesCount++;
-            
-            if (show.seasons && show.seasons.length > 0) {
-                // If we don't have episode runtimes, assume 45min per seen episode
-                let seenEps = 0;
-                show.seasons.forEach(s => {
-                    if (s.seen_episodes) seenEps += s.seen_episodes.length;
-                });
-                totalRuntimeMinutes += seenEps * 45;
-            }
-        });
-        
+        const totalRuntimeMinutes = seriesStats.totalMinutes + movieStats.totalMinutes;
         const hours = Math.floor(totalRuntimeMinutes / 60);
         
         document.getElementById('stat-total-time').textContent = hours > 0 ? `${hours}h` : '0h';
+
+        const shows = await db.shows.where('is_followed').equals(1).toArray();
+        let completedSeriesCount = shows.filter(s => s.is_finished === 1).length;
         document.getElementById('stat-total-series').textContent = completedSeriesCount;
+        
+        const movies = await db.movies.toArray();
         document.getElementById('stat-total-movies').textContent = movies.filter(m => m.status === 'watched').length;
 
         // --- 3. Top 10 horizontal scroll ---
