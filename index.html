@@ -46,10 +46,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
                     <span data-i18n="nav.stats">Stats</span>
                 </button>
-                <button class="sidebar-btn" data-page="favoris">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                    <span data-i18n="nav.favorites">Favoris</span>
-                </button>
+
                 <button class="sidebar-btn" data-page="lists">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                     <span>Listes</span>
@@ -89,10 +86,7 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
                 <span data-i18n="nav.stats">Stats</span>
             </button>
-            <button class="nav-btn" data-page="favoris">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                <span data-i18n="nav.favorites">Favoris</span>
-            </button>
+
             <button class="nav-btn" data-page="lists">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 <span>Listes</span>
@@ -109,38 +103,30 @@
             <!-- LISTES -->
             <section id="page-lists" class="page">
                 <div class="page-inner">
-                    <header class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <header class="page-header">
                         <h1>Mes Listes</h1>
-                        <button id="btn-create-list" class="action-btn primary" style="padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:6px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Créer
-                        </button>
                     </header>
-                    <div id="custom-lists-container" class="poster-grid">
-                        <div class="empty-state" style="grid-column: 1 / -1;">
-                            <div class="empty-icon">📋</div>
-                            <h3>Aucune liste</h3>
-                            <p>Créez des listes personnalisées pour classer vos films et séries.</p>
-                        </div>
+                    <div id="custom-lists-container" class="lists-grid">
+                        <!-- Grid populated by JS (Favoris + Custom Lists + Create Button) -->
                     </div>
                 </div>
             </section>
 
-            <!-- FAVORIS -->
-            <section id="page-favoris" class="page">
+            <!-- DÉTAIL D'UNE LISTE -->
+            <section id="page-list-detail" class="page">
                 <div class="page-inner">
-                    <header class="page-header">
-                        <h1 data-i18n="nav.favorites">Favoris</h1>
+                    <header class="page-header" style="display:flex; align-items:center; gap:12px;">
+                        <button class="back-btn" id="btn-back-lists" style="background:none; border:none; color:var(--text-secondary); cursor:pointer;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                        </button>
+                        <h1 id="list-detail-title" style="margin:0;">Nom de la liste</h1>
                     </header>
-                    <div class="tab-bar">
-                        <button class="tab active" data-tab="favoris-series" data-i18n="nav.series">Séries</button>
-                        <button class="tab" data-tab="favoris-films" data-i18n="nav.movies">Films</button>
+                    <div class="tab-bar" id="list-detail-tabs" style="display:none;">
+                        <button class="tab active" data-tab="list-detail-series">Séries</button>
+                        <button class="tab" data-tab="list-detail-films">Films</button>
                     </div>
-                    <div id="tab-favoris-series" class="tab-content active">
-                        <div id="favoris-series-list" class="poster-grid"></div>
-                    </div>
-                    <div id="tab-favoris-films" class="tab-content">
-                        <div id="favoris-films-list" class="poster-grid"></div>
+                    <div id="list-detail-content" class="poster-grid">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
             </section>

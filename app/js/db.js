@@ -26,6 +26,10 @@ db.version(4).stores({
     episode_notes: 'id, show_id, season_num, ep_num, rating, note, updated_at'
 });
 
+db.version(5).stores({
+    list_items: '++id, list_id, tmdb_id, [list_id+tmdb_id], media_type, added_at'
+});
+
 // Delete legacy DB if it exists
 Dexie.exists("DFWatchDB").then(exists => {
     if (exists) {

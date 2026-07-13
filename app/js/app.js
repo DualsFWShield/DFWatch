@@ -2718,44 +2718,52 @@
     async function renderCustomLists() {
         const container = document.getElementById('custom-lists-container');
         const lists = await db.custom_lists.toArray();
-        if (lists.length === 0) {
-            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">📋</div><h3>Aucune liste</h3><p>Créez des listes personnalisées pour classer vos films et séries.</p></div>`;
-            return;
-        }
         
-        let html = '';
+        // Fetch favoris count
+        const favShows = await db.shows.where('is_favorited').equals(1).count();
+        const favMovies = await db.movies.where('is_favorited').equals(1).count();
+        const totalFavs = favShows + favMovies;
+
+        let html = `
+            <div class="list-card-v2 favoris" data-id="favoris">
+                <div class="list-icon">❤️</div>
+                <h3>Favoris</h3>
+                <p>${totalFavs} élément(s)</p>
+            </div>
+        `;
+        
         for (const list of lists) {
             const items = await db.list_items.where('list_id').equals(list.id).toArray();
-            let posterHtml = '<div class="list-poster" style="display:flex;align-items:center;justify-content:center;background:var(--surface-3);font-size:24px;">📋</div>';
-            if (items.length > 0) {
-                const latest = items[items.length - 1];
-                let itemData = null;
-                if (latest.media_type === 'show') itemData = await db.shows.where('tmdb_id').equals(latest.tmdb_id).first();
-                else itemData = await db.movies.where('tmdb_id').equals(latest.tmdb_id).first();
-                if (itemData && itemData.poster_path) {
-                    posterHtml = `<img src="https://image.tmdb.org/t/p/w200${itemData.poster_path}" class="list-poster">`;
-                }
-            }
-            
+            let iconHtml = '📋';
             html += `
-                <div class="list-item-card" data-id="${list.id}">
-                    ${posterHtml}
-                    <div style="flex:1;">
-                        <h3 style="margin:0 0 4px 0; font-size:16px;">${list.name}</h3>
-                        <p style="margin:0; font-size:13px; color:var(--text-secondary);">${items.length} élément(s)</p>
-                    </div>
-                    <button class="icon-btn text-danger btn-delete-list" data-id="${list.id}">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <div class="list-card-v2" data-id="${list.id}">
+                    <div class="list-icon">${iconHtml}</div>
+                    <h3>${list.name}</h3>
+                    <p>${items.length} élément(s)</p>
+                    <button class="btn-delete-list-v2" data-id="${list.id}" title="Supprimer la liste">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                 </div>
             `;
         }
+
+        html += `
+            <div class="list-card-v2 create-new" id="btn-create-list-card">
+                <div class="list-icon" style="color:var(--text-secondary);">+</div>
+                <h3 style="color:var(--text-secondary);">Créer une liste</h3>
+            </div>
+        `;
+
         container.innerHTML = html;
         
-        container.querySelectorAll('.btn-delete-list').forEach(btn => {
+        // Also hide the old btn-create-list from the header
+        const oldCreateBtn = document.getElementById('btn-create-list');
+        if (oldCreateBtn) oldCreateBtn.style.display = 'none';
+        
+        container.querySelectorAll('.btn-delete-list-v2').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if(await window.customConfirm("Supprimer cette liste ?", "Suppression", "Supprimer", "Annuler")) {
+                if(await window.customConfirm("Voulez-vous vraiment supprimer cette liste ?", "Suppression", "Supprimer", "Annuler")) {
                     const listId = parseInt(btn.dataset.id);
                     await db.custom_lists.delete(listId);
                     await db.list_items.where('list_id').equals(listId).delete();
@@ -2763,21 +2771,142 @@
                 }
             });
         });
-        
-        container.querySelectorAll('.list-item-card').forEach(card => {
+
+        container.querySelectorAll('.list-card-v2:not(.create-new)').forEach(card => {
             card.addEventListener('click', () => {
-                showToast("Détail de la liste en développement !");
+                const id = card.dataset.id;
+                openCustomList(id); 
+            });
+        });
+
+        const createCardBtn = document.getElementById('btn-create-list-card');
+        if (createCardBtn) {
+            createCardBtn.addEventListener('click', async () => {
+                const name = await window.customPrompt("Nom de la nouvelle liste :", "Nouvelle Liste");
+                if (name && name.trim()) {
+                    await db.custom_lists.add({ name: name.trim(), created_at: new Date().toISOString() });
+                    renderCustomLists();
+                }
+            });
+        }
+    }
+
+    let currentListId = null;
+
+    async function openCustomList(id) {
+        currentListId = id;
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-list-detail').classList.add('active');
+        
+        const titleEl = document.getElementById('list-detail-title');
+        const contentEl = document.getElementById('list-detail-content');
+        
+        if (id === 'favoris') {
+            titleEl.textContent = 'Favoris';
+            await renderListDetailItems('favoris');
+        } else {
+            const list = await db.custom_lists.get(parseInt(id));
+            if (list) {
+                titleEl.textContent = list.name;
+                await renderListDetailItems(parseInt(id));
+            }
+        }
+    }
+
+    document.getElementById('btn-back-lists').addEventListener('click', () => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-lists').classList.add('active');
+        renderCustomLists();
+    });
+
+    async function renderListDetailItems(id) {
+        const contentEl = document.getElementById('list-detail-content');
+        let items = [];
+        let html = '';
+        
+        if (id === 'favoris') {
+            const favShows = await db.shows.where('is_favorited').equals(1).toArray();
+            const favMovies = await db.movies.where('is_favorited').equals(1).toArray();
+            
+            favShows.forEach(s => items.push({ type: 'show', data: s }));
+            favMovies.forEach(m => items.push({ type: 'movie', data: m }));
+        } else {
+            const listItems = await db.list_items.where('list_id').equals(id).toArray();
+            for (const item of listItems) {
+                if (item.media_type === 'show') {
+                    const s = await db.shows.where('tmdb_id').equals(item.tmdb_id).first();
+                    if (s) items.push({ type: 'show', data: s, listItemId: item.id });
+                } else {
+                    const m = await db.movies.where('tmdb_id').equals(item.tmdb_id).first();
+                    if (m) items.push({ type: 'movie', data: m, listItemId: item.id });
+                }
+            }
+        }
+        
+        if (items.length === 0) {
+            contentEl.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📭</div><h3>Liste vide</h3><p>Vous n'avez pas encore ajouté d'éléments à cette liste.</p></div>`;
+            return;
+        }
+
+        for (const item of items) {
+            const { type, data, listItemId } = item;
+            const linkClass = type === 'show' ? 'show-link' : 'movie-link';
+            
+            // Delete button logic
+            let deleteBtnHtml = '';
+            if (id === 'favoris') {
+                deleteBtnHtml = `<button class="btn-remove-from-list" data-type="${type}" data-tmdb="${data.tmdb_id}" data-id="favoris" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer;">&times;</button>`;
+            } else {
+                deleteBtnHtml = `<button class="btn-remove-from-list" data-item-id="${listItemId}" data-id="custom" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer;">&times;</button>`;
+            }
+
+            html += `
+                <div style="position:relative;">
+                    <div class="poster-container ${linkClass}" data-id="${data.tmdb_id}" style="cursor:pointer; width:100%; height:100%;">
+                        ${data.poster_path ? `<img src="https://image.tmdb.org/t/p/w200${data.poster_path}" class="poster-img" loading="lazy">` : `<div class="poster-placeholder">No Image</div>`}
+                    </div>
+                    ${deleteBtnHtml}
+                </div>
+            `;
+        }
+        
+        contentEl.innerHTML = html;
+        
+        // Navigation events
+        contentEl.querySelectorAll('.show-link').forEach(el => {
+            el.addEventListener('click', async () => {
+                const s = await db.shows.where('tmdb_id').equals(parseInt(el.dataset.id)).first();
+                if (s) openDetail({ id: s.tmdb_id, name: s.name, backdrop_path: s.poster_path }, 'tv');
+            });
+        });
+        contentEl.querySelectorAll('.movie-link').forEach(el => {
+            el.addEventListener('click', async () => {
+                const m = await db.movies.where('tmdb_id').equals(parseInt(el.dataset.id)).first();
+                if (m) openDetail({ id: m.tmdb_id, title: m.name, backdrop_path: m.poster_path }, 'movie');
+            });
+        });
+        
+        // Remove events
+        contentEl.querySelectorAll('.btn-remove-from-list').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const listType = btn.dataset.id;
+                if (listType === 'favoris') {
+                    const mType = btn.dataset.type;
+                    const tmdb = parseInt(btn.dataset.tmdb);
+                    if (mType === 'show') {
+                        await db.shows.where('tmdb_id').equals(tmdb).modify({ is_favorited: 0 });
+                    } else {
+                        await db.movies.where('tmdb_id').equals(tmdb).modify({ is_favorited: 0 });
+                    }
+                } else {
+                    const listItemId = parseInt(btn.dataset.itemId);
+                    await db.list_items.delete(listItemId);
+                }
+                renderListDetailItems(currentListId); // refresh
             });
         });
     }
-
-    document.getElementById('btn-create-list').addEventListener('click', async () => {
-        const name = await window.customPrompt("Nom de la liste :", "Nouvelle Liste");
-        if (name && name.trim()) {
-            await db.custom_lists.add({ name: name.trim(), description: '', created_at: Date.now() });
-            renderCustomLists();
-        }
-    });
 
     document.querySelector('[data-page="lists"]').addEventListener('click', () => renderCustomLists());
 
@@ -2786,44 +2915,97 @@
         const container = document.getElementById('add-to-list-container');
         const lists = await db.custom_lists.toArray();
         
-        if (lists.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-secondary); font-size:13px;">Aucune liste existante.</p>';
+        let html = '';
+
+        // Favoris toggle
+        let isFavorited = false;
+        if (mediaType === 'show') {
+            const s = await db.shows.where('tmdb_id').equals(parseInt(tmdbId)).first();
+            if (s && s.is_favorited) isFavorited = true;
         } else {
-            let html = '';
+            const m = await db.movies.where('tmdb_id').equals(parseInt(tmdbId)).first();
+            if (m && m.is_favorited) isFavorited = true;
+        }
+
+        html += `
+            <div class="modal-list-row is-favoris ${isFavorited ? 'checked' : ''}" data-list="favoris">
+                <div class="modal-list-info">
+                    <div class="modal-list-icon">❤️</div>
+                    <div class="modal-list-text">
+                        <h4>Favoris</h4>
+                        <p>Ajouter aux favoris</p>
+                    </div>
+                </div>
+                <div class="list-checkbox">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+            </div>
+        `;
+
+        if (lists.length > 0) {
             for (const list of lists) {
                 const existing = await db.list_items.where({list_id: list.id, tmdb_id: parseInt(tmdbId)}).first();
+                const itemCount = await db.list_items.where('list_id').equals(list.id).count();
                 html += `
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; background:var(--surface-2); border-radius:var(--r-4);">
-                        <input type="checkbox" class="list-toggle-chk" data-list="${list.id}" ${existing ? 'checked' : ''}>
-                        <span>${list.name}</span>
-                    </label>
+                    <div class="modal-list-row ${existing ? 'checked' : ''}" data-list="${list.id}">
+                        <div class="modal-list-info">
+                            <div class="modal-list-icon">📋</div>
+                            <div class="modal-list-text">
+                                <h4>${list.name}</h4>
+                                <p>${itemCount} élément(s)</p>
+                            </div>
+                        </div>
+                        <div class="list-checkbox">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
                 `;
             }
-            container.innerHTML = html;
-            
-            container.querySelectorAll('.list-toggle-chk').forEach(chk => {
-                chk.addEventListener('change', async (e) => {
-                    const listId = parseInt(e.target.dataset.list);
-                    if (e.target.checked) {
-                        await db.list_items.add({ list_id: listId, tmdb_id: parseInt(tmdbId), media_type: mediaType, added_at: Date.now() });
-                    } else {
-                        await db.list_items.where({list_id: listId, tmdb_id: parseInt(tmdbId)}).delete();
-                    }
-                    renderCustomLists();
-                });
-            });
         }
         
-        document.getElementById('new-list-name').value = '';
+        container.innerHTML = html;
         
+        container.querySelectorAll('.modal-list-row').forEach(row => {
+            row.addEventListener('click', async () => {
+                const listId = row.dataset.list;
+                const isChecked = row.classList.contains('checked');
+                
+                if (listId === 'favoris') {
+                    if (isChecked) {
+                        row.classList.remove('checked');
+                        if (mediaType === 'show') await db.shows.where('tmdb_id').equals(parseInt(tmdbId)).modify({ is_favorited: 0 });
+                        else await db.movies.where('tmdb_id').equals(parseInt(tmdbId)).modify({ is_favorited: 0 });
+                    } else {
+                        row.classList.add('checked');
+                        if (mediaType === 'show') await db.shows.where('tmdb_id').equals(parseInt(tmdbId)).modify({ is_favorited: 1 });
+                        else await db.movies.where('tmdb_id').equals(parseInt(tmdbId)).modify({ is_favorited: 1 });
+                    }
+                } else {
+                    const lId = parseInt(listId);
+                    if (isChecked) {
+                        row.classList.remove('checked');
+                        await db.list_items.where({list_id: lId, tmdb_id: parseInt(tmdbId)}).delete();
+                    } else {
+                        row.classList.add('checked');
+                        await db.list_items.add({ list_id: lId, tmdb_id: parseInt(tmdbId), media_type: mediaType, added_at: Date.now() });
+                    }
+                }
+                
+                renderCustomLists(); 
+                if (mediaType === 'show') renderShowsView();
+                if (mediaType === 'movie') renderMoviesView();
+            });
+        });
+
+        document.getElementById('new-list-name').value = '';
         const createBtn = document.getElementById('btn-create-add-list');
         const newCreateHandler = async () => {
             const name = document.getElementById('new-list-name').value.trim();
             if (name) {
                 const newListId = await db.custom_lists.add({ name, description: '', created_at: Date.now() });
                 await db.list_items.add({ list_id: newListId, tmdb_id: parseInt(tmdbId), media_type: mediaType, added_at: Date.now() });
+                showAddToListModal(tmdbId, mediaType);
                 renderCustomLists();
-                modal.classList.add('hidden');
                 showToast("Liste créée et ajoutée !");
             }
         };
