@@ -221,58 +221,91 @@
     async function loadRecommendations() {
         searchResults.innerHTML = `<div class="empty-state"><p>${window.I18n ? window.I18n.get('search.loading_recs') : 'Génération de vos recommandations...'}</p></div>`;
         
-        // 1. Get user top rated and feedback
-        const topShows = await db.shows.where('user_rating').above(3).limit(4).toArray();
-        topShows.forEach(s => s.type = 'tv');
-        const topMovies = await db.movies.where('user_rating').above(3).limit(4).toArray();
-        topMovies.forEach(m => m.type = 'movie');
+        // 1. Gather Seeds with weights
+        const seedMap = new Map();
+        const addSeed = (id, type, weight) => {
+            if (!id) return;
+            const existing = seedMap.get(id);
+            if (!existing || existing.weight < weight) seedMap.set(id, { id, type, weight });
+        };
+
+        // Top 10 (Weight 3)
+        const top10 = JSON.parse(localStorage.getItem('dfwatch_top10') || '[]');
+        top10.forEach(item => addSeed(item.id, item.type || 'tv', 3.0));
+
+        // Feedback Likes (Weight 2)
         const feedback = await db.recommendation_feedback.toArray();
-        
-        const likedFeedback = feedback.filter(f => f.feedback_value === 1);
-        const dislikedIds = new Set(feedback.filter(f => f.feedback_value === -1).map(f => f.tmdb_id));
-        
-        // Add liked items as seeds (simulating a mock object with tmdb_id)
-        const extraSeeds = likedFeedback.slice(0, 4).map(f => ({ tmdb_id: f.tmdb_id, type: f.type || 'tv' }));
-        
-        // If not enough rated, fallback to recently added
-        if (topShows.length === 0 && topMovies.length === 0 && extraSeeds.length === 0) {
-            const allShows = await db.shows.limit(2).toArray();
-            allShows.forEach(s => s.type = 'tv');
-            const allMovies = await db.movies.limit(2).toArray();
-            allMovies.forEach(m => m.type = 'movie');
-            topShows.push(...allShows);
-            topMovies.push(...allMovies);
+        const likedFeedback = feedback.filter(f => f.feedback_value === 1).slice(-10);
+        likedFeedback.forEach(f => addSeed(f.tmdb_id, f.type || 'tv', 2.0));
+
+        // Highly Rated (Weight 1.5)
+        const topShows = await db.shows.where('user_rating').above(3).toArray();
+        const topMovies = await db.movies.where('user_rating').above(3).toArray();
+        [...topShows, ...topMovies]
+            .sort(() => 0.5 - Math.random()).slice(0, 10)
+            .forEach(item => addSeed(item.tmdb_id, item.title ? 'movie' : 'tv', 1.5));
+
+        // Fallback: Recently watched / any local content (Weight 1)
+        if (seedMap.size < 5) {
+            const allShows = await db.shows.toArray();
+            const allMovies = await db.movies.toArray();
+            [...allShows, ...allMovies]
+                .sort(() => 0.5 - Math.random()).slice(0, 10)
+                .forEach(item => addSeed(item.tmdb_id, item.title ? 'movie' : 'tv', 1.0));
         }
-        
-        let allResults = [];
-        const seeds = [...topShows, ...topMovies, ...extraSeeds];
-        
-        // 2. Fetch TMDB Recommendations
-        for (const s of seeds) {
-            if (s.tmdb_id) {
-                const recs = await TMDB.getRecommendations(s.tmdb_id, s.type || 'tv'); // fallback to tv for unknown type
-                allResults.push(...recs);
-            }
-        }
-        
-        // Get all local tmdb_ids to filter out already watched/followed items
+
+        const seeds = Array.from(seedMap.values()).sort(() => 0.5 - Math.random()).slice(0, 15);
+
+        // Get local IDs to filter
         const localShows = await db.shows.toArray();
         const localMovies = await db.movies.toArray();
         const localTmdbIds = new Set([...localShows.map(s => s.tmdb_id), ...localMovies.map(m => m.tmdb_id)].filter(id => id));
+        const dislikedIds = new Set(feedback.filter(f => f.feedback_value === -1).map(f => f.tmdb_id));
+
+        // 2. Fetch TMDB Recommendations & Score
+        const candidateMap = new Map();
         
-        // 3. Deduplicate and filter
-        const unique = [];
-        const seen = new Set();
-        for (const r of allResults) {
-            if (!seen.has(r.id) && !localTmdbIds.has(r.id) && !dislikedIds.has(r.id)) {
-                seen.add(r.id);
-                unique.push(r);
-            }
+        for (const s of seeds) {
+            const recs = await TMDB.getRecommendations(s.id, s.type);
+            recs.forEach((r, index) => {
+                if (!r || !r.id) return;
+                if (localTmdbIds.has(r.id) || dislikedIds.has(r.id)) return; // Filter seen/disliked
+
+                const baseScore = (20 - Math.min(index, 20)) * s.weight; // Max 20 * weight
+                
+                if (candidateMap.has(r.id)) {
+                    const c = candidateMap.get(r.id);
+                    c.score += baseScore;
+                    c.seedCount += 1;
+                } else {
+                    candidateMap.set(r.id, {
+                        item: r,
+                        score: baseScore,
+                        seedCount: 1
+                    });
+                }
+            });
         }
-        
-        // 4. Shuffle & Limit
-        unique.sort(() => 0.5 - Math.random());
-        const finalResults = unique.slice(0, 20);
+
+        // 3. Apply Multipliers & Overlap bonuses
+        const candidates = Array.from(candidateMap.values()).map(c => {
+            // Overlap bonus: Being recommended by multiple seeds is huge.
+            if (c.seedCount > 1) c.score *= (1 + (c.seedCount * 0.25));
+            
+            // Quality bonus
+            if (c.item.vote_average) {
+                if (c.item.vote_average >= 8.0) c.score *= 1.2;
+                else if (c.item.vote_average >= 7.0) c.score *= 1.1;
+                else if (c.item.vote_average < 5.0) c.score *= 0.7; // penalize trash
+            }
+            if (c.item.vote_count && c.item.vote_count > 1000) c.score *= 1.1;
+
+            return c;
+        });
+
+        // 4. Sort and limit
+        candidates.sort((a, b) => b.score - a.score);
+        const finalResults = candidates.slice(0, 20).map(c => c.item);
         
         if (finalResults.length === 0) {
             searchResults.innerHTML = `<div class='empty-state'><div class='empty-icon'>⭐</div><h3>${window.I18n ? window.I18n.get('search.not_enough_data') : 'Pas encore assez de données'}</h3><p>${window.I18n ? window.I18n.get('search.not_enough_data_desc') : "Notez ou ajoutez quelques films/séries pour débloquer l'algorithme de recommandation !"}</p></div>`;
@@ -1864,6 +1897,8 @@
         document.getElementById('profile-firstname').value = firstName;
         document.getElementById('profile-lastname').value = lastName;
         document.getElementById('profile-age').value = age;
+        document.getElementById('profile-tmdb-key').value = localStorage.getItem('custom_tmdb_api_key') || '';
+        document.getElementById('profile-tvdb-key').value = localStorage.getItem('custom_tvdb_api_key') || '';
         document.querySelectorAll('#profile-edit-modal .genre-checkbox input').forEach(cb => {
             cb.checked = savedGenres.includes(cb.value);
         });
@@ -2566,6 +2601,21 @@
         localStorage.setItem('dfwatch_firstname', document.getElementById('profile-firstname').value);
         localStorage.setItem('dfwatch_lastname', document.getElementById('profile-lastname').value);
         localStorage.setItem('dfwatch_age', document.getElementById('profile-age').value);
+        
+        const tmdbKey = document.getElementById('profile-tmdb-key').value.trim();
+        if (tmdbKey) localStorage.setItem('custom_tmdb_api_key', tmdbKey);
+        else localStorage.removeItem('custom_tmdb_api_key');
+        
+        const tvdbKey = document.getElementById('profile-tvdb-key').value.trim();
+        const oldTvdbKey = localStorage.getItem('custom_tvdb_api_key');
+        if (tvdbKey) localStorage.setItem('custom_tvdb_api_key', tvdbKey);
+        else localStorage.removeItem('custom_tvdb_api_key');
+        
+        if (oldTvdbKey !== (tvdbKey || null)) {
+            localStorage.removeItem('tvdb_token');
+            localStorage.removeItem('tvdb_token_exp');
+            _TVDB._token = null;
+        }
         
         const checkedGenres = Array.from(document.querySelectorAll('#profile-edit-modal .genre-checkbox input:checked')).map(cb => cb.value);
         localStorage.setItem('dfwatch_genres', JSON.stringify(checkedGenres));

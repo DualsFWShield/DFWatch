@@ -2,7 +2,7 @@
 
 // ========== TMDB API v3 ==========
 const _TMDB = {
-    API_KEY: '0c634de3bcc68012ef07b6be118b1d8a',
+    get API_KEY() { return localStorage.getItem('custom_tmdb_api_key') || '0c634de3bcc68012ef07b6be118b1d8a'; },
     BASE: 'https://api.themoviedb.org/3',
     IMG: 'https://image.tmdb.org/t/p',
     LANG: 'fr-FR',
@@ -82,7 +82,7 @@ const _TMDB = {
 
 // ========== TheTVDB API v4 ==========
 const _TVDB = {
-    API_KEY: '3774d8ec-9644-493a-921a-648f3400d655',
+    get API_KEY() { return localStorage.getItem('custom_tvdb_api_key') || '3774d8ec-9644-493a-921a-648f3400d655'; },
     BASE: 'https://api4.thetvdb.com/v4',
     _token: null,
     _tokenExpiry: 0,
