@@ -223,19 +223,23 @@
         
         // 1. Get user top rated and feedback
         const topShows = await db.shows.where('user_rating').above(3).limit(4).toArray();
+        topShows.forEach(s => s.type = 'tv');
         const topMovies = await db.movies.where('user_rating').above(3).limit(4).toArray();
+        topMovies.forEach(m => m.type = 'movie');
         const feedback = await db.recommendation_feedback.toArray();
         
-        const likedIds = feedback.filter(f => f.feedback_value === 1).map(f => f.tmdb_id);
+        const likedFeedback = feedback.filter(f => f.feedback_value === 1);
         const dislikedIds = new Set(feedback.filter(f => f.feedback_value === -1).map(f => f.tmdb_id));
         
         // Add liked items as seeds (simulating a mock object with tmdb_id)
-        const extraSeeds = likedIds.slice(0, 4).map(id => ({ tmdb_id: id }));
+        const extraSeeds = likedFeedback.slice(0, 4).map(f => ({ tmdb_id: f.tmdb_id, type: f.type || 'tv' }));
         
         // If not enough rated, fallback to recently added
         if (topShows.length === 0 && topMovies.length === 0 && extraSeeds.length === 0) {
             const allShows = await db.shows.limit(2).toArray();
+            allShows.forEach(s => s.type = 'tv');
             const allMovies = await db.movies.limit(2).toArray();
+            allMovies.forEach(m => m.type = 'movie');
             topShows.push(...allShows);
             topMovies.push(...allMovies);
         }
