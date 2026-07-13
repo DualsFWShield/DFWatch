@@ -35,6 +35,13 @@ jobs:
       - name: Add Android Platform
         run: npx cap add android
 
+      - name: Generate App Icons
+        run: |
+          mkdir -p assets
+          cp logo/DFWatch-bbg.png assets/icon.png
+          cp logo/DFWatch-bbg.png assets/splash.png
+          npx @capacitor/assets generate --android
+
       - name: Sync Android Project
         run: npx cap sync android
 
