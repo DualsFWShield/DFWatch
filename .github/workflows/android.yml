@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -55,3 +57,23 @@ jobs:
         with:
           name: dfwatch-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Rename binaries
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk com.dualsfwshield.dfwatch.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab com.dualsfwshield.dfwatch.aab
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
+          body: |
+            Automated build from commit ${{ github.sha }}.
+            
+            **Changes:**
+            ${{ github.event.head_commit.message }}
+          files: |
+            com.dualsfwshield.dfwatch.apk
+            com.dualsfwshield.dfwatch.aab
+          generate_release_notes: true

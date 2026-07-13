@@ -1,5 +1,5 @@
 {
-  "appId": "io.github.noah.dfwatch",
+  "appId": "com.dualsfwshield.dfwatch",
   "appName": "DFWatch",
   "webDir": "dist",
   "bundledWebRuntime": false
