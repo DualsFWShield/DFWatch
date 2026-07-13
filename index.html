@@ -50,6 +50,10 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     <span data-i18n="nav.favorites">Favoris</span>
                 </button>
+                <button class="sidebar-btn" data-page="lists">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    <span>Listes</span>
+                </button>
                 <button class="sidebar-btn" data-page="profile">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <span data-i18n="nav.profile">Profil</span>
@@ -89,6 +93,10 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 <span data-i18n="nav.favorites">Favoris</span>
             </button>
+            <button class="nav-btn" data-page="lists">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span>Listes</span>
+            </button>
             <button class="nav-btn" data-page="profile">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <span data-i18n="nav.profile">Profil</span>
@@ -97,6 +105,26 @@
 
         <!-- ===== MAIN CONTENT ===== -->
         <main id="app">
+
+            <!-- LISTES -->
+            <section id="page-lists" class="page">
+                <div class="page-inner">
+                    <header class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h1>Mes Listes</h1>
+                        <button id="btn-create-list" class="action-btn primary" style="padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Créer
+                        </button>
+                    </header>
+                    <div id="custom-lists-container" class="poster-grid">
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <div class="empty-icon">📋</div>
+                            <h3>Aucune liste</h3>
+                            <p>Créez des listes personnalisées pour classer vos films et séries.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- FAVORIS -->
             <section id="page-favoris" class="page">
@@ -641,6 +669,74 @@
             <div style="display: flex; gap: 12px; justify-content: center;">
                 <button id="custom-confirm-cancel" class="action-btn secondary" style="flex: 1;">Annuler</button>
                 <button id="custom-confirm-ok" class="action-btn danger" style="flex: 1;">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM PROMPT MODAL -->
+    <div id="custom-prompt-modal" class="detail-overlay custom-modal hidden">
+        <div class="settings-card glass-panel" style="max-width: 400px; width: 90%; text-align: center; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 18px;" id="custom-prompt-title">Prompt</h3>
+            <p style="margin-bottom: 16px; color: var(--text-secondary);" id="custom-prompt-message"></p>
+            <input type="text" id="custom-prompt-input" class="form-input" style="width: 100%; margin-bottom: 24px;" />
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="custom-prompt-cancel" class="action-btn secondary" style="flex: 1;">Annuler</button>
+                <button id="custom-prompt-ok" class="action-btn primary" style="flex: 1;">Valider</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REWATCH MODAL -->
+    <div id="rewatch-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width:400px; padding: 24px; text-align: center;">
+            <h2 style="margin-bottom:8px;">Gestion du visionnage</h2>
+            <p id="rewatch-title" style="color:var(--text-secondary); margin-bottom:16px; font-size:14px;"></p>
+            <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:24px;">
+                <button class="icon-btn" id="btn-rewatch-minus" style="background:var(--surface-3); border-radius:50%; width:40px; height:40px;">-</button>
+                <div style="font-size:24px; font-weight:bold;">
+                    <span id="rewatch-count">1</span> <span style="font-size:14px; font-weight:normal; color:var(--text-muted);">vue(s)</span>
+                </div>
+                <button class="icon-btn" id="btn-rewatch-plus" style="background:var(--surface-3); border-radius:50%; width:40px; height:40px;">+</button>
+            </div>
+            <div class="modal-actions" style="display:flex; justify-content:center;">
+                <button class="action-btn primary" id="btn-rewatch-close" style="width:100%;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EPISODE NOTE MODAL -->
+    <div id="episode-note-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width:400px; padding: 24px;">
+            <h2 style="margin-bottom:16px;">Note & Avis</h2>
+            <p id="episode-note-title" style="color:var(--text-secondary); margin-bottom:16px; font-size:13px;"></p>
+            <div style="display:flex; justify-content:center; gap:8px; margin-bottom:16px;" id="episode-star-rating">
+                <span class="star-btn" data-val="1">★</span>
+                <span class="star-btn" data-val="2">★</span>
+                <span class="star-btn" data-val="3">★</span>
+                <span class="star-btn" data-val="4">★</span>
+                <span class="star-btn" data-val="5">★</span>
+            </div>
+            <textarea id="episode-note-text" class="form-input" style="width:100%; min-height:80px; resize:vertical; font-family: inherit; font-size: 14px;" placeholder="Ajoutez un avis personnel sur cet épisode..."></textarea>
+            <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
+                <button class="action-btn secondary" id="btn-episode-note-cancel">Annuler</button>
+                <button class="action-btn primary" id="btn-episode-note-save">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD TO LIST MODAL -->
+    <div id="add-to-list-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width:400px;">
+            <h2 style="margin-bottom:16px;">Ajouter à une liste</h2>
+            <div id="add-to-list-container" style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; margin-bottom:16px;">
+                <!-- list options injected here -->
+            </div>
+            <div style="border-top:1px solid var(--border-subtle); padding-top:16px;">
+                <input type="text" id="new-list-name" class="form-input" placeholder="Nouvelle liste..." style="width:100%; margin-bottom:8px;">
+                <button class="action-btn secondary" id="btn-create-add-list" style="width:100%;">Créer et ajouter</button>
+            </div>
+            <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end;">
+                <button class="action-btn secondary" id="btn-add-to-list-cancel">Fermer</button>
             </div>
         </div>
     </div>

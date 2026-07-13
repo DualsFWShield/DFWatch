@@ -20,6 +20,12 @@ db.version(3).stores({
     recommendation_feedback: 'tmdb_id, type, feedback_value'
 });
 
+db.version(4).stores({
+    custom_lists: '++id, name, description, created_at',
+    list_items: '++id, list_id, tmdb_id, media_type, added_at',
+    episode_notes: 'id, show_id, season_num, ep_num, rating, note, updated_at'
+});
+
 // Delete legacy DB if it exists
 Dexie.exists("DFWatchDB").then(exists => {
     if (exists) {

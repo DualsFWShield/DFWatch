@@ -532,11 +532,23 @@
         const sortedSeasons = [...regularSeasons, ...bonusSeasons];
 
         let seasonsHTML = '';
+        const seasonDataMap = {};
+        const noteMap = {};
+        let hasPersonalNotes = false;
+        
+        // Fetch personal notes
+        const allNotes = (await db.episode_notes.toArray()).filter(n => String(n.show_id) === String(show.id));
+        allNotes.forEach(n => {
+            noteMap[`S${n.season_num}E${n.ep_num}`] = n.rating;
+            if (n.rating > 0) hasPersonalNotes = true;
+        });
+
         for (const season of sortedSeasons) {
             const isBonus = season.season_number === 0;
             const seasonTitle = isBonus ? 'Bonus (Specials)' : `Saison ${season.season_number}`;
             const seasonData = await TMDB.getSeasonDetails(show.id, season.season_number);
             const episodes = seasonData ? seasonData.episodes || [] : [];
+            seasonDataMap[season.season_number] = episodes;
             const watchedInSeason = episodes.filter(ep => watchedEpisodes.has(`S${season.season_number}E${ep.episode_number}`)).length;
 
             let epsHTML = '';
@@ -564,6 +576,7 @@
                         </div>
                         <div style="display:flex; gap:0.5rem; align-items:center; flex-shrink:0;">
                             ${checked ? `<div class="ep-rewatch-sm" data-show="${title}" data-tvtime="${existing ? existing.tvtime_id : ''}" data-season="${season.season_number}" data-ep="${ep.episode_number}" data-runtime="${ep.runtime || 0}" style="cursor:pointer; color:var(--text-muted); font-size:16px;" title="Revoir">↻</div>` : ''}
+                            <div class="ep-note-sm" data-show-id="${show.id}" data-season="${season.season_number}" data-ep="${ep.episode_number}" data-ep-name="${ep.name || `Épisode ${ep.episode_number}`}" style="cursor:pointer; font-size:16px; opacity:0.7;" title="Note & Avis">📝</div>
                             <div class="ep-check-sm ${checked ? 'checked' : ''}" data-show="${title}" data-tvtime="${existing ? existing.tvtime_id : ''}" data-season="${season.season_number}" data-ep="${ep.episode_number}" data-tmdb-id="${show.id}" data-runtime="${ep.runtime || 0}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
                             </div>
@@ -585,6 +598,102 @@
                 </div>`;
         }
 
+        // Build heatmaps
+        function getHeatmapColorClass(val) {
+            if (!val || val === 0) return 'bg-empty';
+            if (val >= 9.0) return 'bg-awesome';
+            if (val >= 8.0) return 'bg-great';
+            if (val >= 7.0) return 'bg-good';
+            if (val >= 6.0) return 'bg-regular';
+            if (val >= 5.0) return 'bg-bad';
+            return 'bg-garbage';
+        }
+
+        const heatmapSeasons = regularSeasons; // Exclude bonus seasons from charts
+        let maxEpCount = 0;
+        heatmapSeasons.forEach(s => {
+            const eps = seasonDataMap[s.season_number] || [];
+            if (eps.length > maxEpCount) maxEpCount = eps.length;
+        });
+
+        let tmdbHeatmapHtml = '';
+        let personalHeatmapHtml = '';
+
+        if (heatmapSeasons.length > 0 && maxEpCount > 0) {
+            const headerRow = `<tr><th></th>` + heatmapSeasons.map(s => `<th>S${s.season_number}</th>`).join('') + `</tr>`;
+            
+            let tmdbRows = '';
+            let persRows = '';
+
+            for (let e = 1; e <= maxEpCount; e++) {
+                let tmdbCells = `<th>E${e}</th>`;
+                let persCells = `<th>E${e}</th>`;
+                
+                heatmapSeasons.forEach(s => {
+                    const eps = seasonDataMap[s.season_number] || [];
+                    const epObj = eps.find(ep => ep.episode_number === e);
+                    
+                    if (epObj) {
+                        const tmdbVal = epObj.vote_average ? epObj.vote_average.toFixed(1) : '';
+                        const tmdbClass = tmdbVal ? getHeatmapColorClass(parseFloat(tmdbVal)) : 'bg-empty';
+                        tmdbCells += `<td class="heatmap-cell ${tmdbClass}">${tmdbVal || '-'}</td>`;
+                        
+                        const persVal = noteMap[`S${s.season_number}E${e}`] || 0;
+                        const persScaled = persVal * 2; 
+                        const persClass = persVal > 0 ? getHeatmapColorClass(persScaled) : 'bg-empty';
+                        persCells += `<td class="heatmap-cell ${persClass}">${persVal ? persVal : '-'}</td>`;
+                    } else {
+                        tmdbCells += `<td class="heatmap-cell bg-empty"></td>`;
+                        persCells += `<td class="heatmap-cell bg-empty"></td>`;
+                    }
+                });
+                tmdbRows += `<tr>${tmdbCells}</tr>`;
+                persRows += `<tr>${persCells}</tr>`;
+            }
+
+            const legendHtml = `
+                <div class="heatmap-legend">
+                    <div class="heatmap-legend-item"><div class="heatmap-legend-color bg-awesome"></div> Awesome</div>
+                    <div class="heatmap-legend-item"><div class="heatmap-legend-color bg-great"></div> Great</div>
+                    <div class="heatmap-legend-item"><div class="heatmap-legend-color bg-good"></div> Good</div>
+                    <div class="heatmap-legend-item"><div class="heatmap-legend-color bg-regular"></div> Regular</div>
+                    <div class="heatmap-legend-item"><div class="heatmap-legend-color bg-bad"></div> Bad</div>
+                    <div class="heatmap-legend-item"><div class="heatmap-legend-color bg-garbage"></div> Garbage</div>
+                </div>
+            `;
+
+            tmdbHeatmapHtml = `
+                <div class="heatmap-section">
+                    <div class="heatmap-header-flex">
+                        <h3 style="margin:0; font-size:16px;">Notes TMDB</h3>
+                        ${legendHtml}
+                    </div>
+                    <div class="heatmap-container">
+                        <table class="heatmap-table">
+                            ${headerRow}
+                            ${tmdbRows}
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            if (hasPersonalNotes) {
+                personalHeatmapHtml = `
+                    <div class="heatmap-section" style="margin-top:0;">
+                        <div class="heatmap-header-flex">
+                            <h3 style="margin:0; font-size:16px;">Vos notes</h3>
+                        </div>
+                        <div class="heatmap-container">
+                            <table class="heatmap-table">
+                                ${headerRow}
+                                ${persRows}
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         detailBody.innerHTML = `
             <div class="detail-header-flex">
                 ${posterUrl ? `<img src="${posterUrl}" class="detail-main-poster" alt="${title}">` : ''}
@@ -598,6 +707,9 @@
                         </button>
                         <button class="detail-action-btn fav-btn ${isFavorited ? 'active' : ''}" id="btn-fav-show">
                             ${isFavorited ? '❤️ Favori' : '🤍 Favori'}
+                        </button>
+                        <button class="detail-action-btn list-btn" id="btn-add-to-list" data-tmdb-id="${show.id}" data-type="show">
+                            📋 Liste
                         </button>
                         <button class="detail-action-btn finish-btn ${isFinished ? 'active' : ''}" id="btn-finish-show" data-tmdb-id="${show.id}" data-title="${title}">
                             ${isFinished ? '🏁 Terminée' : '🏁 Terminer'}
@@ -615,6 +727,10 @@
             </div>
             ${castHTML}
             ${trailerHTML}
+            
+            ${tmdbHeatmapHtml}
+            ${personalHeatmapHtml}
+
             <div class="detail-section">
                 <h3>Saisons</h3>
                 ${seasonsHTML}
@@ -858,11 +974,11 @@
                     records = await db.watch_history.where('show_name').equals(showName)
                         .filter(r => r.season_number === season && r.episode_number === epNum).toArray();
                 }
+                
                 if (records.length > 0) {
                     const r = records[0];
-                    await db.watch_history.update(r.id, { rewatch_count: (r.rewatch_count || 0) + 1 });
-                    showToast(`${showName} S${season}E${epNum} revu !`);
-                    renderShowDetail(show); // Refresh to show new badge
+                    const currentViews = (r.rewatch_count || 0) + 1;
+                    showRewatchModal('episode', { historyId: r.id, showName, season, epNum }, currentViews, show);
                 }
             });
         });
@@ -875,11 +991,36 @@
                 const epsContainer = document.getElementById(`season-eps-s${season}`);
                 const eps = epsContainer.querySelectorAll('.ep-check-sm:not(.checked)');
                 
-                for (const epBtn of eps) {
-                    epBtn.click();
+                if (eps.length > 0) {
+                    for (const epBtn of eps) {
+                        epBtn.click();
+                    }
+                    showToast(`Saison ${season} marquée comme vue`);
+                    setTimeout(() => renderShowDetail(show), 500);
+                } else {
+                    // La saison est déjà vue, on retire une vue à tous les épisodes
+                    const showName = show.name;
+                    let existingShow = await db.shows.where('tmdb_id').equals(show.id).first();
+                    const tvtimeId = existingShow ? String(existingShow.tvtime_id) : '';
+                    
+                    let records = [];
+                    if (tvtimeId && tvtimeId !== "undefined") {
+                        records = await db.watch_history.where('show_tvtime_id').equals(tvtimeId).filter(r => r.season_number === season).toArray();
+                    }
+                    if (records.length === 0) {
+                        records = await db.watch_history.where('show_name').equals(showName).filter(r => r.season_number === season).toArray();
+                    }
+                    
+                    for (const r of records) {
+                        if (r.rewatch_count && r.rewatch_count > 0) {
+                            await db.watch_history.update(r.id, { rewatch_count: r.rewatch_count - 1 });
+                        } else {
+                            await db.watch_history.delete(r.id);
+                        }
+                    }
+                    showToast(`Saison ${season} : une vue retirée`);
+                    renderShowDetail(show);
                 }
-                showToast(`Saison ${season} marquée comme vue`);
-                setTimeout(() => renderShowDetail(show), 500);
             });
         });
         
@@ -889,14 +1030,32 @@
                 e.stopPropagation();
                 const season = parseInt(btn.dataset.season);
                 const epsContainer = document.getElementById(`season-eps-s${season}`);
-                const eps = epsContainer.querySelectorAll('.ep-rewatch-sm');
                 
-                for (const epBtn of eps) {
+                const epsUnchecked = epsContainer.querySelectorAll('.ep-check-sm:not(.checked)');
+                for (const epBtn of epsUnchecked) {
                     epBtn.click();
                 }
-                if(eps.length > 0) {
-                    showToast(`Saison ${season} revue`);
-                }
+                
+                setTimeout(async () => {
+                    const showName = show.name;
+                    const tvtimeId = existing ? String(existing.tvtime_id) : '';
+                    let records = [];
+                    if (tvtimeId) {
+                        records = await db.watch_history.where('show_tvtime_id').equals(tvtimeId).filter(r => r.season_number === season).toArray();
+                    }
+                    if (records.length === 0) {
+                        records = await db.watch_history.where('show_name').equals(showName).filter(r => r.season_number === season).toArray();
+                    }
+                    
+                    let maxCount = 1;
+                    for (const r of records) {
+                        const newCount = Math.max((r.rewatch_count || 0), 1);
+                        if (newCount > maxCount) maxCount = newCount;
+                        await db.watch_history.update(r.id, { rewatch_count: newCount });
+                    }
+                    
+                    showRewatchModal('season', { showName, season, records }, maxCount + 1, show);
+                }, 200);
             });
         });
         // Fix TMDB
@@ -973,10 +1132,41 @@
                 try {
                     await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
                     showToast('Lien copié dans le presse-papier !');
-                } catch(e) {
-                    showToast('Impossible de partager.');
+                } catch (e) {
+                    console.error('Error updating watch history', e);
                 }
             }
+        });
+
+        document.querySelectorAll('.ep-note-sm').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const showId = btn.dataset.showId;
+                const season = parseInt(btn.dataset.season);
+                const ep = parseInt(btn.dataset.ep);
+                const epName = btn.dataset.epName;
+                showEpisodeNoteModal(showId, season, ep, epName);
+            });
+        });
+
+        // Add to list
+        const btnAddToList = document.getElementById('btn-add-to-list');
+        if (btnAddToList) {
+            btnAddToList.addEventListener('click', () => {
+                showAddToListModal(show.id, 'show');
+            });
+        }
+
+        // Episode Notes
+        document.querySelectorAll('.ep-note-sm').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const showId = btn.dataset.showId;
+                const season = parseInt(btn.dataset.season);
+                const ep = parseInt(btn.dataset.ep);
+                const epName = btn.dataset.epName;
+                showEpisodeNoteModal(showId, season, ep, epName);
+            });
         });
 
         // Load similar shows asynchronously
@@ -1077,6 +1267,9 @@
                         <button class="detail-action-btn fav-btn ${isFavorited ? 'active' : ''}" id="btn-fav-movie">
                             ${isFavorited ? '❤️ Favori' : '🤍 Favori'}
                         </button>
+                        <button class="detail-action-btn list-btn" id="btn-add-to-list-movie" data-tmdb-id="${movie.id}" data-type="movie">
+                            📋 Liste
+                        </button>
                     </div>
                     <div class="user-rating-widget" id="movie-rating-widget">
                         <span style="font-size:12px; color:var(--text-muted); margin-right:8px;">Ma note:</span>
@@ -1130,6 +1323,14 @@
                 } catch(e) { showToast('Impossible de partager.'); }
             }
         });
+
+        // Add to list
+        const btnAddToListMovie = document.getElementById('btn-add-to-list-movie');
+        if (btnAddToListMovie) {
+            btnAddToListMovie.addEventListener('click', () => {
+                showAddToListModal(movie.id, 'movie');
+            });
+        }
 
         // Load similar movies asynchronously
         (async () => {
@@ -1227,11 +1428,14 @@
                 const tmdbId = parseInt(this.dataset.tmdbId);
                 const existing = await db.movies.where('tmdb_id').equals(tmdbId).first();
                 if (existing) {
-                    await db.movie_watches.add({
-                        movie_uuid: existing.uuid || '', movie_name: this.dataset.title,
-                        watched_at: new Date().toISOString(), rewatch_count: 1, runtime: parseInt(this.dataset.runtime) || 0
-                    });
-                    showToast(`${this.dataset.title} revu !`);
+                    const records = await db.movie_watches.where('movie_uuid').equals(existing.uuid).toArray();
+                    let views = 0;
+                    if (records.length > 0) {
+                        views = records.reduce((sum, r) => sum + (r.rewatch_count || 0) + 1, 0);
+                    } else {
+                        views = 1; // Fallback
+                    }
+                    showRewatchModal('movie', { tmdbId, movieUuid: existing.uuid, movieName: this.dataset.title, records }, views, movie);
                 }
             });
         }
@@ -2175,6 +2379,38 @@
         });
     };
 
+    // ---- Custom Prompt ----
+    window.customPrompt = function(message, title = "Prompt", placeholder = "") {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('custom-prompt-modal');
+            document.getElementById('custom-prompt-title').textContent = title;
+            document.getElementById('custom-prompt-message').textContent = message;
+            
+            const input = document.getElementById('custom-prompt-input');
+            input.placeholder = placeholder;
+            input.value = "";
+            
+            const btnOk = document.getElementById('custom-prompt-ok');
+            const btnCancel = document.getElementById('custom-prompt-cancel');
+            
+            modal.classList.remove('hidden');
+            input.focus();
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                btnOk.removeEventListener('click', onOk);
+                btnCancel.removeEventListener('click', onCancel);
+            };
+
+            const onOk = () => { cleanup(); resolve(input.value); };
+            const onCancel = () => { cleanup(); resolve(null); };
+
+            btnOk.addEventListener('click', onOk);
+            btnCancel.addEventListener('click', onCancel);
+
+        });
+    };
+
     // ---- Toast ----
     window.showToast = function(msg, duration = 3000) {
         const toast = document.getElementById('toast');
@@ -2475,5 +2711,293 @@
     
     setupPullToRefresh('tab-series-watching', 'series-pull-indicator', refreshSeriesList);
     setupPullToRefresh('tab-films-watched', 'films-pull-indicator', refreshFilmsList);
+
+    // ==========================================
+    // CUSTOM LISTS
+    // ==========================================
+    async function renderCustomLists() {
+        const container = document.getElementById('custom-lists-container');
+        const lists = await db.custom_lists.toArray();
+        if (lists.length === 0) {
+            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">📋</div><h3>Aucune liste</h3><p>Créez des listes personnalisées pour classer vos films et séries.</p></div>`;
+            return;
+        }
+        
+        let html = '';
+        for (const list of lists) {
+            const items = await db.list_items.where('list_id').equals(list.id).toArray();
+            let posterHtml = '<div class="list-poster" style="display:flex;align-items:center;justify-content:center;background:var(--surface-3);font-size:24px;">📋</div>';
+            if (items.length > 0) {
+                const latest = items[items.length - 1];
+                let itemData = null;
+                if (latest.media_type === 'show') itemData = await db.shows.where('tmdb_id').equals(latest.tmdb_id).first();
+                else itemData = await db.movies.where('tmdb_id').equals(latest.tmdb_id).first();
+                if (itemData && itemData.poster_path) {
+                    posterHtml = `<img src="https://image.tmdb.org/t/p/w200${itemData.poster_path}" class="list-poster">`;
+                }
+            }
+            
+            html += `
+                <div class="list-item-card" data-id="${list.id}">
+                    ${posterHtml}
+                    <div style="flex:1;">
+                        <h3 style="margin:0 0 4px 0; font-size:16px;">${list.name}</h3>
+                        <p style="margin:0; font-size:13px; color:var(--text-secondary);">${items.length} élément(s)</p>
+                    </div>
+                    <button class="icon-btn text-danger btn-delete-list" data-id="${list.id}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        
+        container.querySelectorAll('.btn-delete-list').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if(await window.customConfirm("Supprimer cette liste ?", "Suppression", "Supprimer", "Annuler")) {
+                    const listId = parseInt(btn.dataset.id);
+                    await db.custom_lists.delete(listId);
+                    await db.list_items.where('list_id').equals(listId).delete();
+                    renderCustomLists();
+                }
+            });
+        });
+        
+        container.querySelectorAll('.list-item-card').forEach(card => {
+            card.addEventListener('click', () => {
+                showToast("Détail de la liste en développement !");
+            });
+        });
+    }
+
+    document.getElementById('btn-create-list').addEventListener('click', async () => {
+        const name = await window.customPrompt("Nom de la liste :", "Nouvelle Liste");
+        if (name && name.trim()) {
+            await db.custom_lists.add({ name: name.trim(), description: '', created_at: Date.now() });
+            renderCustomLists();
+        }
+    });
+
+    document.querySelector('[data-page="lists"]').addEventListener('click', () => renderCustomLists());
+
+    async function showAddToListModal(tmdbId, mediaType) {
+        const modal = document.getElementById('add-to-list-modal');
+        const container = document.getElementById('add-to-list-container');
+        const lists = await db.custom_lists.toArray();
+        
+        if (lists.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-secondary); font-size:13px;">Aucune liste existante.</p>';
+        } else {
+            let html = '';
+            for (const list of lists) {
+                const existing = await db.list_items.where({list_id: list.id, tmdb_id: parseInt(tmdbId)}).first();
+                html += `
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; background:var(--surface-2); border-radius:var(--r-4);">
+                        <input type="checkbox" class="list-toggle-chk" data-list="${list.id}" ${existing ? 'checked' : ''}>
+                        <span>${list.name}</span>
+                    </label>
+                `;
+            }
+            container.innerHTML = html;
+            
+            container.querySelectorAll('.list-toggle-chk').forEach(chk => {
+                chk.addEventListener('change', async (e) => {
+                    const listId = parseInt(e.target.dataset.list);
+                    if (e.target.checked) {
+                        await db.list_items.add({ list_id: listId, tmdb_id: parseInt(tmdbId), media_type: mediaType, added_at: Date.now() });
+                    } else {
+                        await db.list_items.where({list_id: listId, tmdb_id: parseInt(tmdbId)}).delete();
+                    }
+                    renderCustomLists();
+                });
+            });
+        }
+        
+        document.getElementById('new-list-name').value = '';
+        
+        const createBtn = document.getElementById('btn-create-add-list');
+        const newCreateHandler = async () => {
+            const name = document.getElementById('new-list-name').value.trim();
+            if (name) {
+                const newListId = await db.custom_lists.add({ name, description: '', created_at: Date.now() });
+                await db.list_items.add({ list_id: newListId, tmdb_id: parseInt(tmdbId), media_type: mediaType, added_at: Date.now() });
+                renderCustomLists();
+                modal.classList.add('hidden');
+                showToast("Liste créée et ajoutée !");
+            }
+        };
+        createBtn.replaceWith(createBtn.cloneNode(true));
+        document.getElementById('btn-create-add-list').addEventListener('click', newCreateHandler);
+
+        modal.classList.remove('hidden');
+    }
+
+    document.getElementById('btn-add-to-list-cancel').addEventListener('click', () => {
+        document.getElementById('add-to-list-modal').classList.add('hidden');
+    });
+
+    // ==========================================
+    // EPISODE NOTES
+    // ==========================================
+    let currentNoteCtx = null;
+    async function showEpisodeNoteModal(showId, season, ep, epName) {
+        currentNoteCtx = { showId, season, ep };
+        document.getElementById('episode-note-title').textContent = epName;
+        
+        const noteId = `${showId}_S${season}_E${ep}`;
+        const note = await db.episode_notes.get(noteId);
+        
+        const rating = note ? note.rating : 0;
+        const text = note ? note.note : '';
+        
+        document.querySelectorAll('#episode-star-rating .star-btn').forEach(btn => {
+            const val = parseInt(btn.dataset.val);
+            btn.classList.toggle('active', val <= rating);
+            
+            btn.onclick = () => {
+                document.querySelectorAll('#episode-star-rating .star-btn').forEach(b => {
+                    b.classList.toggle('active', parseInt(b.dataset.val) <= val);
+                });
+                currentNoteCtx.rating = val;
+            };
+        });
+        currentNoteCtx.rating = rating;
+        document.getElementById('episode-note-text').value = text;
+        
+        document.getElementById('episode-note-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('btn-episode-note-cancel').addEventListener('click', () => {
+        document.getElementById('episode-note-modal').classList.add('hidden');
+    });
+
+    document.getElementById('btn-episode-note-save').addEventListener('click', async () => {
+        if (!currentNoteCtx) return;
+        const noteId = `${currentNoteCtx.showId}_S${currentNoteCtx.season}_E${currentNoteCtx.ep}`;
+        const text = document.getElementById('episode-note-text').value.trim();
+        const rating = currentNoteCtx.rating;
+        
+        if (text || rating > 0) {
+            await db.episode_notes.put({
+                id: noteId,
+                show_id: currentNoteCtx.showId,
+                season_num: currentNoteCtx.season,
+                ep_num: currentNoteCtx.ep,
+                rating: rating,
+                note: text,
+                updated_at: Date.now()
+            });
+            showToast("Note enregistrée !");
+        } else {
+            await db.episode_notes.delete(noteId);
+        }
+        
+        document.getElementById('episode-note-modal').classList.add('hidden');
+        
+        // Optional: refresh icon color to indicate a note exists
+        const noteIcon = document.querySelector(`.ep-note-sm[data-show-id="${currentNoteCtx.showId}"][data-season="${currentNoteCtx.season}"][data-ep="${currentNoteCtx.ep}"]`);
+        if (noteIcon) {
+            noteIcon.style.opacity = (text || rating > 0) ? '1' : '0.3';
+            noteIcon.style.color = (text || rating > 0) ? 'var(--iris-400)' : '';
+        }
+    });
+
+    // ==========================================
+    // REWATCH MODAL
+    // ==========================================
+    let currentRewatchCtx = null;
+    window.showRewatchModal = function(type, ctx, currentViews, showObj) {
+        currentRewatchCtx = { type, ctx, currentViews, showObj };
+        document.getElementById('rewatch-count').textContent = currentViews;
+        
+        let title = '';
+        if (type === 'movie') title = ctx.movieName;
+        else if (type === 'episode') title = `${ctx.showName} - S${ctx.season}E${ctx.epNum}`;
+        else if (type === 'season') title = `${ctx.showName} - Saison ${ctx.season} entière`;
+        
+        document.getElementById('rewatch-title').textContent = title;
+        document.getElementById('rewatch-modal').classList.remove('hidden');
+    };
+    
+    document.getElementById('btn-rewatch-close').addEventListener('click', () => {
+        document.getElementById('rewatch-modal').classList.add('hidden');
+        if (currentRewatchCtx && currentRewatchCtx.showObj) {
+            if (currentRewatchCtx.type === 'movie') {
+                renderMovieDetail(currentRewatchCtx.showObj);
+            } else {
+                renderShowDetail(currentRewatchCtx.showObj);
+            }
+        }
+    });
+
+    document.getElementById('btn-rewatch-plus').addEventListener('click', async () => {
+        if (!currentRewatchCtx) return;
+        currentRewatchCtx.currentViews++;
+        document.getElementById('rewatch-count').textContent = currentRewatchCtx.currentViews;
+        
+        await updateRewatchCount(currentRewatchCtx.currentViews);
+    });
+
+    document.getElementById('btn-rewatch-minus').addEventListener('click', async () => {
+        if (!currentRewatchCtx) return;
+        if (currentRewatchCtx.currentViews > 0) {
+            currentRewatchCtx.currentViews--;
+            document.getElementById('rewatch-count').textContent = currentRewatchCtx.currentViews;
+            
+            await updateRewatchCount(currentRewatchCtx.currentViews);
+        }
+    });
+
+    async function updateRewatchCount(views) {
+        const targetRewatchCount = views > 0 ? views - 1 : 0;
+        const ctx = currentRewatchCtx.ctx;
+        
+        if (currentRewatchCtx.type === 'episode') {
+            const row = await db.watch_history.get(ctx.historyId);
+            if (!row) return;
+            if (views === 0) {
+                await db.watch_history.delete(row.id);
+                document.getElementById('rewatch-modal').classList.add('hidden');
+                renderShowDetail(currentRewatchCtx.showObj);
+            } else {
+                await db.watch_history.update(row.id, { rewatch_count: targetRewatchCount });
+            }
+        } else if (currentRewatchCtx.type === 'season') {
+            for (const r of ctx.records) {
+                if (views === 0) {
+                    await db.watch_history.delete(r.id);
+                } else {
+                    await db.watch_history.update(r.id, { rewatch_count: targetRewatchCount });
+                }
+            }
+            if (views === 0) {
+                document.getElementById('rewatch-modal').classList.add('hidden');
+                renderShowDetail(currentRewatchCtx.showObj);
+            }
+        } else if (currentRewatchCtx.type === 'movie') {
+            // For movies, consolidate to a single watch record if multiple existed
+            if (ctx.records && ctx.records.length > 0) {
+                const keepId = ctx.records[0].id;
+                for (let i = 1; i < ctx.records.length; i++) {
+                    await db.movie_watches.delete(ctx.records[i].id);
+                }
+                if (views === 0) {
+                    await db.movie_watches.delete(keepId);
+                    await db.movies.where('tmdb_id').equals(ctx.tmdbId).modify({ status: 'watchlist' });
+                    document.getElementById('rewatch-modal').classList.add('hidden');
+                    renderMovieDetail(currentRewatchCtx.showObj);
+                } else {
+                    await db.movie_watches.update(keepId, { rewatch_count: targetRewatchCount });
+                }
+            } else if (views > 0) {
+                // If somehow they increment from 0 to 1 but no record existed
+                await db.movie_watches.add({
+                    movie_uuid: ctx.movieUuid, movie_name: ctx.movieName,
+                    watched_at: new Date().toISOString(), rewatch_count: targetRewatchCount, runtime: 0
+                });
+            }
+        }
+    }
 
 })();

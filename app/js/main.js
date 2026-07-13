@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnClearDB.addEventListener('click', async () => {
-        if (confirm("Êtes-vous sûr de vouloir effacer TOUTES vos données ? Cette action est irréversible.")) {
+        if (await window.customConfirm("Êtes-vous sûr de vouloir effacer TOUTES vos données ? Cette action est irréversible.", "Suppression des données", "Effacer", "Annuler")) {
             await DBService.clearAll();
             alert("Base de données effacée.");
             updateDashboard();

@@ -192,6 +192,9 @@ const Importer = {
                         if (backup.data.movies) { await db.movies.clear(); await db.movies.bulkAdd(backup.data.movies); importedCount += backup.data.movies.length; }
                         if (backup.data.movieWatches) { await db.movie_watches.clear(); await db.movie_watches.bulkAdd(backup.data.movieWatches); importedCount += backup.data.movieWatches.length; }
                         if (backup.data.recommendation_feedback) { await db.recommendation_feedback.clear(); await db.recommendation_feedback.bulkAdd(backup.data.recommendation_feedback); }
+                        if (backup.data.customLists) { await db.custom_lists.clear(); await db.custom_lists.bulkAdd(backup.data.customLists); }
+                        if (backup.data.listItems) { await db.list_items.clear(); await db.list_items.bulkAdd(backup.data.listItems); }
+                        if (backup.data.episodeNotes) { await db.episode_notes.clear(); await db.episode_notes.bulkAdd(backup.data.episodeNotes); }
                     }
                     
                     onProgress('Importation terminée !');
@@ -218,7 +221,10 @@ const Importer = {
                 history: await db.watch_history.toArray(),
                 movies: await db.movies.toArray(),
                 movieWatches: await db.movie_watches.toArray(),
-                recommendation_feedback: await db.recommendation_feedback.toArray()
+                recommendation_feedback: await db.recommendation_feedback.toArray(),
+                customLists: await db.custom_lists.toArray(),
+                listItems: await db.list_items.toArray(),
+                episodeNotes: await db.episode_notes.toArray()
             };
         }
 
