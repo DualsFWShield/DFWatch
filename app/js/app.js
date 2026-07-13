@@ -22,7 +22,7 @@
         if (target === 'stats') refreshStats();
         if (target === 'series') refreshSeriesList();
         if (target === 'films') refreshFilmsList();
-        if (target === 'favoris') refreshFavoris();
+        if (target === 'lists') renderCustomLists();
         if (target === 'search') initSearch();
         if (target === 'calendar') refreshCalendar();
     }
@@ -2717,44 +2717,60 @@
     // ==========================================
     async function renderCustomLists() {
         const container = document.getElementById('custom-lists-container');
-        const lists = await db.custom_lists.toArray();
-        
-        // Fetch favoris count
-        const favShows = await db.shows.where('is_favorited').equals(1).count();
-        const favMovies = await db.movies.where('is_favorited').equals(1).count();
-        const totalFavs = favShows + favMovies;
+        try {
+            const lists = await db.custom_lists.toArray();
+            
+            // Fetch favoris count (safely fallback if index fails)
+            let favShows = 0;
+            let favMovies = 0;
+            try {
+                favShows = await db.shows.where('is_favorited').equals(1).count();
+                favMovies = await db.movies.where('is_favorited').equals(1).count();
+            } catch (err) {
+                // Fallback if index is broken
+                const allShows = await db.shows.toArray();
+                favShows = allShows.filter(s => s.is_favorited === 1).length;
+                const allMovies = await db.movies.toArray();
+                favMovies = allMovies.filter(m => m.is_favorited === 1).length;
+            }
+            const totalFavs = favShows + favMovies;
 
-        let html = `
-            <div class="list-card-v2 favoris" data-id="favoris">
-                <div class="list-icon">❤️</div>
-                <h3>Favoris</h3>
-                <p>${totalFavs} élément(s)</p>
-            </div>
-        `;
-        
-        for (const list of lists) {
-            const items = await db.list_items.where('list_id').equals(list.id).toArray();
-            let iconHtml = '📋';
-            html += `
-                <div class="list-card-v2" data-id="${list.id}">
-                    <div class="list-icon">${iconHtml}</div>
-                    <h3>${list.name}</h3>
-                    <p>${items.length} élément(s)</p>
-                    <button class="btn-delete-list-v2" data-id="${list.id}" title="Supprimer la liste">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
+            let html = `
+                <div class="list-card-v2 favoris" data-id="favoris">
+                    <div class="list-icon">❤️</div>
+                    <h3>Favoris</h3>
+                    <p>${totalFavs} élément(s)</p>
                 </div>
             `;
+            
+            for (const list of lists) {
+                const items = await db.list_items.where('list_id').equals(list.id).toArray();
+                let iconHtml = '📋';
+                html += `
+                    <div class="list-card-v2" data-id="${list.id}">
+                        <div class="list-icon">${iconHtml}</div>
+                        <h3>${list.name}</h3>
+                        <p>${items.length} élément(s)</p>
+                        <button class="btn-delete-list-v2" data-id="${list.id}" title="Supprimer la liste">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="list-card-v2 create-new" id="btn-create-list-card">
+                    <div class="list-icon" style="color:var(--text-secondary);">+</div>
+                    <h3 style="color:var(--text-secondary);">Créer une liste</h3>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = `<div style="color: red; padding: 20px;">Erreur renderCustomLists: ${e.message}<br>${e.stack}</div>`;
+            return;
         }
-
-        html += `
-            <div class="list-card-v2 create-new" id="btn-create-list-card">
-                <div class="list-icon" style="color:var(--text-secondary);">+</div>
-                <h3 style="color:var(--text-secondary);">Créer une liste</h3>
-            </div>
-        `;
-
-        container.innerHTML = html;
         
         // Also hide the old btn-create-list from the header
         const oldCreateBtn = document.getElementById('btn-create-list');

@@ -30,6 +30,18 @@ db.version(5).stores({
     list_items: '++id, list_id, tmdb_id, [list_id+tmdb_id], media_type, added_at'
 });
 
+db.version(6).stores({
+    shows: '++id, tvtime_id, tmdb_id, name, is_followed, type, is_favorited, user_rating',
+    movies: '++id, uuid, tmdb_id, name, status, release_date, is_favorited, user_rating',
+    watch_history: '++id, show_tvtime_id, show_name, season_number, episode_number',
+    movie_watches: '++id, movie_uuid, movie_name',
+    achievements: 'id',
+    recommendation_feedback: 'tmdb_id, type, feedback_value',
+    custom_lists: '++id, name, description, created_at',
+    list_items: '++id, list_id, tmdb_id, [list_id+tmdb_id], media_type, added_at',
+    episode_notes: 'id, show_id, season_num, ep_num, rating, note, updated_at'
+});
+
 // Delete legacy DB if it exists
 Dexie.exists("DFWatchDB").then(exists => {
     if (exists) {
