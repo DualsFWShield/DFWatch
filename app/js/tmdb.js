@@ -38,6 +38,28 @@ const _TMDB = {
         return data ? (data.results || []).slice(0, 20) : [];
     },
 
+    async discover(type = 'movie', filters = {}) {
+        let qs = '';
+        if (filters.genre) qs += `&with_genres=${filters.genre}`;
+        if (filters.year) {
+            if (filters.year.includes('s')) {
+                // e.g. "2010s"
+                const y = parseInt(filters.year);
+                qs += `&primary_release_date.gte=${y}-01-01&primary_release_date.lte=${y+9}-12-31`;
+            } else {
+                qs += `&primary_release_year=${filters.year}`;
+                qs += `&first_air_date_year=${filters.year}`; // for tv
+            }
+        }
+        if (filters.sort) qs += `&sort_by=${filters.sort}`;
+        else qs += `&sort_by=popularity.desc`;
+        
+        const data = await this._fetch(`/discover/${type}?page=1${qs}`);
+        if (!data) return [];
+        // Add media_type so the cards render correctly since discover doesn't return it
+        return (data.results || []).map(item => ({...item, media_type: type})).slice(0, 20);
+    },
+
     async getShowDetails(id) { return this._fetch(`/tv/${id}?append_to_response=credits,videos`); },
     async getMovieDetails(id) { return this._fetch(`/movie/${id}?append_to_response=credits,videos`); },
     async getSeasonDetails(id, season) { return this._fetch(`/tv/${id}/season/${season}`); },
@@ -246,6 +268,10 @@ const TMDB = {
 
     async getRecommendations(id, type = 'movie') {
         return _TMDB.getRecommendations(id, type);
+    },
+
+    async discover(type = 'movie', filters = {}) {
+        return _TMDB.discover(type, filters);
     },
 
     async findShowByName(name) {

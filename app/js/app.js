@@ -24,6 +24,7 @@
         if (target === 'films') refreshFilmsList();
         if (target === 'favoris') refreshFavoris();
         if (target === 'search') initSearch();
+        if (target === 'calendar') refreshCalendar();
     }
 
     // ---- Theme Init ----
@@ -153,10 +154,24 @@
         });
     });
 
-    // ---- Search ----
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
+    const filtersPanel = document.getElementById('search-filters-panel');
+    const btnToggleFilters = document.getElementById('btn-toggle-filters');
+    const btnApplyFilters = document.getElementById('btn-apply-filters');
     let searchTimer;
+
+    if (btnToggleFilters) {
+        btnToggleFilters.addEventListener('click', () => {
+            filtersPanel.classList.toggle('hidden');
+        });
+    }
+
+    if (btnApplyFilters) {
+        btnApplyFilters.addEventListener('click', () => {
+            doSearch('', true); // trigger discover
+        });
+    }
 
     searchInput.addEventListener('input', () => {
         clearTimeout(searchTimer);
@@ -273,9 +288,29 @@
         });
     }
 
-    async function doSearch(query) {
+    async function doSearch(query, useFilters = false) {
         searchResults.innerHTML = '<div class="empty-state"><p>Recherche en cours...</p></div>';
-        const results = await TMDB.search(query, currentSearchType);
+        
+        let results = [];
+        
+        if (useFilters) {
+            const genre = document.getElementById('filter-genre').value;
+            const year = document.getElementById('filter-year').value;
+            const sort = document.getElementById('filter-sort').value;
+            
+            // If "Pour vous" or "Tendances" is selected, fallback to movie or let user choose via tabs
+            let type = currentSearchType === 'tv' ? 'tv' : 'movie'; 
+            if (currentSearchType === 'multi' || currentSearchType === 'foryou') {
+                // Discover API doesn't support 'multi', so we just default to movie and switch tab
+                document.querySelector('.search-tab[data-search-type="movie"]').click();
+                type = 'movie';
+            }
+            
+            results = await TMDB.discover(type, { genre, year, sort });
+        } else {
+            results = await TMDB.search(query, currentSearchType);
+        }
+        
         if (!results.length) {
             searchResults.innerHTML = '<div class="empty-state"><p>Aucun résultat.</p></div>';
             return;
@@ -445,21 +480,33 @@
         const rating = show.vote_average ? (show.vote_average * 10).toFixed(0) + '%' : '';
         const creator = (show.created_by && show.created_by.length > 0) ? show.created_by.map(c => c.name).join(', ') : '';
         
+        // --- Cast (improved with known_for_department) ---
         let castHTML = '';
         if (show.credits && show.credits.cast) {
-            const cast = show.credits.cast.slice(0, 10);
+            const cast = show.credits.cast.slice(0, 12);
             if (cast.length > 0) {
                 castHTML = '<div class="detail-section"><h3>Têtes d\'affiche</h3><div class="horizontal-scroll cast-scroll">';
                 cast.forEach(c => {
                     const img = c.profile_path ? TMDB.imgUrl(c.profile_path, 'w185') : '';
+                    const dept = c.known_for_department && c.known_for_department !== 'Acting' ? `<div class="cast-dept">${c.known_for_department}</div>` : '';
                     castHTML += `
                         <div class="cast-card">
-                            ${img ? `<img src="${img}" alt="${c.name}" loading="lazy">` : `<div class="cast-placeholder"></div>`}
+                            ${img ? `<img src="${img}" alt="${c.name}" loading="lazy">` : `<div class="cast-placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>`}
                             <div class="cast-name">${c.name}</div>
-                            <div class="cast-char">${c.character}</div>
+                            <div class="cast-char">${c.character || ''}${dept}</div>
                         </div>`;
                 });
                 castHTML += '</div></div>';
+            }
+        }
+
+        // --- Trailer ---
+        let trailerHTML = '';
+        if (show.videos && show.videos.results && show.videos.results.length > 0) {
+            const trailer = show.videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube')
+                         || show.videos.results.find(v => v.site === 'YouTube');
+            if (trailer) {
+                trailerHTML = `<div class="detail-section"><h3>Bande-annonce</h3><div class="trailer-container"><iframe src="https://www.youtube.com/embed/${trailer.key}?rel=0" frameborder="0" allowfullscreen loading="lazy" title="Bande-annonce"></iframe></div></div>`;
             }
         }
 
@@ -502,12 +549,20 @@
                     rewatchCount = h ? (h.rewatch_count || 0) : 0;
                 }
                 const rewatchBadge = rewatchCount > 0 ? `<span class="rewatch-badge" style="background:var(--iris-600); color:#fff; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:6px;">x${rewatchCount + 1}</span>` : '';
+                const airDateStr = ep.air_date ? new Date(ep.air_date).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '';
+                const epOverview = ep.overview ? `<div class="ep-overview">${ep.overview}</div>` : '';
+                const runtimeStr = ep.runtime ? `${ep.runtime} min` : '';
+                const epMetaParts = [airDateStr, runtimeStr].filter(Boolean).join(' · ');
 
                 epsHTML += `
                     <div class="season-ep-row">
                         <span class="ep-num">${ep.episode_number}</span>
-                        <span class="ep-name">${ep.name || `Épisode ${ep.episode_number}`} ${rewatchBadge}</span>
-                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <div class="ep-details-col">
+                            <span class="ep-name">${ep.name || `Épisode ${ep.episode_number}`} ${rewatchBadge}</span>
+                            ${epMetaParts ? `<span class="ep-air-date">${epMetaParts}</span>` : ''}
+                            ${epOverview}
+                        </div>
+                        <div style="display:flex; gap:0.5rem; align-items:center; flex-shrink:0;">
                             ${checked ? `<div class="ep-rewatch-sm" data-show="${title}" data-tvtime="${existing ? existing.tvtime_id : ''}" data-season="${season.season_number}" data-ep="${ep.episode_number}" data-runtime="${ep.runtime || 0}" style="cursor:pointer; color:var(--text-muted); font-size:16px;" title="Revoir">↻</div>` : ''}
                             <div class="ep-check-sm ${checked ? 'checked' : ''}" data-show="${title}" data-tvtime="${existing ? existing.tvtime_id : ''}" data-season="${season.season_number}" data-ep="${ep.episode_number}" data-tmdb-id="${show.id}" data-runtime="${ep.runtime || 0}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -559,11 +614,15 @@
                 </div>
             </div>
             ${castHTML}
+            ${trailerHTML}
             <div class="detail-section">
                 <h3>Saisons</h3>
                 ${seasonsHTML}
             </div>
-            <div class="detail-section" style="margin-top: 2rem;">
+            <div class="detail-section" id="detail-similar-shows"></div>
+            <div class="detail-section detail-footer-actions" style="margin-top: 2rem; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <button class="action-btn secondary" id="btn-sync-show" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);" title="Forcer la synchronisation des données depuis TMDB">🔄 Actualiser les données</button>
+                <button class="action-btn secondary" id="btn-share-show" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">📤 Partager</button>
                 <button class="action-btn secondary" id="btn-fix-tmdb-tv" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">Mauvaise identification TMDB ?</button>
             </div>
         `;
@@ -858,6 +917,96 @@
                 refreshSeriesList();
             }
         });
+
+        // Manual sync button
+        document.getElementById('btn-sync-show').addEventListener('click', async function() {
+            this.disabled = true;
+            this.textContent = '⏳ Synchronisation...';
+            try {
+                const details = await TMDB.getShowDetails(show.id);
+                if (details) {
+                    const existing = await db.shows.where('tmdb_id').equals(show.id).first();
+                    if (existing) {
+                        const total = details.number_of_episodes || 0;
+                        const nextAir = details.next_episode_to_air ? details.next_episode_to_air.air_date : null;
+                        const genres = details.genres ? details.genres.map(g => g.name) : [];
+                        
+                        // Re-calculate finished status from scratch
+                        let history = [];
+                        if (existing.tvtime_id) history = await db.watch_history.where('show_tvtime_id').equals(String(existing.tvtime_id)).toArray();
+                        if (history.length === 0) history = await db.watch_history.where('show_name').equals(existing.name).toArray();
+                        const uniqueWatched = new Set();
+                        history.forEach(h => { if (h.season_number > 0) uniqueWatched.add(`S${h.season_number}E${h.episode_number}`); });
+                        const doneEps = uniqueWatched.size;
+                        const shouldBeFinished = doneEps >= total && total > 0;
+                        
+                        await db.shows.update(existing.id, { 
+                            nb_episodes_total: total, next_air_date: nextAir,
+                            is_finished: shouldBeFinished ? 1 : 0,
+                            last_sync: Date.now(), genres: genres
+                        });
+                    }
+                    showToast('Données actualisées !');
+                    refreshSeriesList();
+                    renderShowDetail(details); // Re-render detail view
+                } else {
+                    showToast('Impossible de récupérer les données.');
+                }
+            } catch (e) {
+                showToast('Erreur lors de la synchronisation.');
+            }
+            this.disabled = false;
+            this.textContent = '🔄 Actualiser les données';
+        });
+
+        // Share button
+        document.getElementById('btn-share-show').addEventListener('click', async function() {
+            const shareData = {
+                title: `${title} — DFWatch`,
+                text: `Je suis ${title} sur DFWatch ! ${genres ? '(' + genres + ')' : ''}`,
+                url: `https://www.themoviedb.org/tv/${show.id}`
+            };
+            if (navigator.share) {
+                try { await navigator.share(shareData); } catch (e) { /* user cancelled */ }
+            } else {
+                // Fallback: copy to clipboard
+                try {
+                    await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+                    showToast('Lien copié dans le presse-papier !');
+                } catch(e) {
+                    showToast('Impossible de partager.');
+                }
+            }
+        });
+
+        // Load similar shows asynchronously
+        (async () => {
+            try {
+                const similar = await TMDB.getRecommendations(show.id, 'tv');
+                const container = document.getElementById('detail-similar-shows');
+                if (similar && similar.length > 0 && container) {
+                    let html = '<h3>Vous aimerez aussi</h3><div class="horizontal-scroll">';
+                    similar.slice(0, 10).forEach(item => {
+                        const pUrl = TMDB.imgUrl(item.poster_path, 'w185');
+                        const name = item.name || item.title || '';
+                        if (pUrl) {
+                            html += `<div class="h-poster similar-poster" data-tmdb-id="${item.id}" data-type="${item.media_type || 'tv'}"><img src="${pUrl}" alt="${name}" loading="lazy"><div class="similar-label">${name}</div></div>`;
+                        }
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                    
+                    container.querySelectorAll('.similar-poster').forEach(el => {
+                        el.addEventListener('click', async () => {
+                            const tmdbId = parseInt(el.dataset.tmdbId);
+                            const type = el.dataset.type || 'tv';
+                            const details = type === 'tv' ? await TMDB.getShowDetails(tmdbId) : await TMDB.getMovieDetails(tmdbId);
+                            if (details) openDetail(details, type);
+                        });
+                    });
+                }
+            } catch(e) {}
+        })();
     }
 
     async function renderMovieDetail(movie) {
@@ -875,21 +1024,32 @@
             if (dir) director = dir.name;
         }
         
+        // --- Cast (improved) ---
         let castHTML = '';
         if (movie.credits && movie.credits.cast) {
-            const cast = movie.credits.cast.slice(0, 10);
+            const cast = movie.credits.cast.slice(0, 12);
             if (cast.length > 0) {
                 castHTML = '<div class="detail-section"><h3>Têtes d\'affiche</h3><div class="horizontal-scroll cast-scroll">';
                 cast.forEach(c => {
                     const img = c.profile_path ? TMDB.imgUrl(c.profile_path, 'w185') : '';
                     castHTML += `
                         <div class="cast-card">
-                            ${img ? `<img src="${img}" alt="${c.name}" loading="lazy">` : `<div class="cast-placeholder"></div>`}
+                            ${img ? `<img src="${img}" alt="${c.name}" loading="lazy">` : `<div class="cast-placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>`}
                             <div class="cast-name">${c.name}</div>
-                            <div class="cast-char">${c.character}</div>
+                            <div class="cast-char">${c.character || ''}</div>
                         </div>`;
                 });
                 castHTML += '</div></div>';
+            }
+        }
+
+        // --- Trailer ---
+        let trailerHTML = '';
+        if (movie.videos && movie.videos.results && movie.videos.results.length > 0) {
+            const trailer = movie.videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube')
+                         || movie.videos.results.find(v => v.site === 'YouTube');
+            if (trailer) {
+                trailerHTML = `<div class="detail-section"><h3>Bande-annonce</h3><div class="trailer-container"><iframe src="https://www.youtube.com/embed/${trailer.key}?rel=0" frameborder="0" allowfullscreen loading="lazy" title="Bande-annonce"></iframe></div></div>`;
             }
         }
 
@@ -929,7 +1089,10 @@
                 </div>
             </div>
             ${castHTML}
-            <div class="detail-section" style="margin-top: 2rem;">
+            ${trailerHTML}
+            <div class="detail-section" id="detail-similar-movies"></div>
+            <div class="detail-section detail-footer-actions" style="margin-top: 2rem; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <button class="action-btn secondary" id="btn-share-movie" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">📤 Partager</button>
                 <button class="action-btn secondary" id="btn-fix-tmdb-movie" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">Mauvaise identification TMDB ?</button>
             </div>
         `;
@@ -950,6 +1113,49 @@
                 refreshFilmsList();
             }
         });
+
+        // Share movie
+        document.getElementById('btn-share-movie').addEventListener('click', async function() {
+            const shareData = {
+                title: `${title} — DFWatch`,
+                text: `J'ai vu ${title} sur DFWatch ! ${genres ? '(' + genres + ')' : ''}`,
+                url: `https://www.themoviedb.org/movie/${movie.id}`
+            };
+            if (navigator.share) {
+                try { await navigator.share(shareData); } catch (e) {}
+            } else {
+                try {
+                    await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+                    showToast('Lien copié dans le presse-papier !');
+                } catch(e) { showToast('Impossible de partager.'); }
+            }
+        });
+
+        // Load similar movies asynchronously
+        (async () => {
+            try {
+                const similar = await TMDB.getRecommendations(movie.id, 'movie');
+                const container = document.getElementById('detail-similar-movies');
+                if (similar && similar.length > 0 && container) {
+                    let html = '<h3>Films similaires</h3><div class="horizontal-scroll">';
+                    similar.slice(0, 10).forEach(item => {
+                        const pUrl = TMDB.imgUrl(item.poster_path, 'w185');
+                        const name = item.title || item.name || '';
+                        if (pUrl) {
+                            html += `<div class="h-poster similar-poster" data-tmdb-id="${item.id}" data-type="movie"><img src="${pUrl}" alt="${name}" loading="lazy"><div class="similar-label">${name}</div></div>`;
+                        }
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                    container.querySelectorAll('.similar-poster').forEach(el => {
+                        el.addEventListener('click', async () => {
+                            const details = await TMDB.getMovieDetails(parseInt(el.dataset.tmdbId));
+                            if (details) openDetail(details, 'movie');
+                        });
+                    });
+                }
+            } catch(e) {}
+        })();
 
         document.getElementById('btn-add-movie').addEventListener('click', async function () {
             const tmdbId = parseInt(this.dataset.tmdbId);
@@ -1128,8 +1334,10 @@
             // Check for background sync
             const now = new Date().getTime();
             const lastSync = show.last_sync || 0;
-            // Sync if missing data or if last sync is older than 24h
-            if (!show.nb_episodes_total || (now - lastSync) > 86400000) {
+            const isAlreadyFinished = show.is_finished === 1;
+            const needsSync = !show.nb_episodes_total || (now - lastSync) > 86400000;
+            // Skip auto-sync for finished series — use manual "Recalculer" to re-check them
+            if (needsSync && !isAlreadyFinished) {
                 if (!window._syncingShows) window._syncingShows = new Set();
                 if (!window._syncingShows.has(show.id)) {
                     window._syncingShows.add(show.id);
@@ -1158,11 +1366,11 @@
                         } catch(e) {}
                     }, Math.random() * 5000 + 1000); // spread over 1-6 seconds
                 }
-            } else {
-                // Auto-correct is_finished if we have nb_episodes_total cached
+            } else if (!isAlreadyFinished) {
+                // Auto-correct is_finished if we have nb_episodes_total cached (only for non-finished shows)
                 if (show.nb_episodes_total > 0) {
                     const shouldBeFinished = doneEps >= show.nb_episodes_total;
-                    if ((show.is_finished === 1) !== shouldBeFinished) {
+                    if (!shouldBeFinished !== !show.is_finished) {
                         show.is_finished = shouldBeFinished ? 1 : 0;
                         db.shows.update(show.id, { is_finished: show.is_finished }); // fire and forget
                     }
@@ -1600,6 +1808,71 @@
     }
 
     // ---- Stats & Achievements ----
+    let statsChartInstance = null;
+
+    async function renderStatsChart() {
+        const canvas = document.getElementById('stats-chart');
+        if (!canvas || !window.Chart) return;
+        
+        const shows = await db.shows.toArray();
+        const movies = await db.movies.toArray();
+        
+        const genreCounts = {};
+        const countGenres = (items) => {
+            items.forEach(item => {
+                if (item.genres && Array.isArray(item.genres)) {
+                    item.genres.forEach(g => {
+                        const name = g.name || g;
+                        genreCounts[name] = (genreCounts[name] || 0) + 1;
+                    });
+                }
+            });
+        };
+        countGenres(shows);
+        countGenres(movies);
+        
+        const sortedGenres = Object.entries(genreCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 7); // Top 7 genres
+            
+        const labels = sortedGenres.map(g => g[0]);
+        const data = sortedGenres.map(g => g[1]);
+        
+        if (statsChartInstance) statsChartInstance.destroy();
+        
+        statsChartInstance = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#8b5cf6', // iris
+                        '#06b6d4', // cyan
+                        '#ec4899', // pink
+                        '#3b82f6', // blue
+                        '#10b981', // emerald
+                        '#f59e0b', // amber
+                        '#6366f1'  // indigo
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#8b8ba3', font: { family: "'Inter', sans-serif", size: 11 } }
+                    }
+                },
+                layout: { padding: 0 }
+            }
+        });
+    }
+
     async function refreshStats() {
         const achs = await Achievements.evaluate();
         
@@ -1627,6 +1900,9 @@
         
         const mHours = Math.floor(movieStats.totalMinutes / 60);
         document.getElementById('stat-films-hours').textContent = `Total : ${mHours.toLocaleString()} heures`;
+
+        // Render Chart
+        await renderStatsChart();
 
         // Render achievements
         const container = document.getElementById('achievements-container');
@@ -2010,6 +2286,135 @@
         showToast(window.I18n ? window.I18n.get('toast.profile_saved') : 'Profil enregistré avec succès !');
     });
 
+    // ---- Calendar / Agenda ----
+    let calendarDate = new Date();
+    
+    const calPrev = document.getElementById('cal-prev');
+    const calNext = document.getElementById('cal-next');
+    if (calPrev) calPrev.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); refreshCalendar(); });
+    if (calNext) calNext.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); refreshCalendar(); });
+
+    async function refreshCalendar() {
+        const monthLabel = document.getElementById('cal-month-label');
+        const grid = document.getElementById('calendar-grid');
+        const eventsContainer = document.getElementById('calendar-events');
+        if (!monthLabel || !grid || !eventsContainer) return;
+
+        const year = calendarDate.getFullYear();
+        const month = calendarDate.getMonth();
+        monthLabel.textContent = new Date(year, month).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        monthLabel.style.textTransform = 'capitalize';
+
+        // Gather events from DB
+        const events = [];
+        
+        // 1. Series with next_air_date
+        const shows = await db.shows.where('is_followed').equals(1).toArray();
+        for (const show of shows) {
+            if (show.next_air_date) {
+                const d = new Date(show.next_air_date);
+                events.push({ date: d, type: 'episode', name: show.name, detail: 'Prochain épisode', poster: show.poster_path, tmdb_id: show.tmdb_id, media_type: 'tv' });
+            }
+        }
+        
+        // 2. Movies with future release dates
+        const movies = await db.movies.toArray();
+        for (const movie of movies) {
+            if (movie.release_date && new Date(movie.release_date) > new Date()) {
+                const d = new Date(movie.release_date);
+                events.push({ date: d, type: 'movie', name: movie.name, detail: 'Sortie du film', poster: movie.poster_path, tmdb_id: movie.tmdb_id, media_type: 'movie' });
+            }
+        }
+        
+        // Build calendar grid
+        const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const adjustedFirst = firstDay === 0 ? 6 : firstDay - 1; // Monday-first
+        
+        const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        let gridHTML = dayNames.map(d => `<div class="cal-header">${d}</div>`).join('');
+        
+        // Empty cells before first day
+        for (let i = 0; i < adjustedFirst; i++) gridHTML += '<div class="cal-day empty"></div>';
+        
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateObj = new Date(year, month, day);
+            const dayEvents = events.filter(e => e.date.getFullYear() === year && e.date.getMonth() === month && e.date.getDate() === day);
+            const isToday = dateObj.toDateString() === today.toDateString();
+            const hasEvents = dayEvents.length > 0;
+            
+            let dots = '';
+            let bgImage = '';
+            if (hasEvents) {
+                dots = '<div class="cal-dots" style="position:relative; z-index:2;">' + dayEvents.map(e => `<span class="cal-dot ${e.type}"></span>`).join('') + '</div>';
+                const firstWithPoster = dayEvents.find(e => e.poster);
+                if (firstWithPoster) {
+                    bgImage = `background-image: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 50%), url('${TMDB.imgUrl(firstWithPoster.poster, 'w185')}'); background-size: cover; background-position: center; border: none;`;
+                }
+            }
+            
+            gridHTML += `<div class="cal-day ${isToday ? 'today' : ''} ${hasEvents ? 'has-events' : ''}" data-date="${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}" style="${bgImage}">
+                <span style="position:relative; z-index:2; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${day}</span>
+                ${dots}
+            </div>`;
+        }
+        
+        grid.innerHTML = gridHTML;
+        
+        // Click on day to show events
+        grid.querySelectorAll('.cal-day[data-date]').forEach(el => {
+            el.addEventListener('click', () => {
+                grid.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
+                el.classList.add('selected');
+                const [y, m, d] = el.dataset.date.split('-').map(Number);
+                const dayEvents = events.filter(e => e.date.getFullYear() === y && e.date.getMonth() === m - 1 && e.date.getDate() === d);
+                renderCalendarEvents(dayEvents, eventsContainer, el.dataset.date);
+            });
+        });
+        
+        // Show all events for this month by default
+        const monthEvents = events.filter(e => e.date.getFullYear() === year && e.date.getMonth() === month);
+        monthEvents.sort((a, b) => a.date - b.date);
+        renderCalendarEvents(monthEvents, eventsContainer, null);
+    }
+    
+    function renderCalendarEvents(events, container, selectedDate) {
+        if (events.length === 0) {
+            const label = selectedDate ? `le ${new Date(selectedDate).toLocaleDateString('fr-FR', { day:'numeric', month:'long' })}` : 'ce mois-ci';
+            container.innerHTML = `<div class="empty-state" style="padding:32px 0;"><div class="empty-icon">📅</div><h3>Rien de prévu ${label}</h3><p>Suivez des séries ou ajoutez des films pour voir vos dates importantes ici.</p></div>`;
+            return;
+        }
+        
+        const title = selectedDate ? new Date(selectedDate).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' }) : 'Ce mois';
+        let html = `<h3 style="margin-bottom:16px; text-transform:capitalize;">${title}</h3>`;
+        
+        events.forEach(ev => {
+            const posterUrl = ev.poster ? TMDB.imgUrl(ev.poster, 'w92') : '';
+            const dateStr = ev.date.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+            html += `
+                <div class="calendar-event-card" data-tmdb-id="${ev.tmdb_id}" data-type="${ev.media_type}" style="display:flex; gap:12px; align-items:center; padding:12px; background:var(--glass); border:1px solid var(--glass-border); border-radius:var(--r-12); margin-bottom:8px; cursor:pointer; transition: all 0.2s;">
+                    ${posterUrl ? `<img src="${posterUrl}" style="width:48px; border-radius:var(--r-8);" loading="lazy">` : '<div style="width:48px;height:72px;background:var(--surface-3);border-radius:var(--r-8);"></div>'}
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:14px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.name}</div>
+                        <div style="font-size:12px; color:var(--text-muted);">${ev.detail} · ${dateStr}</div>
+                    </div>
+                    <span class="cal-type-badge ${ev.type}" style="font-size:10px; padding:3px 8px; border-radius:var(--r-pill); font-weight:600;">${ev.type === 'movie' ? '🎬 Film' : '📺 Épisode'}</span>
+                </div>`;
+        });
+        container.innerHTML = html;
+        
+        // Click handlers
+        container.querySelectorAll('.calendar-event-card').forEach(card => {
+            card.addEventListener('click', async () => {
+                const tmdbId = parseInt(card.dataset.tmdbId);
+                const type = card.dataset.type;
+                const details = type === 'tv' ? await TMDB.getShowDetails(tmdbId) : await TMDB.getMovieDetails(tmdbId);
+                if (details) openDetail(details, type);
+            });
+        });
+    }
+
     // ---- Init ----
     refreshSeriesList();
     refreshProfile();
@@ -2020,5 +2425,55 @@
     setTimeout(() => {
         enrichAllMedia();
     }, 2000);
+
+    // ---- Pull-to-Refresh ----
+    function setupPullToRefresh(containerId, indicatorId, refreshFn) {
+        const container = document.getElementById(containerId);
+        const indicator = document.getElementById(indicatorId);
+        if (!container || !indicator) return;
+        
+        let startY = 0, pulling = false;
+        
+        container.addEventListener('touchstart', (e) => {
+            if (container.scrollTop === 0) {
+                startY = e.touches[0].clientY;
+                pulling = true;
+            }
+        }, { passive: true });
+        
+        container.addEventListener('touchmove', (e) => {
+            if (!pulling) return;
+            const diff = e.touches[0].clientY - startY;
+            if (diff > 60) {
+                indicator.classList.add('visible');
+                indicator.textContent = '↻ Relâchez pour actualiser';
+            } else if (diff > 10) {
+                indicator.classList.add('visible');
+                indicator.textContent = '⬇ Tirez pour actualiser';
+            } else {
+                indicator.classList.remove('visible');
+            }
+        }, { passive: true });
+        
+        container.addEventListener('touchend', async () => {
+            if (!pulling) return;
+            pulling = false;
+            if (indicator.classList.contains('visible') && indicator.textContent.includes('Relâchez')) {
+                indicator.textContent = '⏳ Actualisation...';
+                indicator.classList.add('loading');
+                // Clear sync cache to force re-fetch
+                if (window._syncingShows) window._syncingShows.clear();
+                await refreshFn();
+                setTimeout(() => {
+                    indicator.classList.remove('visible', 'loading');
+                }, 500);
+            } else {
+                indicator.classList.remove('visible');
+            }
+        });
+    }
+    
+    setupPullToRefresh('tab-series-watching', 'series-pull-indicator', refreshSeriesList);
+    setupPullToRefresh('tab-films-watched', 'films-pull-indicator', refreshFilmsList);
 
 })();
