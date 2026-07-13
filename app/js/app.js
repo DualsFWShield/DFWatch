@@ -507,6 +507,60 @@
         }
     }
 
+    function buildProvidersHTML(item) {
+        if (!item || !item['watch/providers'] || !item['watch/providers'].results) return '';
+        const savedCountry = localStorage.getItem('dfwatch_country');
+        const country = savedCountry || ((window.I18n && window.I18n.lang === 'en') ? 'US' : 'FR');
+        let providers = item['watch/providers'].results[country] || item['watch/providers'].results['US'];
+        if (!providers && Object.keys(item['watch/providers'].results).length > 0) {
+            providers = Object.values(item['watch/providers'].results)[0];
+        }
+        if (!providers || (!providers.flatrate && !providers.rent && !providers.buy)) return '';
+        
+        let html = '<div class="detail-providers" style="margin-top:16px; margin-bottom:16px; display:flex; flex-direction:row; flex-wrap:wrap; gap:24px;">';
+        
+        const renderCategory = (list, titleKey, defaultTitle) => {
+            if (!list || list.length === 0) return '';
+            
+            const uniqueProviders = [];
+            const seen = new Set();
+            list.forEach(p => {
+                if (!seen.has(p.provider_id)) {
+                    seen.add(p.provider_id);
+                    uniqueProviders.push(p);
+                }
+            });
+
+            let catHtml = '<div>';
+            catHtml += `<div style="font-size:12px; font-weight:600; margin-bottom:8px; color:var(--text-secondary);">${window.I18n ? window.I18n.get(titleKey) || defaultTitle : defaultTitle}</div>`;
+            catHtml += '<div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start;">';
+            
+            uniqueProviders.forEach(p => {
+                const logo = p.logo_path ? TMDB.imgUrl(p.logo_path, 'w154') : '';
+                const linkTag = providers.link ? `<a href="${providers.link}" target="_blank" style="text-decoration:none; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; color:inherit;">` : `<div style="display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center;">`;
+                const closeTag = providers.link ? `</a>` : `</div>`;
+                
+                catHtml += linkTag;
+                if (logo) {
+                    catHtml += `<img src="${logo}" alt="${p.provider_name}" style="width:40px; height:40px; border-radius:10px; object-fit:cover; box-shadow:0 2px 8px rgba(0,0,0,0.3); border:1px solid var(--border-light);">`;
+                } else {
+                    catHtml += `<div style="width:40px; height:40px; border-radius:10px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; border:1px solid var(--border-light);">${p.provider_name.substring(0,3)}</div>`;
+                }
+                catHtml += `<span style="font-size:10px; color:var(--text-secondary); max-width:60px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${p.provider_name}">${p.provider_name}</span>`;
+                catHtml += closeTag;
+            });
+            catHtml += '</div></div>';
+            return catHtml;
+        };
+        
+        html += renderCategory(providers.flatrate, 'detail.available_on', 'En Streaming');
+        html += renderCategory(providers.rent, 'detail.rent_on', 'En Location');
+        html += renderCategory(providers.buy, 'detail.buy_on', "À l'Achat");
+
+        html += '</div>';
+        return html;
+    }
+
     async function renderShowDetail(show) {
         const title = show.name || 'Sans titre';
         const overview = show.overview || (window.I18n ? window.I18n.get('detail.no_overview') : 'Pas de description disponible.');
@@ -516,6 +570,7 @@
         const posterUrl = show.poster_path ? TMDB.imgUrl(show.poster_path, 'w500') : '';
         const rating = show.vote_average ? (show.vote_average * 10).toFixed(0) + '%' : '';
         const creator = (show.created_by && show.created_by.length > 0) ? show.created_by.map(c => c.name).join(', ') : '';
+        const providersHTML = buildProvidersHTML(show);
         
         // --- Cast (improved with known_for_department) ---
         let castHTML = '';
@@ -760,6 +815,7 @@
                         </div>
                     </div>
                     <p class="detail-overview">${overview}</p>
+                    ${providersHTML}
                     ${creator ? `<div class="detail-creator"><strong>Créateur :</strong> ${creator}</div>` : ''}
                 </div>
             </div>
@@ -1252,6 +1308,8 @@
             if (dir) director = dir.name;
         }
         
+        const providersHTML = buildProvidersHTML(movie);
+
         // --- Cast (improved) ---
         let castHTML = '';
         if (movie.credits && movie.credits.cast) {
@@ -1316,6 +1374,7 @@
                         </div>
                     </div>
                     <p class="detail-overview">${overview}</p>
+                    ${providersHTML}
                     ${director ? `<div class="detail-creator"><strong>Réalisateur :</strong> ${director}</div>` : ''}
                 </div>
             </div>
@@ -1897,6 +1956,7 @@
         document.getElementById('profile-firstname').value = firstName;
         document.getElementById('profile-lastname').value = lastName;
         document.getElementById('profile-age').value = age;
+        document.getElementById('profile-country').value = localStorage.getItem('dfwatch_country') || 'FR';
         document.getElementById('profile-tmdb-key').value = localStorage.getItem('custom_tmdb_api_key') || '';
         document.getElementById('profile-tvdb-key').value = localStorage.getItem('custom_tvdb_api_key') || '';
         document.querySelectorAll('#profile-edit-modal .genre-checkbox input').forEach(cb => {
@@ -2601,6 +2661,7 @@
         localStorage.setItem('dfwatch_firstname', document.getElementById('profile-firstname').value);
         localStorage.setItem('dfwatch_lastname', document.getElementById('profile-lastname').value);
         localStorage.setItem('dfwatch_age', document.getElementById('profile-age').value);
+        localStorage.setItem('dfwatch_country', document.getElementById('profile-country').value);
         
         const tmdbKey = document.getElementById('profile-tmdb-key').value.trim();
         if (tmdbKey) localStorage.setItem('custom_tmdb_api_key', tmdbKey);

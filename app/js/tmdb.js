@@ -61,8 +61,8 @@ const _TMDB = {
         return (data.results || []).map(item => ({...item, media_type: type})).slice(0, 20);
     },
 
-    async getShowDetails(id) { return this._fetch(`/tv/${id}?append_to_response=credits,videos`); },
-    async getMovieDetails(id) { return this._fetch(`/movie/${id}?append_to_response=credits,videos`); },
+    async getShowDetails(id) { return this._fetch(`/tv/${id}?append_to_response=credits,videos,watch/providers`); },
+    async getMovieDetails(id) { return this._fetch(`/movie/${id}?append_to_response=credits,videos,watch/providers`); },
     async getSeasonDetails(id, season) { return this._fetch(`/tv/${id}/season/${season}`); },
 
     async getRecommendations(id, type = 'movie') {
