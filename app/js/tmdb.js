@@ -19,7 +19,8 @@ const _TMDB = {
 
     async _fetch(endpoint) {
         const sep = endpoint.includes('?') ? '&' : '?';
-        const url = `${this.BASE}${endpoint}${sep}api_key=${this.API_KEY}&language=${this.LANG}`;
+        const currentLang = (window.I18n && window.I18n.lang === 'en') ? 'en-US' : 'fr-FR';
+        const url = `${this.BASE}${endpoint}${sep}api_key=${this.API_KEY}&language=${currentLang}`;
         try {
             const res = await fetch(url);
             if (!res.ok) return null;

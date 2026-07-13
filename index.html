@@ -49,7 +49,7 @@
 
                 <button class="sidebar-btn" data-page="lists">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                    <span>Listes</span>
+                    <span data-i18n="nav.lists">Listes</span>
                 </button>
                 <button class="sidebar-btn" data-page="profile">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -89,7 +89,7 @@
 
             <button class="nav-btn" data-page="lists">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                <span>Listes</span>
+                <span data-i18n="nav.lists">Listes</span>
             </button>
             <button class="nav-btn" data-page="profile">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -104,7 +104,7 @@
             <section id="page-lists" class="page">
                 <div class="page-inner">
                     <header class="page-header">
-                        <h1>Mes Listes</h1>
+                        <h1 data-i18n="nav.lists">Mes Listes</h1>
                     </header>
                     <div id="custom-lists-container" class="lists-grid">
                         <!-- Grid populated by JS (Favoris + Custom Lists + Create Button) -->
@@ -122,8 +122,8 @@
                         <h1 id="list-detail-title" style="margin:0;">Nom de la liste</h1>
                     </header>
                     <div class="tab-bar" id="list-detail-tabs" style="display:none;">
-                        <button class="tab active" data-tab="list-detail-series">Séries</button>
-                        <button class="tab" data-tab="list-detail-films">Films</button>
+                        <button class="tab active" data-tab="list-detail-series" data-i18n="nav.series">Séries</button>
+                        <button class="tab" data-tab="list-detail-films" data-i18n="nav.movies">Films</button>
                     </div>
                     <div id="list-detail-content" class="poster-grid">
                         <!-- Populated by JS -->
@@ -255,7 +255,7 @@
                     <div class="search-wrapper" style="display: flex; gap: 8px; align-items: stretch;">
                         <div class="search-box" style="flex: 1;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input type="text" id="search-input" placeholder="Rechercher un film ou une série..." autocomplete="off">
+                            <input type="text" id="search-input" placeholder="Rechercher un film ou une série..." autocomplete="off" data-i18n="search.placeholder">
                         </div>
                         <button id="btn-toggle-filters" class="icon-btn" style="background:var(--surface-2); border:1px solid var(--border-default); padding:0 12px; border-radius:var(--r-12); color:var(--text-secondary); cursor:pointer;">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -264,32 +264,32 @@
                     <div id="search-filters-panel" class="hidden" style="background:var(--surface-2); padding:12px; border-radius:var(--r-12); margin-bottom:16px; border:1px solid var(--border-subtle);">
                         <div style="display:flex; gap:12px; flex-wrap:wrap;">
                             <select id="filter-genre" class="form-input" style="flex:1; min-width:120px; font-size:13px;">
-                                <option value="">Tous les genres</option>
-                                <option value="28">Action</option>
-                                <option value="12">Aventure</option>
-                                <option value="16">Animation</option>
-                                <option value="35">Comédie</option>
-                                <option value="18">Drame</option>
-                                <option value="14">Fantastique</option>
-                                <option value="27">Horreur</option>
-                                <option value="878">Science-Fiction</option>
-                                <option value="53">Thriller</option>
+                                <option value="" data-i18n="search.all_genres">Tous les genres</option>
+                                <option value="28" data-i18n="genres.action">Action</option>
+                                <option value="12" data-i18n="genres.adventure">Aventure</option>
+                                <option value="16" data-i18n="genres.animation">Animation</option>
+                                <option value="35" data-i18n="genres.comedy">Comédie</option>
+                                <option value="18" data-i18n="genres.drama">Drame</option>
+                                <option value="14" data-i18n="genres.fantasy">Fantastique</option>
+                                <option value="27" data-i18n="genres.horror">Horreur</option>
+                                <option value="878" data-i18n="genres.scifi">Science-Fiction</option>
+                                <option value="53" data-i18n="genres.thriller">Thriller</option>
                             </select>
                             <select id="filter-year" class="form-input" style="flex:1; min-width:120px; font-size:13px;">
-                                <option value="">Toutes les années</option>
+                                <option value="" data-i18n="search.all_years">Toutes les années</option>
                                 <option value="2024">2024</option>
                                 <option value="2023">2023</option>
-                                <option value="2020s">Années 2020</option>
-                                <option value="2010s">Années 2010</option>
-                                <option value="2000s">Années 2000</option>
+                                <option value="2020s" data-i18n="search.years_2020">Années 2020</option>
+                                <option value="2010s" data-i18n="search.years_2010">Années 2010</option>
+                                <option value="2000s" data-i18n="search.years_2000">Années 2000</option>
                             </select>
                             <select id="filter-sort" class="form-input" style="flex:1; min-width:120px; font-size:13px;">
-                                <option value="popularity.desc">Plus populaires</option>
-                                <option value="vote_average.desc">Mieux notés</option>
-                                <option value="primary_release_date.desc">Plus récents</option>
+                                <option value="popularity.desc" data-i18n="search.sort_pop">Plus populaires</option>
+                                <option value="vote_average.desc" data-i18n="search.sort_rating">Mieux notés</option>
+                                <option value="primary_release_date.desc" data-i18n="search.sort_recent">Plus récents</option>
                             </select>
                         </div>
-                        <button id="btn-apply-filters" class="action-btn primary" style="width:100%; margin-top:12px; font-size:13px;">Découvrir</button>
+                        <button id="btn-apply-filters" class="action-btn primary" style="width:100%; margin-top:12px; font-size:13px;" data-i18n="search.btn_discover">Découvrir</button>
                     </div>
                     <div class="search-tabs">
                         <button class="search-tab active" data-search-type="foryou" data-i18n="search.foryou">Pour vous</button>
@@ -335,7 +335,7 @@
                                     <div class="stat-num"><span class="big">0</span><span class="unit">J</span></div>
                                     <div class="stat-num"><span class="big">0</span><span class="unit">H</span></div>
                                 </div>
-                                <div class="stat-raw-hours" id="stat-series-hours" style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">Total : 0 heures</div>
+                                <div class="stat-raw-hours" id="stat-series-hours" style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;" data-i18n="stats.total_hours">Total : 0 heures</div>
                             </div>
                             <div class="stat-card gradient-blue">
                                 <div class="stat-card-icon">✅</div>
@@ -350,7 +350,7 @@
                                     <div class="stat-num"><span class="big">0</span><span class="unit">J</span></div>
                                     <div class="stat-num"><span class="big">0</span><span class="unit">H</span></div>
                                 </div>
-                                <div class="stat-raw-hours" id="stat-films-hours" style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">Total : 0 heures</div>
+                                <div class="stat-raw-hours" id="stat-films-hours" style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;" data-i18n="stats.total_hours">Total : 0 heures</div>
                             </div>
                             <div class="stat-card gradient-pink">
                                 <div class="stat-card-icon">🎞️</div>
@@ -362,7 +362,7 @@
 
                     <!-- Chart.js Visualization -->
                     <div class="profile-section" style="margin-top:24px;">
-                        <h2 class="section-title">Habitudes de visionnage</h2>
+                        <h2 class="section-title" data-i18n="stats.habits">Habitudes de visionnage</h2>
                         <div style="background:var(--surface-2); padding:16px; border-radius:var(--r-12); border:1px solid var(--border-subtle); margin-top:12px;">
                             <canvas id="stats-chart" height="200"></canvas>
                         </div>
@@ -404,7 +404,7 @@
                         <div class="stat-card glass-panel">
                             <div class="stat-icon">⏱️</div>
                             <div class="stat-value" id="stat-total-time">0h</div>
-                            <div class="stat-label">Temps devant l'écran</div>
+                            <div class="stat-label" data-i18n="stats.total_time">Temps devant l'écran</div>
                         </div>
                         <div class="stat-card glass-panel">
                             <div class="stat-icon">🏆</div>
@@ -490,13 +490,14 @@
                                 
                                 <hr class="divider" style="margin:20px 0;">
                                 
-                                <h3 style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Maintenance</h3>
-                                <button id="btn-force-update" class="action-btn" style="width:100%; margin-bottom:12px; background:var(--iris-400); color:white; border:none; font-size:13px;">Forcer la mise à jour (Vider le cache PWA)</button>
-                                <button id="btn-sync-finished" class="action-btn secondary" style="width:100%; font-size:12px;">Recalculer statuts des séries</button>
+                                <h3 style="font-size:13px; color:var(--text-muted); margin-bottom:12px;" data-i18n="profile.maintenance">Maintenance</h3>
+                                <button id="btn-force-update" class="action-btn" style="width:100%; margin-bottom:12px; background:var(--iris-400); color:white; border:none; font-size:13px;" data-i18n="profile.force_update">Forcer la mise à jour (Vider le cache PWA)</button>
+                                <button id="btn-sync-all-tmdb" class="action-btn secondary" style="width:100%; font-size:12px; margin-bottom:12px;" data-i18n="profile.sync_all">🔄 Actualiser toutes les données TMDB</button>
+                                <button id="btn-sync-finished" class="action-btn secondary" style="width:100%; font-size:12px;" data-i18n="profile.recalc_status">Recalculer statuts des séries</button>
                                 
                                 <hr class="divider" style="margin:20px 0;">
                                 
-                                <button id="btn-clear" class="action-btn danger" style="width:100%;">Effacer toutes les données</button>
+                                <button id="btn-clear" class="action-btn danger" style="width:100%;" data-i18n="profile.clear_data">Effacer toutes les données</button>
                             </div>
                         </div>
                     </div>
@@ -522,7 +523,7 @@
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                     </button>
                     <div class="detail-body" style="padding-top:60px;">
-                        <h2 style="margin-bottom:24px;">Tous les succès</h2>
+                        <h2 style="margin-bottom:24px;" data-i18n="stats.achievements_all">Tous les succès</h2>
                         <div id="achievements-full-list" class="achievements-grid"></div>
                     </div>
                 </div>
@@ -550,22 +551,22 @@
                 <div class="setting-row">
                     <label style="margin-bottom:8px; display:block; font-weight:600; font-size:13px; color:var(--text-muted);" data-i18n="modal.favorite_genres">Genres Favoris (Hero)</label>
                     <div class="genres-grid" id="profile-genres">
-                        <label class="genre-checkbox"><input type="checkbox" value="Action"> Action</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Aventure"> Aventure</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Animation"> Animation</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Comédie"> Comédie</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Drame"> Drame</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Fantastique"> Fantastique</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Horreur"> Horreur</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Science-Fiction"> Science-Fiction</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Thriller"> Thriller</label>
-                        <label class="genre-checkbox"><input type="checkbox" value="Romance"> Romance</label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Action"> <span data-i18n="genres.action">Action</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Aventure"> <span data-i18n="genres.adventure">Aventure</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Animation"> <span data-i18n="genres.animation">Animation</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Comédie"> <span data-i18n="genres.comedy">Comédie</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Drame"> <span data-i18n="genres.drama">Drame</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Fantastique"> <span data-i18n="genres.fantasy">Fantastique</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Horreur"> <span data-i18n="genres.horror">Horreur</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Science-Fiction"> <span data-i18n="genres.scifi">Science-Fiction</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Thriller"> <span data-i18n="genres.thriller">Thriller</span></label>
+                        <label class="genre-checkbox"><input type="checkbox" value="Romance"> <span data-i18n="genres.romance">Romance</span></label>
                     </div>
                 </div>
                 <div class="setting-row">
                     <label style="margin-bottom:8px; display:block; font-weight:600; font-size:13px; color:var(--text-muted);" data-i18n="modal.top10">Mon Top 10</label>
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Sélectionnez jusqu'à 10 séries ou films parmi votre historique.</p>
-                    <input type="text" id="top10-search" class="form-input" placeholder="Rechercher une série ou un film..." style="margin-bottom:8px;">
+                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;" data-i18n="modal.top10_desc">Sélectionnez jusqu'à 10 séries ou films parmi votre historique.</p>
+                    <input type="text" id="top10-search" class="form-input" placeholder="Rechercher une série ou un film..." style="margin-bottom:8px;" data-i18n="search.top10_placeholder">
                     <div id="top10-search-results" style="max-height:140px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; margin-bottom:12px; background:var(--bg-panel); border-radius:var(--r-8); padding:8px; border:1px solid var(--border-light);" class="hidden"></div>
                     <div id="top10-selected-list" style="display:flex; flex-wrap:wrap; gap:8px; min-height:40px; padding:8px; border:1px dashed var(--border-light); border-radius:var(--r-8);"></div>
                 </div>
@@ -580,16 +581,16 @@
     <!-- TMDB FIX MODAL -->
     <div id="tmdb-fix-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2 style="margin-bottom:16px;">Corriger l'identification</h2>
+            <h2 style="margin-bottom:16px;" data-i18n="modal.fix_tmdb_title">Corriger l'identification</h2>
             <div class="modal-body">
                 <div style="display:flex; gap:10px; margin-bottom:16px;">
-                    <input type="text" id="tmdb-fix-input" class="form-input" placeholder="Titre exact de la série ou du film...">
-                    <button class="action-btn primary" id="btn-tmdb-fix-search">Rechercher</button>
+                    <input type="text" id="tmdb-fix-input" class="form-input" placeholder="Titre exact de la série ou du film..." data-i18n="modal.fix_tmdb_input">
+                    <button class="action-btn primary" id="btn-tmdb-fix-search" data-i18n="modal.search">Rechercher</button>
                 </div>
                 <div id="tmdb-fix-results" class="modal-results"></div>
             </div>
             <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end;">
-                <button class="action-btn secondary" id="btn-tmdb-fix-cancel">Annuler</button>
+                <button class="action-btn secondary" id="btn-tmdb-fix-cancel" data-i18n="action.cancel">Annuler</button>
             </div>
         </div>
     </div>
@@ -599,24 +600,24 @@
     <!-- EXPORT MODAL -->
     <div id="export-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2 style="margin-bottom:16px;">Exporter la sauvegarde</h2>
+            <h2 style="margin-bottom:16px;" data-i18n="profile.export_modal_title">Exporter la sauvegarde</h2>
             <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="export-chk-data" checked>
-                    <span>Données (Historique, Listes, Statistiques)</span>
+                    <span data-i18n="profile.export_data">Données (Historique, Listes, Statistiques)</span>
                 </label>
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="export-chk-settings" checked>
-                    <span>Paramètres (Thème, Profil, Top 10)</span>
+                    <span data-i18n="profile.export_settings">Paramètres (Thème, Profil, Top 10)</span>
                 </label>
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="export-chk-cache" checked>
-                    <span>Cache (TMDB IDs et affiches préchargées)</span>
+                    <span data-i18n="profile.export_cache">Cache (TMDB IDs et affiches préchargées)</span>
                 </label>
             </div>
             <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
-                <button class="action-btn secondary" id="btn-export-cancel">Annuler</button>
-                <button class="action-btn primary" id="btn-export-confirm">Générer le fichier</button>
+                <button class="action-btn secondary" id="btn-export-cancel" data-i18n="action.cancel">Annuler</button>
+                <button class="action-btn primary" id="btn-export-confirm" data-i18n="profile.export_btn">Générer le fichier</button>
             </div>
         </div>
     </div>
@@ -624,25 +625,25 @@
     <!-- IMPORT MODAL -->
     <div id="import-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2 style="margin-bottom:16px;">Importer une sauvegarde</h2>
-            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">Sélectionnez ce que vous souhaitez restaurer :</p>
+            <h2 style="margin-bottom:16px;" data-i18n="profile.import_modal_title">Importer une sauvegarde</h2>
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;" data-i18n="profile.import_desc">Sélectionnez ce que vous souhaitez restaurer :</p>
             <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="import-chk-data" checked>
-                    <span>Données (Historique, Listes)</span>
+                    <span data-i18n="profile.import_data">Données (Historique, Listes)</span>
                 </label>
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="import-chk-settings" checked>
-                    <span>Paramètres (Écrasera les paramètres actuels)</span>
+                    <span data-i18n="profile.import_settings">Paramètres (Écrasera les paramètres actuels)</span>
                 </label>
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="import-chk-cache" checked>
-                    <span>Cache (Mise à jour des affiches)</span>
+                    <span data-i18n="profile.import_cache">Cache (TMDB IDs et affiches)</span>
                 </label>
             </div>
             <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
-                <button class="action-btn secondary" id="btn-import-cancel">Annuler</button>
-                <button class="action-btn primary" id="btn-import-confirm">Lancer la restauration</button>
+                <button class="action-btn secondary" id="btn-import-cancel" data-i18n="action.cancel">Annuler</button>
+                <button class="action-btn primary" id="btn-import-confirm" data-i18n="profile.import">Importer</button>
             </div>
         </div>
     </div>
@@ -650,11 +651,11 @@
     <!-- CUSTOM CONFIRM MODAL -->
     <div id="custom-confirm-modal" class="detail-overlay custom-modal hidden">
         <div class="settings-card glass-panel" style="max-width: 400px; width: 90%; text-align: center; padding: 24px;">
-            <h3 style="margin-bottom: 16px; font-size: 18px;" id="custom-confirm-title">Confirmation</h3>
+            <h3 style="margin-bottom: 16px; font-size: 18px;" id="custom-confirm-title" data-i18n="modal.confirm_title">Confirmation</h3>
             <p style="margin-bottom: 24px; color: var(--text-secondary);" id="custom-confirm-message"></p>
             <div style="display: flex; gap: 12px; justify-content: center;">
-                <button id="custom-confirm-cancel" class="action-btn secondary" style="flex: 1;">Annuler</button>
-                <button id="custom-confirm-ok" class="action-btn danger" style="flex: 1;">Confirmer</button>
+                <button id="custom-confirm-cancel" class="action-btn secondary" style="flex: 1;" data-i18n="action.cancel">Annuler</button>
+                <button id="custom-confirm-ok" class="action-btn danger" style="flex: 1;" data-i18n="modal.confirm_btn">Confirmer</button>
             </div>
         </div>
     </div>
@@ -662,12 +663,12 @@
     <!-- CUSTOM PROMPT MODAL -->
     <div id="custom-prompt-modal" class="detail-overlay custom-modal hidden">
         <div class="settings-card glass-panel" style="max-width: 400px; width: 90%; text-align: center; padding: 24px;">
-            <h3 style="margin-bottom: 16px; font-size: 18px;" id="custom-prompt-title">Prompt</h3>
+            <h3 style="margin-bottom: 16px; font-size: 18px;" id="custom-prompt-title" data-i18n="modal.prompt_title">Prompt</h3>
             <p style="margin-bottom: 16px; color: var(--text-secondary);" id="custom-prompt-message"></p>
             <input type="text" id="custom-prompt-input" class="form-input" style="width: 100%; margin-bottom: 24px;" />
             <div style="display: flex; gap: 12px; justify-content: center;">
-                <button id="custom-prompt-cancel" class="action-btn secondary" style="flex: 1;">Annuler</button>
-                <button id="custom-prompt-ok" class="action-btn primary" style="flex: 1;">Valider</button>
+                <button id="custom-prompt-cancel" class="action-btn secondary" style="flex: 1;" data-i18n="action.cancel">Annuler</button>
+                <button id="custom-prompt-ok" class="action-btn primary" style="flex: 1;" data-i18n="modal.prompt_btn">Valider</button>
             </div>
         </div>
     </div>
@@ -675,17 +676,17 @@
     <!-- REWATCH MODAL -->
     <div id="rewatch-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:400px; padding: 24px; text-align: center;">
-            <h2 style="margin-bottom:8px;">Gestion du visionnage</h2>
+            <h2 style="margin-bottom:8px;" data-i18n="modal.rewatch_title">Gestion du visionnage</h2>
             <p id="rewatch-title" style="color:var(--text-secondary); margin-bottom:16px; font-size:14px;"></p>
             <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:24px;">
                 <button class="icon-btn" id="btn-rewatch-minus" style="background:var(--surface-3); border-radius:50%; width:40px; height:40px;">-</button>
                 <div style="font-size:24px; font-weight:bold;">
-                    <span id="rewatch-count">1</span> <span style="font-size:14px; font-weight:normal; color:var(--text-muted);">vue(s)</span>
+                    <span id="rewatch-count">1</span> <span style="font-size:14px; font-weight:normal; color:var(--text-muted);" data-i18n="modal.rewatch_views">vue(s)</span>
                 </div>
                 <button class="icon-btn" id="btn-rewatch-plus" style="background:var(--surface-3); border-radius:50%; width:40px; height:40px;">+</button>
             </div>
             <div class="modal-actions" style="display:flex; justify-content:center;">
-                <button class="action-btn primary" id="btn-rewatch-close" style="width:100%;">Fermer</button>
+                <button class="action-btn primary" id="btn-rewatch-close" style="width:100%;" data-i18n="modal.rewatch_close">Fermer</button>
             </div>
         </div>
     </div>
@@ -693,7 +694,7 @@
     <!-- EPISODE NOTE MODAL -->
     <div id="episode-note-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:400px; padding: 24px;">
-            <h2 style="margin-bottom:16px;">Note & Avis</h2>
+            <h2 style="margin-bottom:16px;" data-i18n="modal.note_title">Note & Avis</h2>
             <p id="episode-note-title" style="color:var(--text-secondary); margin-bottom:16px; font-size:13px;"></p>
             <div style="display:flex; justify-content:center; gap:8px; margin-bottom:16px;" id="episode-star-rating">
                 <span class="star-btn" data-val="1">★</span>
@@ -702,10 +703,10 @@
                 <span class="star-btn" data-val="4">★</span>
                 <span class="star-btn" data-val="5">★</span>
             </div>
-            <textarea id="episode-note-text" class="form-input" style="width:100%; min-height:80px; resize:vertical; font-family: inherit; font-size: 14px;" placeholder="Ajoutez un avis personnel sur cet épisode..."></textarea>
+            <textarea id="episode-note-text" class="form-input" style="width:100%; min-height:80px; resize:vertical; font-family: inherit; font-size: 14px;" placeholder="Ajoutez un avis personnel sur cet épisode..." data-i18n-placeholder="modal.note_placeholder"></textarea>
             <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
-                <button class="action-btn secondary" id="btn-episode-note-cancel">Annuler</button>
-                <button class="action-btn primary" id="btn-episode-note-save">Enregistrer</button>
+                <button class="action-btn secondary" id="btn-episode-note-cancel" data-i18n="action.cancel">Annuler</button>
+                <button class="action-btn primary" id="btn-episode-note-save" data-i18n="modal.save">Enregistrer</button>
             </div>
         </div>
     </div>
@@ -713,16 +714,16 @@
     <!-- ADD TO LIST MODAL -->
     <div id="add-to-list-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:400px;">
-            <h2 style="margin-bottom:16px;">Ajouter à une liste</h2>
+            <h2 style="margin-bottom:16px;" data-i18n="modal.add_list_title">Ajouter à une liste</h2>
             <div id="add-to-list-container" style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; margin-bottom:16px;">
                 <!-- list options injected here -->
             </div>
             <div style="border-top:1px solid var(--border-subtle); padding-top:16px;">
-                <input type="text" id="new-list-name" class="form-input" placeholder="Nouvelle liste..." style="width:100%; margin-bottom:8px;">
-                <button class="action-btn secondary" id="btn-create-add-list" style="width:100%;">Créer et ajouter</button>
+                <input type="text" id="new-list-name" class="form-input" placeholder="Nouvelle liste..." style="width:100%; margin-bottom:8px;" data-i18n-placeholder="modal.add_list_new">
+                <button class="action-btn secondary" id="btn-create-add-list" style="width:100%;" data-i18n="modal.add_list_create">Créer et ajouter</button>
             </div>
             <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end;">
-                <button class="action-btn secondary" id="btn-add-to-list-cancel">Fermer</button>
+                <button class="action-btn secondary" id="btn-add-to-list-cancel" data-i18n="modal.add_list_close">Fermer</button>
             </div>
         </div>
     </div>
@@ -746,7 +747,7 @@
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                 // Show update toast
                                 if (window.showToast) {
-                                    const updateHtml = `Une mise à jour est disponible ! <button onclick="window.updateApp()" style="margin-left:12px; background:var(--iris-400); color:white; border:none; padding:4px 10px; border-radius:6px; font-weight:600; cursor:pointer;">Mettre à jour</button>`;
+                                    const updateHtml = `${window.I18n ? window.I18n.get('toast.update_available') : 'Une mise à jour est disponible !'} <button onclick="window.updateApp()" style="margin-left:12px; background:var(--iris-400); color:white; border:none; padding:4px 10px; border-radius:6px; font-weight:600; cursor:pointer;">${window.I18n ? window.I18n.get('action.update') : 'Mettre à jour'}</button>`;
                                     window.showToast(updateHtml, 15000);
                                     window.updateApp = () => {
                                         newWorker.postMessage({ type: 'SKIP_WAITING' });

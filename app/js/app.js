@@ -94,7 +94,7 @@
         const favMovies = await db.movies.where('is_favorited').equals(1).toArray();
         
         if (favShows.length === 0) {
-            seriesGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">💔</div><h3>Aucune série en favoris</h3><p>Cliquez sur le coeur dans la fiche d\'une série pour l\'ajouter.</p></div>';
+            seriesGrid.innerHTML = `<div class="empty-state"><div class="empty-icon">💔</div><h3>${window.I18n ? window.I18n.get('lists.empty_fav_series_title') : 'Aucune série en favoris'}</h3><p>${window.I18n ? window.I18n.get('lists.empty_fav_series_desc') : 'Cliquez sur le coeur dans la fiche d\'une série pour l\'ajouter.'}</p></div>`;
         } else {
             favShows.forEach(show => {
                 const posterUrl = show.poster_path ? TMDB.imgUrl(show.poster_path, 'w342') : null;
@@ -114,7 +114,7 @@
         }
         
         if (favMovies.length === 0) {
-            filmsGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">💔</div><h3>Aucun film en favoris</h3><p>Cliquez sur le coeur dans la fiche d\'un film pour l\'ajouter.</p></div>';
+            filmsGrid.innerHTML = `<div class="empty-state"><div class="empty-icon">💔</div><h3>${window.I18n ? window.I18n.get('lists.empty_fav_movies_title') : 'Aucun film en favoris'}</h3><p>${window.I18n ? window.I18n.get('lists.empty_fav_movies_desc') : 'Cliquez sur le coeur dans la fiche d\'un film pour l\'ajouter.'}</p></div>`;
         } else {
             favMovies.forEach(movie => {
                 const posterUrl = movie.poster_path ? TMDB.imgUrl(movie.poster_path, 'w342') : null;
@@ -198,18 +198,18 @@
     }
 
     async function loadTrending() {
-        searchResults.innerHTML = '<div class="empty-state"><p>Chargement des tendances...</p></div>';
+        searchResults.innerHTML = `<div class="empty-state"><p>${window.I18n ? window.I18n.get('search.loading_trends') : 'Chargement des tendances...'}</p></div>`;
         const type = currentSearchType === 'multi' ? 'all' : currentSearchType;
         const results = await TMDB.getTrending(type);
         if (!results.length) {
-            searchResults.innerHTML = '<div class="empty-state"><p>Aucune tendance trouvée.</p></div>';
+            searchResults.innerHTML = `<div class="empty-state"><p>${window.I18n ? window.I18n.get('search.no_trends') : 'Aucune tendance trouvée.'}</p></div>`;
             return;
         }
         searchResults.innerHTML = '';
         const header = document.createElement('h3');
         header.style.gridColumn = '1 / -1';
         header.style.marginBottom = '1rem';
-        header.textContent = 'Populaire en ce moment';
+        header.textContent = window.I18n ? window.I18n.get('search.popular_now') : 'Populaire en ce moment';
         searchResults.appendChild(header);
         
         results.forEach(item => {
@@ -219,7 +219,7 @@
     }
 
     async function loadRecommendations() {
-        searchResults.innerHTML = '<div class="empty-state"><p>Génération de vos recommandations...</p></div>';
+        searchResults.innerHTML = `<div class="empty-state"><p>${window.I18n ? window.I18n.get('search.loading_recs') : 'Génération de vos recommandations...'}</p></div>`;
         
         // 1. Get user top rated and feedback
         const topShows = await db.shows.where('user_rating').above(3).limit(4).toArray();
@@ -271,7 +271,7 @@
         const finalResults = unique.slice(0, 20);
         
         if (finalResults.length === 0) {
-            searchResults.innerHTML = "<div class='empty-state'><div class='empty-icon'>⭐</div><h3>Pas encore assez de données</h3><p>Notez ou ajoutez quelques films/séries pour débloquer l'algorithme de recommandation !</p></div>";
+            searchResults.innerHTML = `<div class='empty-state'><div class='empty-icon'>⭐</div><h3>${window.I18n ? window.I18n.get('search.not_enough_data') : 'Pas encore assez de données'}</h3><p>${window.I18n ? window.I18n.get('search.not_enough_data_desc') : "Notez ou ajoutez quelques films/séries pour débloquer l'algorithme de recommandation !"}</p></div>`;
             return;
         }
         
@@ -279,7 +279,7 @@
         const header = document.createElement('h3');
         header.style.gridColumn = '1 / -1';
         header.style.marginBottom = '1rem';
-        header.textContent = 'Sélectionné spécialement pour vous';
+        header.textContent = window.I18n ? window.I18n.get('search.for_you_title') : 'Sélectionné spécialement pour vous';
         searchResults.appendChild(header);
         
         finalResults.forEach(item => {
@@ -289,7 +289,7 @@
     }
 
     async function doSearch(query, useFilters = false) {
-        searchResults.innerHTML = '<div class="empty-state"><p>Recherche en cours...</p></div>';
+        searchResults.innerHTML = `<div class="empty-state"><p>${window.I18n ? window.I18n.get('search.searching') : 'Recherche en cours...'}</p></div>`;
         
         let results = [];
         
@@ -338,10 +338,10 @@
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'recommendation-actions';
             actionsDiv.innerHTML = `
-                <button class="thumb-btn thumb-down" title="Ne plus me recommander" aria-label="Pouce en bas">
+                <button class="thumb-btn thumb-down" title="${window.I18n ? window.I18n.get('search.thumb_down') : 'Ne plus me recommander'}" aria-label="Pouce en bas">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
                 </button>
-                <button class="thumb-btn thumb-up" title="J'aime ce genre" aria-label="Pouce en l'air">
+                <button class="thumb-btn thumb-up" title="${window.I18n ? window.I18n.get('search.thumb_up') : "J'aime ce genre"}" aria-label="Pouce en l'air">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4.33A2.31 2.31 0 0 1 2 20V13a2.31 2.31 0 0 1 2.33-2H7"></path></svg>
                 </button>
             `;
@@ -389,7 +389,7 @@
             const q = tmdbFixInput.value.trim();
             if (q.length < 2) return;
             
-            tmdbFixResults.innerHTML = '<div style="padding:12px; color:var(--text-muted);">Recherche en cours...</div>';
+            tmdbFixResults.innerHTML = `<div style="padding:12px; color:var(--text-muted);">${window.I18n ? window.I18n.get('search.searching') : 'Recherche en cours...'}</div>`;
             const results = await TMDB.search(q, tmdbFixMediaType);
             
             if (!results || results.length === 0) {
@@ -472,7 +472,7 @@
 
     async function renderShowDetail(show) {
         const title = show.name || 'Sans titre';
-        const overview = show.overview || 'Pas de description disponible.';
+        const overview = show.overview || (window.I18n ? window.I18n.get('detail.no_overview') : 'Pas de description disponible.');
         const year = (show.first_air_date || '').split('-')[0];
         const genres = (show.genres || []).map(g => g.name).join(', ');
         const episodeCount = show.number_of_episodes || '?';
@@ -545,7 +545,7 @@
 
         for (const season of sortedSeasons) {
             const isBonus = season.season_number === 0;
-            const seasonTitle = isBonus ? 'Bonus (Specials)' : `Saison ${season.season_number}`;
+            const seasonTitle = isBonus ? (window.I18n ? window.I18n.get('detail.bonus_season') : 'Bonus (Specials)') : (window.I18n ? window.I18n.get('detail.season_title', {number: season.season_number}) : `Saison ${season.season_number}`);
             const seasonData = await TMDB.getSeasonDetails(show.id, season.season_number);
             const episodes = seasonData ? seasonData.episodes || [] : [];
             seasonDataMap[season.season_number] = episodes;
@@ -561,7 +561,8 @@
                     rewatchCount = h ? (h.rewatch_count || 0) : 0;
                 }
                 const rewatchBadge = rewatchCount > 0 ? `<span class="rewatch-badge" style="background:var(--iris-600); color:#fff; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:6px;">x${rewatchCount + 1}</span>` : '';
-                const airDateStr = ep.air_date ? new Date(ep.air_date).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '';
+                const currentLang = (window.I18n && window.I18n.lang === 'en') ? 'en-US' : 'fr-FR';
+                const airDateStr = ep.air_date ? new Date(ep.air_date).toLocaleDateString(currentLang, { day:'numeric', month:'short', year:'numeric' }) : '';
                 const epOverview = ep.overview ? `<div class="ep-overview">${ep.overview}</div>` : '';
                 const runtimeStr = ep.runtime ? `${ep.runtime} min` : '';
                 const epMetaParts = [airDateStr, runtimeStr].filter(Boolean).join(' · ');
@@ -590,8 +591,8 @@
                         <h3>${seasonTitle}</h3>
                         <div style="display:flex; gap:1rem; align-items:center;">
                             <span class="season-progress">${watchedInSeason}/${episodes.length}</span>
-                            <button class="season-action-btn season-check-all" data-season="${season.season_number}" title="Tout marquer comme vu" style="background:none; border:none; color:var(--text-primary); cursor:pointer;">✓</button>
-                            <button class="season-action-btn season-rewatch-all" data-season="${season.season_number}" title="Tout revoir" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">↻</button>
+                            <button class="season-action-btn season-check-all" data-season="${season.season_number}" title="${window.I18n ? window.I18n.get('detail.mark_all_seen') : 'Tout marquer comme vu'}" style="background:none; border:none; color:var(--text-primary); cursor:pointer;">✓</button>
+                            <button class="season-action-btn season-rewatch-all" data-season="${season.season_number}" title="${window.I18n ? window.I18n.get('detail.rewatch_all') : 'Tout revoir'}" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">↻</button>
                         </div>
                     </div>
                     <div class="season-episodes" id="season-eps-s${season.season_number}">${epsHTML}</div>
@@ -712,7 +713,7 @@
                             📋 Liste
                         </button>
                         <button class="detail-action-btn finish-btn ${isFinished ? 'active' : ''}" id="btn-finish-show" data-tmdb-id="${show.id}" data-title="${title}">
-                            ${isFinished ? '🏁 Terminée' : '🏁 Terminer'}
+                            ${isFinished ? (window.I18n ? window.I18n.get('detail.finished') : '🏁 Terminée') : (window.I18n ? window.I18n.get('detail.finish') : '🏁 Terminer')}
                         </button>
                     </div>
                     <div class="user-rating-widget" id="show-rating-widget">
@@ -732,14 +733,14 @@
             ${personalHeatmapHtml}
 
             <div class="detail-section">
-                <h3>Saisons</h3>
+                <h3>${window.I18n ? window.I18n.get('detail.seasons') : 'Saisons'}</h3>
                 ${seasonsHTML}
             </div>
             <div class="detail-section" id="detail-similar-shows"></div>
             <div class="detail-section detail-footer-actions" style="margin-top: 2rem; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                <button class="action-btn secondary" id="btn-sync-show" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);" title="Forcer la synchronisation des données depuis TMDB">🔄 Actualiser les données</button>
-                <button class="action-btn secondary" id="btn-share-show" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">📤 Partager</button>
-                <button class="action-btn secondary" id="btn-fix-tmdb-tv" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">Mauvaise identification TMDB ?</button>
+                <button class="action-btn secondary" id="btn-sync-show" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);" title="${window.I18n ? window.I18n.get('action.tmdb_refresh') : 'Forcer la synchronisation des données depuis TMDB'}">${window.I18n ? window.I18n.get('action.tmdb_refresh') : '🔄 Actualiser les données'}</button>
+                <button class="action-btn secondary" id="btn-share-show" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">${window.I18n ? window.I18n.get('action.share') : '📤 Partager'}</button>
+                <button class="action-btn secondary" id="btn-fix-tmdb-tv" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">${window.I18n ? window.I18n.get('action.tmdb_fix') : 'Mauvaise identification TMDB ?'}</button>
             </div>
         `;
 
@@ -826,8 +827,8 @@
             }
             const isFin = existing.is_finished ? false : true; // Toggled value
             this.classList.toggle('active');
-            this.textContent = isFin ? '🏁 Terminée' : '🏁 Terminer';
-            showToast(isFin ? `${title} marquée comme terminée` : `${title} retirée des séries terminées`);
+            this.textContent = isFin ? (window.I18n ? window.I18n.get('detail.finished') : '🏁 Terminée') : (window.I18n ? window.I18n.get('detail.finish') : '🏁 Terminer');
+            showToast(isFin ? (window.I18n ? window.I18n.get('toast.series_finished', {title}) : `${title} marquée comme terminée`) : (window.I18n ? window.I18n.get('toast.series_unfinished', {title}) : `${title} retirée des séries terminées`));
             refreshSeriesList(); // Update main UI list immediately
         });
 
@@ -897,11 +898,11 @@
                     if (finBtn) {
                         if (shouldBeFinished) {
                             finBtn.classList.add('active');
-                            finBtn.textContent = '🏁 Terminée';
+                            finBtn.textContent = window.I18n ? window.I18n.get('detail.finished') : '🏁 Terminée';
                             showToast(`"${title}" marquée comme terminée automatiquement !`);
                         } else {
                             finBtn.classList.remove('active');
-                            finBtn.textContent = '🏁 Terminer';
+                            finBtn.textContent = window.I18n ? window.I18n.get('detail.finish') : '🏁 Terminer';
                         }
                     }
                     refreshSeriesList();
@@ -995,7 +996,7 @@
                     for (const epBtn of eps) {
                         epBtn.click();
                     }
-                    showToast(`Saison ${season} marquée comme vue`);
+                    showToast(window.I18n ? window.I18n.get('toast.season_seen', {season}) : `Saison ${season} marquée comme vue`);
                     setTimeout(() => renderShowDetail(show), 500);
                 } else {
                     // La saison est déjà vue, on retire une vue à tous les épisodes
@@ -1018,7 +1019,7 @@
                             await db.watch_history.delete(r.id);
                         }
                     }
-                    showToast(`Saison ${season} : une vue retirée`);
+                    showToast(window.I18n ? window.I18n.get('toast.season_unseen', {season}) : `Saison ${season} : une vue retirée`);
                     renderShowDetail(show);
                 }
             });
@@ -1286,7 +1287,7 @@
             <div class="detail-section" id="detail-similar-movies"></div>
             <div class="detail-section detail-footer-actions" style="margin-top: 2rem; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 <button class="action-btn secondary" id="btn-share-movie" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">📤 Partager</button>
-                <button class="action-btn secondary" id="btn-fix-tmdb-movie" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">Mauvaise identification TMDB ?</button>
+                <button class="action-btn secondary" id="btn-fix-tmdb-movie" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">${window.I18n ? window.I18n.get('action.tmdb_fix') : 'Mauvaise identification TMDB ?'}</button>
             </div>
         `;
 
@@ -1623,7 +1624,7 @@
                             if ((totalSeasons > 0 && lastSeason > totalSeasons) || (totalEps > 0 && doneEps > totalEps + 5)) {
                                 shouldAutoLink = false;
                                 const msg = `Nous avons trouvé "${details.name}" mais votre historique (${doneEps} eps vus jusqu'à la saison ${lastSeason}) ne correspond pas à cette série (${totalSeasons} saisons, ${totalEps} eps).\n\nLier quand même ?`;
-                                const answer = await window.customConfirm(msg, "Incohérence détectée", "Lier quand même", "Rechercher la bonne");
+                                const answer = await window.customConfirm(msg, window.I18n ? window.I18n.get('action.inconsistency') : "Incohérence détectée", window.I18n ? window.I18n.get('action.link_anyway') : "Lier quand même", window.I18n ? window.I18n.get('action.search_correct') : "Rechercher la bonne");
                                 if (answer) {
                                     shouldAutoLink = true;
                                 }
@@ -1964,6 +1965,55 @@
             }
         }
 
+        // Sync ALL TMDB data
+        const btnSyncAll = document.getElementById('btn-sync-all-tmdb');
+        if (btnSyncAll && !btnSyncAll.dataset.bound) {
+            btnSyncAll.dataset.bound = "1";
+            btnSyncAll.addEventListener('click', async function() {
+                if(!await window.customConfirm(window.I18n ? window.I18n.get('action.sync_global_prompt') : "Voulez-vous vraiment actualiser toutes vos données depuis TMDB ? (Cela peut prendre plusieurs secondes)", window.I18n ? window.I18n.get('action.sync_global_title') : "Actualisation globale", window.I18n ? window.I18n.get('action.sync_global_btn') : "Actualiser", window.I18n ? window.I18n.get('action.sync_global_cancel') : "Annuler")) return;
+                
+                const prevText = this.textContent;
+                this.textContent = window.I18n ? window.I18n.get('action.sync_global_progress') : 'Synchronisation en cours...';
+                this.disabled = true;
+                showToast(window.I18n ? window.I18n.get('action.sync_global_progress') : "Actualisation en cours...");
+                
+                try {
+                    const allShows = await db.shows.toArray();
+                    for(let s of allShows) {
+                        try {
+                            const details = await TMDB.getShowDetails(s.tmdb_id);
+                            if(details) {
+                                await db.shows.update(s.id, {
+                                    name: details.name,
+                                    type: details.status === 'Ended' ? 'finished' : (details.status === 'Returning Series' ? 'watching' : s.type)
+                                });
+                            }
+                        } catch(e) {}
+                    }
+                    
+                    const allMovies = await db.movies.toArray();
+                    for(let m of allMovies) {
+                        try {
+                            const details = await TMDB.getMovieDetails(m.tmdb_id);
+                            if(details) {
+                                await db.movies.update(m.id, {
+                                    name: details.title,
+                                    release_date: details.release_date
+                                });
+                            }
+                        } catch(e) {}
+                    }
+                    showToast(window.I18n ? window.I18n.get('action.sync_global_done') : "Actualisation terminée !");
+                    setTimeout(() => location.reload(), 1500);
+                } catch(e) {
+                    showToast(window.I18n ? window.I18n.get('action.sync_global_error') : "Erreur lors de l'actualisation");
+                } finally {
+                    this.textContent = prevText;
+                    this.disabled = false;
+                }
+            });
+        }
+
         // Sync finished series button
         const btnSync = document.getElementById('btn-sync-finished');
         if (btnSync && !btnSync.dataset.bound) {
@@ -2277,7 +2327,7 @@
 
 
     document.getElementById('btn-force-update').addEventListener('click', async () => {
-        const confirmed = await window.customConfirm("Cela va vider le cache de l'application et forcer le téléchargement de la dernière version. Continuer ?");
+        const confirmed = await window.customConfirm(window.I18n ? window.I18n.get('profile.force_update_prompt') : "Cela va vider le cache de l'application et forcer le téléchargement de la dernière version. Continuer ?");
         if (confirmed) {
             try {
                 if ('serviceWorker' in navigator) {
@@ -2302,7 +2352,7 @@
     });
 
     document.getElementById('btn-clear').addEventListener('click', async () => {
-        const confirmed = await window.customConfirm('⚠️ Effacer TOUTES vos données ? Cette action est irréversible.');
+        const confirmed = await window.customConfirm(window.I18n ? window.I18n.get('profile.clear_data_prompt') : '⚠️ Effacer TOUTES vos données ? Cette action est irréversible.');
         if (confirmed) {
             await DB.clearAll();
             showToast('Données effacées');
@@ -2351,7 +2401,7 @@
 
 
     // ---- Custom Confirm ----
-    window.customConfirm = function(message, title = "Confirmation", okText = "Confirmer", cancelText = "Annuler") {
+    window.customConfirm = function(message, title = window.I18n ? window.I18n.get('modal.confirm_title') : "Confirmation", okText = window.I18n ? window.I18n.get('modal.confirm_btn') : "Confirmer", cancelText = window.I18n ? window.I18n.get('action.cancel') : "Annuler") {
         return new Promise((resolve) => {
             const modal = document.getElementById('custom-confirm-modal');
             document.getElementById('custom-confirm-title').textContent = title;
@@ -2380,7 +2430,7 @@
     };
 
     // ---- Custom Prompt ----
-    window.customPrompt = function(message, title = "Prompt", placeholder = "") {
+    window.customPrompt = function(message, title = window.I18n ? window.I18n.get('modal.prompt_title') : "Prompt", placeholder = "") {
         return new Promise((resolve) => {
             const modal = document.getElementById('custom-prompt-modal');
             document.getElementById('custom-prompt-title').textContent = title;
@@ -2474,12 +2524,12 @@
             matches.forEach(m => {
                 const row = document.createElement('div');
                 row.style = 'padding:6px 8px; cursor:pointer; font-size:13px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;';
-                row.innerHTML = `<span>${m.name}</span><span style="font-size:10px; padding:2px 4px; background:var(--bg-card); border-radius:4px; color:var(--text-muted);">${m._type === 'movie' ? 'Film' : 'Série'}</span>`;
+                row.innerHTML = `<span>${m.name}</span><span style="font-size:10px; padding:2px 4px; background:var(--bg-card); border-radius:4px; color:var(--text-muted);">${m._type === 'movie' ? (window.I18n ? window.I18n.get('media.movie') : 'Film') : (window.I18n ? window.I18n.get('media.series') : 'Série')}</span>`;
                 row.addEventListener('mouseover', () => row.style.background = 'var(--border-light)');
                 row.addEventListener('mouseout', () => row.style.background = 'transparent');
                 row.addEventListener('click', () => {
                     if (currentTop10.length >= 10) {
-                        showToast('Vous avez déjà 10 éléments dans votre Top 10.');
+                        showToast(window.I18n ? window.I18n.get('toast.top10_max') : 'Vous avez déjà 10 éléments dans votre Top 10.');
                         return;
                     }
                     if (!currentTop10.find(t => t.tmdb_id === m.tmdb_id)) {
@@ -2538,7 +2588,8 @@
 
         const year = calendarDate.getFullYear();
         const month = calendarDate.getMonth();
-        monthLabel.textContent = new Date(year, month).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        const currentLang = (window.I18n && window.I18n.lang === 'en') ? 'en-US' : 'fr-FR';
+        monthLabel.textContent = new Date(year, month).toLocaleDateString(currentLang, { month: 'long', year: 'numeric' });
         monthLabel.style.textTransform = 'capitalize';
 
         // Gather events from DB
@@ -2549,7 +2600,7 @@
         for (const show of shows) {
             if (show.next_air_date) {
                 const d = new Date(show.next_air_date);
-                events.push({ date: d, type: 'episode', name: show.name, detail: 'Prochain épisode', poster: show.poster_path, tmdb_id: show.tmdb_id, media_type: 'tv' });
+                events.push({ date: d, type: 'episode', name: show.name, detail: (window.I18n ? window.I18n.get('calendar.next_episode') : 'Prochain épisode'), poster: show.poster_path, tmdb_id: show.tmdb_id, media_type: 'tv' });
             }
         }
         
@@ -2558,7 +2609,7 @@
         for (const movie of movies) {
             if (movie.release_date && new Date(movie.release_date) > new Date()) {
                 const d = new Date(movie.release_date);
-                events.push({ date: d, type: 'movie', name: movie.name, detail: 'Sortie du film', poster: movie.poster_path, tmdb_id: movie.tmdb_id, media_type: 'movie' });
+                events.push({ date: d, type: 'movie', name: movie.name, detail: (window.I18n ? window.I18n.get('calendar.movie_release') : 'Sortie du film'), poster: movie.poster_path, tmdb_id: movie.tmdb_id, media_type: 'movie' });
             }
         }
         
@@ -2567,7 +2618,15 @@
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const adjustedFirst = firstDay === 0 ? 6 : firstDay - 1; // Monday-first
         
-        const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        const dayNames = [
+            window.I18n ? window.I18n.get('calendar.days.mon') : 'Lun',
+            window.I18n ? window.I18n.get('calendar.days.tue') : 'Mar',
+            window.I18n ? window.I18n.get('calendar.days.wed') : 'Mer',
+            window.I18n ? window.I18n.get('calendar.days.thu') : 'Jeu',
+            window.I18n ? window.I18n.get('calendar.days.fri') : 'Ven',
+            window.I18n ? window.I18n.get('calendar.days.sat') : 'Sam',
+            window.I18n ? window.I18n.get('calendar.days.sun') : 'Dim'
+        ];
         let gridHTML = dayNames.map(d => `<div class="cal-header">${d}</div>`).join('');
         
         // Empty cells before first day
@@ -2616,18 +2675,20 @@
     }
     
     function renderCalendarEvents(events, container, selectedDate) {
+        const currentLang = (window.I18n && window.I18n.lang === 'en') ? 'en-US' : 'fr-FR';
         if (events.length === 0) {
-            const label = selectedDate ? `le ${new Date(selectedDate).toLocaleDateString('fr-FR', { day:'numeric', month:'long' })}` : 'ce mois-ci';
-            container.innerHTML = `<div class="empty-state" style="padding:32px 0;"><div class="empty-icon">📅</div><h3>Rien de prévu ${label}</h3><p>Suivez des séries ou ajoutez des films pour voir vos dates importantes ici.</p></div>`;
+            const label = selectedDate ? `${window.I18n ? window.I18n.get('calendar.on') : 'le'} ${new Date(selectedDate).toLocaleDateString(currentLang, { day:'numeric', month:'long' })}` : (window.I18n ? window.I18n.get('calendar.this_month') : 'ce mois-ci');
+            container.innerHTML = `<div class="empty-state" style="padding:32px 0;"><div class="empty-icon">📅</div><h3>${window.I18n ? window.I18n.get('calendar.empty_title', { label }) : 'Rien de prévu ' + label}</h3><p>${window.I18n ? window.I18n.get('calendar.empty_desc') : 'Suivez des séries ou ajoutez des films pour voir vos dates importantes ici.'}</p></div>`;
             return;
         }
         
-        const title = selectedDate ? new Date(selectedDate).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' }) : 'Ce mois';
+        const title = selectedDate ? new Date(selectedDate).toLocaleDateString(currentLang, { weekday:'long', day:'numeric', month:'long' }) : (window.I18n ? window.I18n.get('calendar.title_month') : 'Ce mois');
         let html = `<h3 style="margin-bottom:16px; text-transform:capitalize;">${title}</h3>`;
         
         events.forEach(ev => {
             const posterUrl = ev.poster ? TMDB.imgUrl(ev.poster, 'w92') : '';
-            const dateStr = ev.date.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+            const currentLang = (window.I18n && window.I18n.lang === 'en') ? 'en-US' : 'fr-FR';
+            const dateStr = ev.date.toLocaleDateString(currentLang, { day:'numeric', month:'short' });
             html += `
                 <div class="calendar-event-card" data-tmdb-id="${ev.tmdb_id}" data-type="${ev.media_type}" style="display:flex; gap:12px; align-items:center; padding:12px; background:var(--glass); border:1px solid var(--glass-border); border-radius:var(--r-12); margin-bottom:8px; cursor:pointer; transition: all 0.2s;">
                     ${posterUrl ? `<img src="${posterUrl}" style="width:48px; border-radius:var(--r-8);" loading="lazy">` : '<div style="width:48px;height:72px;background:var(--surface-3);border-radius:var(--r-8);"></div>'}
@@ -2635,7 +2696,7 @@
                         <div style="font-weight:600; font-size:14px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.name}</div>
                         <div style="font-size:12px; color:var(--text-muted);">${ev.detail} · ${dateStr}</div>
                     </div>
-                    <span class="cal-type-badge ${ev.type}" style="font-size:10px; padding:3px 8px; border-radius:var(--r-pill); font-weight:600;">${ev.type === 'movie' ? '🎬 Film' : '📺 Épisode'}</span>
+                    <span class="cal-type-badge ${ev.type}" style="font-size:10px; padding:3px 8px; border-radius:var(--r-pill); font-weight:600;">${ev.type === 'movie' ? (window.I18n ? window.I18n.get('media.movie_icon') : '🎬 Film') : (window.I18n ? window.I18n.get('media.episode_icon') : '📺 Épisode')}</span>
                 </div>`;
         });
         container.innerHTML = html;
@@ -2682,10 +2743,10 @@
             const diff = e.touches[0].clientY - startY;
             if (diff > 60) {
                 indicator.classList.add('visible');
-                indicator.textContent = '↻ Relâchez pour actualiser';
+                indicator.textContent = window.I18n ? window.I18n.get('action.pull_release') : '↻ Relâchez pour actualiser';
             } else if (diff > 10) {
                 indicator.classList.add('visible');
-                indicator.textContent = '⬇ Tirez pour actualiser';
+                indicator.textContent = window.I18n ? window.I18n.get('action.pull_refresh') : '⬇ Tirez pour actualiser';
             } else {
                 indicator.classList.remove('visible');
             }
@@ -2694,8 +2755,8 @@
         container.addEventListener('touchend', async () => {
             if (!pulling) return;
             pulling = false;
-            if (indicator.classList.contains('visible') && indicator.textContent.includes('Relâchez')) {
-                indicator.textContent = '⏳ Actualisation...';
+            if (indicator.classList.contains('visible') && indicator.textContent.includes(window.I18n ? window.I18n.get('action.release_word') : 'Relâchez')) {
+                indicator.textContent = window.I18n ? window.I18n.get('action.loading') : '⏳ Actualisation...';
                 indicator.classList.add('loading');
                 // Clear sync cache to force re-fetch
                 if (window._syncingShows) window._syncingShows.clear();
@@ -2738,8 +2799,8 @@
             let html = `
                 <div class="list-card-v2 favoris" data-id="favoris">
                     <div class="list-icon">❤️</div>
-                    <h3>Favoris</h3>
-                    <p>${totalFavs} élément(s)</p>
+                    <h3>${window.I18n ? window.I18n.get('lists.favoris') : 'Favoris'}</h3>
+                    <p>${window.I18n ? window.I18n.get('lists.items_count', { count: totalFavs }) : totalFavs + ' élément(s)'}</p>
                 </div>
             `;
             
@@ -2750,8 +2811,8 @@
                     <div class="list-card-v2" data-id="${list.id}">
                         <div class="list-icon">${iconHtml}</div>
                         <h3>${list.name}</h3>
-                        <p>${items.length} élément(s)</p>
-                        <button class="btn-delete-list-v2" data-id="${list.id}" title="Supprimer la liste">
+                        <p>${window.I18n ? window.I18n.get('lists.items_count', { count: items.length }) : items.length + ' élément(s)'}</p>
+                        <button class="btn-delete-list-v2" data-id="${list.id}" title="${window.I18n ? window.I18n.get('lists.delete') : 'Supprimer la liste'}">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
                     </div>
@@ -2761,7 +2822,7 @@
             html += `
                 <div class="list-card-v2 create-new" id="btn-create-list-card">
                     <div class="list-icon" style="color:var(--text-secondary);">+</div>
-                    <h3 style="color:var(--text-secondary);">Créer une liste</h3>
+                    <h3 style="color:var(--text-secondary);">${window.I18n ? window.I18n.get('lists.create') : 'Créer une liste'}</h3>
                 </div>
             `;
 
@@ -2779,7 +2840,7 @@
         container.querySelectorAll('.btn-delete-list-v2').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if(await window.customConfirm("Voulez-vous vraiment supprimer cette liste ?", "Suppression", "Supprimer", "Annuler")) {
+                if(await window.customConfirm(window.I18n ? window.I18n.get('lists.delete_confirm') : "Voulez-vous vraiment supprimer cette liste ?", window.I18n ? window.I18n.get('lists.delete_title') : "Suppression", window.I18n ? window.I18n.get('lists.delete_btn') : "Supprimer", window.I18n ? window.I18n.get('lists.cancel_btn') : "Annuler")) {
                     const listId = parseInt(btn.dataset.id);
                     await db.custom_lists.delete(listId);
                     await db.list_items.where('list_id').equals(listId).delete();
@@ -2798,7 +2859,7 @@
         const createCardBtn = document.getElementById('btn-create-list-card');
         if (createCardBtn) {
             createCardBtn.addEventListener('click', async () => {
-                const name = await window.customPrompt("Nom de la nouvelle liste :", "Nouvelle Liste");
+                const name = await window.customPrompt(window.I18n ? window.I18n.get('lists.prompt_name') : "Nom de la nouvelle liste :", window.I18n ? window.I18n.get('lists.prompt_default') : "Nouvelle Liste");
                 if (name && name.trim()) {
                     await db.custom_lists.add({ name: name.trim(), created_at: new Date().toISOString() });
                     renderCustomLists();
@@ -2818,7 +2879,7 @@
         const contentEl = document.getElementById('list-detail-content');
         
         if (id === 'favoris') {
-            titleEl.textContent = 'Favoris';
+            titleEl.textContent = window.I18n ? window.I18n.get('lists.favoris') : 'Favoris';
             await renderListDetailItems('favoris');
         } else {
             const list = await db.custom_lists.get(parseInt(id));
@@ -2860,7 +2921,7 @@
         }
         
         if (items.length === 0) {
-            contentEl.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📭</div><h3>Liste vide</h3><p>Vous n'avez pas encore ajouté d'éléments à cette liste.</p></div>`;
+            contentEl.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📭</div><h3>${window.I18n ? window.I18n.get('lists.empty_state') : 'Liste vide'}</h3><p>${window.I18n ? window.I18n.get('lists.empty_desc') : 'Vous n\'avez pas encore ajouté d\'éléments à cette liste.'}</p></div>`;
             return;
         }
 
@@ -2948,8 +3009,8 @@
                 <div class="modal-list-info">
                     <div class="modal-list-icon">❤️</div>
                     <div class="modal-list-text">
-                        <h4>Favoris</h4>
-                        <p>Ajouter aux favoris</p>
+                        <h4>${window.I18n ? window.I18n.get('lists.favoris') : 'Favoris'}</h4>
+                        <p>${window.I18n ? window.I18n.get('lists.add_favoris') : 'Ajouter aux favoris'}</p>
                     </div>
                 </div>
                 <div class="list-checkbox">
@@ -2968,7 +3029,7 @@
                             <div class="modal-list-icon">📋</div>
                             <div class="modal-list-text">
                                 <h4>${list.name}</h4>
-                                <p>${itemCount} élément(s)</p>
+                                <p>${window.I18n ? window.I18n.get('lists.items_count', { count: itemCount }) : itemCount + ' élément(s)'}</p>
                             </div>
                         </div>
                         <div class="list-checkbox">
@@ -3022,7 +3083,7 @@
                 await db.list_items.add({ list_id: newListId, tmdb_id: parseInt(tmdbId), media_type: mediaType, added_at: Date.now() });
                 showAddToListModal(tmdbId, mediaType);
                 renderCustomLists();
-                showToast("Liste créée et ajoutée !");
+                showToast(window.I18n ? window.I18n.get('toast.list_created') : "Liste créée et ajoutée !");
             }
         };
         createBtn.replaceWith(createBtn.cloneNode(true));
@@ -3112,7 +3173,7 @@
         let title = '';
         if (type === 'movie') title = ctx.movieName;
         else if (type === 'episode') title = `${ctx.showName} - S${ctx.season}E${ctx.epNum}`;
-        else if (type === 'season') title = `${ctx.showName} - Saison ${ctx.season} entière`;
+        else if (type === 'season') title = window.I18n ? window.I18n.get('toast.season_all', {show: ctx.showName, season: ctx.season}) : `${ctx.showName} - Saison ${ctx.season} entière`;
         
         document.getElementById('rewatch-title').textContent = title;
         document.getElementById('rewatch-modal').classList.remove('hidden');
