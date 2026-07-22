@@ -1938,8 +1938,119 @@
         document.getElementById('profile-display-name').textContent = displayName;
         document.getElementById('profile-avatar-initials').textContent = initials;
         
+        // Avatar photo
+        const avatarPhoto = document.getElementById('profile-avatar-photo');
+        const customAvatar = localStorage.getItem('dfwatch_avatar_custom');
+        if (avatarPhoto) {
+            if (customAvatar) {
+                avatarPhoto.src = customAvatar;
+                avatarPhoto.classList.remove('hidden');
+            } else {
+                avatarPhoto.classList.add('hidden');
+            }
+        }
+        
         const metaText = age ? `${age} ans` : 'Complétez votre profil';
         document.getElementById('profile-display-meta').textContent = metaText;
+        
+        // XP System
+        if (window.ProfileCard) {
+            const seriesStatsXP = await DB.getSeriesStats();
+            const movieStatsXP = await DB.getMovieStats();
+            let achievementCountXP = 0;
+            try { const ach = await db.achievements.toArray(); achievementCountXP = ach.filter(a => a.unlocked).length; } catch(e) {}
+            const xpStats = {
+                episodes: seriesStatsXP.count,
+                movies: (await db.movies.toArray()).filter(m => m.status === 'watched').length,
+                totalMinutes: seriesStatsXP.totalMinutes + movieStatsXP.totalMinutes,
+                achievements: achievementCountXP,
+            };
+            const xp = ProfileCard.calculateXP(xpStats);
+            const level = ProfileCard.getLevel(xp);
+            const xpCurrent = ProfileCard.getXPForLevel(level);
+            const xpNext = ProfileCard.getXPForLevel(level + 1);
+            const progress = xpNext > xpCurrent ? ((xp - xpCurrent) / (xpNext - xpCurrent)) * 100 : 100;
+            const lang = (window.I18n && window.I18n.lang) || 'fr';
+            const rankName = ProfileCard.getRankName(level, lang, xp);
+            const rank = ProfileCard.getRank(level);
+            
+            window.dfwatch_current_level = level; // Save for UI unlocking
+
+            // Apply selected ring styles to main ring, bg ring, and rank badge
+            const avatarRingDiv = document.getElementById('profile-avatar-ring');
+            const avatarRingBgDiv = document.querySelector('.profile-avatar-ring-bg');
+            const rankBadgeDiv = document.getElementById('profile-rank-name');
+            
+            const ringElements = [avatarRingDiv, avatarRingBgDiv].filter(Boolean);
+            
+            [...ringElements, rankBadgeDiv].filter(Boolean).forEach(el => {
+                if (el.id === 'profile-rank-name') {
+                    el.className = 'profile-rank-badge'; // Keep base class
+                } else if (el.classList.contains('profile-avatar-ring-bg')) {
+                    el.className = 'profile-avatar-ring-bg';
+                } else {
+                    el.className = 'profile-avatar-ring';
+                }
+                el.removeAttribute('data-style');
+                el.removeAttribute('data-anim');
+                el.style = el.id === 'profile-rank-name' ? 'margin:0;' : '';
+            });
+
+            // Apply ring styles
+            if (ringElements.length > 0) {
+                let customRing = JSON.parse(localStorage.getItem('dfwatch_custom_ring') || 'null');
+                if (!customRing) {
+                    const oldSaved = localStorage.getItem('dfwatch_avatar_ring');
+                    ringElements.forEach(el => {
+                        if (oldSaved) el.classList.add(oldSaved);
+                        else if (rank.cssClass) el.classList.add(rank.cssClass);
+                    });
+                } else {
+                    ringElements.forEach(el => {
+                        el.setAttribute('data-style', customRing.style);
+                        el.setAttribute('data-anim', customRing.anim);
+                        customRing.colors.forEach((c, i) => {
+                            if (c) el.style.setProperty(`--ring-c${i+1}`, c);
+                        });
+                    });
+                    if (window.renderAvatarParticles) {
+                        window.renderAvatarParticles(customRing.style === 'particles' ? customRing.colors : null);
+                    }
+                }
+                if (avatarRingDiv) avatarRingDiv.style.setProperty('--progress', progress / 100);
+            }
+            
+            // Apply badge styles
+            if (rankBadgeDiv) {
+                let customBadge = JSON.parse(localStorage.getItem('dfwatch_custom_badge') || 'null');
+                if (!customBadge) {
+                    if (rank.cssClass) rankBadgeDiv.classList.add(rank.cssClass);
+                } else {
+                    rankBadgeDiv.setAttribute('data-style', customBadge.style);
+                    rankBadgeDiv.setAttribute('data-anim', customBadge.anim);
+                    customBadge.colors.forEach((c, i) => {
+                        if (c) rankBadgeDiv.style.setProperty(`--ring-c${i+1}`, c);
+                    });
+                }
+            }
+            
+            const lvlBadge = document.getElementById('profile-level-badge');
+            if (lvlBadge) lvlBadge.textContent = `${xp.toLocaleString('fr-FR')} XP`;
+            const rankNameEl = document.getElementById('profile-rank-name');
+            if (rankNameEl) rankNameEl.textContent = rankName;
+            
+            const xpNeeded = Math.max(0, xpNext - xp);
+            const moviesNeeded = Math.ceil(xpNeeded / 25);
+            const epsNeeded = Math.ceil(xpNeeded / 10);
+            const nextRank = ProfileCard.XP_RANKS.find(r => r.minLevel > level) || ProfileCard.getRank(level);
+            const nextRankName = lang === 'en' ? nextRank.name_en : nextRank.name_fr;
+            const nextLevelStr = xpNeeded > 0 ? `${moviesNeeded} films / ${epsNeeded} eps avant le rang ${nextRankName}` : '';
+            
+            if (rankNameEl) rankNameEl.textContent = `${rank.icon} ${rankName}`;
+            
+            const nextLevelEl = document.getElementById('profile-next-level');
+            if (nextLevelEl) nextLevelEl.textContent = nextLevelStr;
+        }
         
         // Populate Hero Genres
         const savedGenres = JSON.parse(localStorage.getItem('dfwatch_genres') || '[]');
@@ -2016,8 +2127,13 @@
         const processGenres = (item) => {
             if (item.genres && Array.isArray(item.genres)) {
                 item.genres.forEach(g => {
-                    if (!genreTally[g]) genreTally[g] = 0;
-                    genreTally[g]++;
+                    const genreName = typeof g === 'string' ? g : (g ? g.name : null);
+                    if (!genreName || genreName === 'null') return;
+                    const baseCategory = window.ProfileCard ? window.ProfileCard.getGenreCategory(genreName) : genreName;
+                    if (!baseCategory || baseCategory === 'null') return;
+                    
+                    if (!genreTally[baseCategory]) genreTally[baseCategory] = 0;
+                    genreTally[baseCategory]++;
                 });
             }
         };
@@ -2035,11 +2151,24 @@
         
         if (tasteSummaryEl && genresListEl) {
             if (sortedGenres.length > 0) {
-                const top3 = sortedGenres.slice(0, 3);
-                tasteSummaryEl.innerHTML = window.I18n ? window.I18n.get('profile.taste_desc', { top: top3.join(', ') }) : `Vous êtes un grand fan de <span style="color:var(--cyan-400)">${top3.join(', ')}</span>.`;
+                const top3 = sortedGenres.slice(0, 3).map(g => window.ProfileCard ? window.ProfileCard.translateGenre(g) : g);
+                
+                let titleDesc = '';
+                if (window.ProfileCard && typeof window.ProfileCard.getBestPersonality === 'function') {
+                    const statsForTitle = { totalHours: hours, episodes: seriesStats.count, movies: movies.filter(m => m.status === 'watched').length, topGenres: sortedGenres };
+                    const currentLang = (window.I18n && window.I18n.lang) || 'fr';
+                    const bestTitle = window.ProfileCard.getBestPersonality(statsForTitle, currentLang);
+                    const asText = currentLang === 'en' ? 'As a' : 'En tant que';
+                    titleDesc = `${asText} <span style="color:var(--iris-400); font-weight:700;">${bestTitle}</span>, `;
+                }
+                
+                const baseStr = window.I18n ? window.I18n.get('profile.taste_desc', { top: `<span style="color:var(--cyan-400)">${top3.join(', ')}</span>` }) : `vous êtes un grand fan de <span style="color:var(--cyan-400)">${top3.join(', ')}</span>.`;
+                let finalStr = titleDesc ? `${titleDesc}${baseStr.charAt(0).toLowerCase()}${baseStr.slice(1)}` : baseStr;
+                tasteSummaryEl.innerHTML = finalStr;
                 
                 genresListEl.innerHTML = '';
                 sortedGenres.forEach(genre => {
+                    const translatedGenre = window.ProfileCard ? window.ProfileCard.translateGenre(genre) : genre;
                     const count = genreTally[genre];
                     const div = document.createElement('div');
                     div.style.display = 'flex';
@@ -2053,7 +2182,7 @@
                     const titleCountStr = window.I18n ? window.I18n.get('profile.titles_count', { count }) : `${count} titre${count > 1 ? 's' : ''}`;
                     
                     div.innerHTML = `
-                        <span>${genre}</span>
+                        <span>${translatedGenre}</span>
                         <span style="color:var(--text-muted); font-weight:700;">${titleCountStr}</span>
                     `;
                     genresListEl.appendChild(div);
@@ -2650,6 +2779,90 @@
         renderTop10Selected();
         document.getElementById('top10-search').value = '';
         document.getElementById('top10-search-results').classList.add('hidden');
+        
+        // Populate advanced customization (Ring and Badge)
+        const currLevel = window.dfwatch_current_level || 0;
+        const lang = (window.I18n && window.I18n.locale) || 'fr';
+        
+        const styles = [
+            { val: 'solid', min: 0, label_fr: 'Solid (Noob)', label_en: 'Solid (Noob)' },
+            { val: 'gradient', min: 10, label_fr: 'Dégradé 2 couleurs (Passionné)', label_en: '2-Color Gradient (Enthusiast)' },
+            { val: 'multicolor', min: 20, label_fr: 'Multicolore (Expert)', label_en: 'Multicolor (Expert)' },
+            { val: 'particles', min: 35, label_fr: 'Particules (Mythe)', label_en: 'Particles (Myth)' }
+        ];
+        
+        const anims = [
+            { val: 'none', min: 0, label_fr: 'Fixe', label_en: 'Fixed' },
+            { val: 'pulse', min: 5, label_fr: 'Pulsation (Amateur)', label_en: 'Pulse (Amateur)' },
+            { val: 'rotate', min: 15, label_fr: 'Rotation (Cinéphile)', label_en: 'Rotate (Cinephile)' },
+            { val: 'blend', min: 25, label_fr: 'Blend Magique (Maître)', label_en: 'Magic Blend (Master)' },
+            { val: 'particle_spin', min: 40, label_fr: 'Vortex Cosmique (Hacker)', label_en: 'Cosmic Vortex (Hacker)' }
+        ];
+        
+        const setupCustomization = (prefix, storageKey) => {
+            const styleSelect = document.getElementById(`${prefix}-style-select`);
+            const animSelect = document.getElementById(`${prefix}-anim-select`);
+            if (!styleSelect || !animSelect) return;
+            
+            styleSelect.innerHTML = '';
+            animSelect.innerHTML = '';
+            
+            styles.forEach(s => {
+                if (currLevel >= s.min) {
+                    const opt = document.createElement('option');
+                    opt.value = s.val;
+                    opt.textContent = lang === 'en' ? s.label_en : s.label_fr;
+                    styleSelect.appendChild(opt);
+                }
+            });
+            
+            anims.forEach(a => {
+                if (currLevel >= a.min) {
+                    const opt = document.createElement('option');
+                    opt.value = a.val;
+                    opt.textContent = lang === 'en' ? a.label_en : a.label_fr;
+                    animSelect.appendChild(opt);
+                }
+            });
+            
+            const savedData = JSON.parse(localStorage.getItem(storageKey) || 'null');
+            if (savedData) {
+                if (savedData.style) styleSelect.value = savedData.style;
+                if (savedData.anim) animSelect.value = savedData.anim;
+                if (savedData.colors) {
+                    savedData.colors.forEach((c, i) => {
+                        const input = document.getElementById(`${prefix}-color-${i+1}`);
+                        if (input && c) input.value = c;
+                    });
+                }
+            } else {
+                if (currLevel >= 35) styleSelect.value = 'particles';
+                else if (currLevel >= 20) styleSelect.value = 'multicolor';
+                else if (currLevel >= 10) styleSelect.value = 'gradient';
+                else styleSelect.value = 'solid';
+                
+                if (currLevel >= 40) animSelect.value = 'particle_spin';
+                else if (currLevel >= 25) animSelect.value = 'blend';
+                else if (currLevel >= 15) animSelect.value = 'rotate';
+                else if (currLevel >= 5) animSelect.value = 'pulse';
+                else animSelect.value = 'none';
+            }
+            
+            const updateColorPickers = () => {
+                const style = styleSelect.value;
+                document.getElementById(`${prefix}-color-1`).style.display = 'block';
+                document.getElementById(`${prefix}-color-2`).style.display = (style === 'gradient' || style === 'multicolor' || style === 'particles') ? 'block' : 'none';
+                document.getElementById(`${prefix}-color-3`).style.display = (style === 'multicolor' || style === 'particles') ? 'block' : 'none';
+                document.getElementById(`${prefix}-color-4`).style.display = (style === 'multicolor') ? 'block' : 'none';
+            };
+            styleSelect.removeEventListener('change', updateColorPickers);
+            styleSelect.addEventListener('change', updateColorPickers);
+            updateColorPickers();
+        };
+
+        setupCustomization('ring', 'dfwatch_custom_ring');
+        setupCustomization('badge', 'dfwatch_custom_badge');
+        
         profileEditModal.classList.remove('hidden');
     });
     
@@ -2682,12 +2895,324 @@
         localStorage.setItem('dfwatch_genres', JSON.stringify(checkedGenres));
         localStorage.setItem('dfwatch_top10', JSON.stringify(currentTop10));
         
+        const saveCustomization = (prefix, storageKey) => {
+            const styleSelect = document.getElementById(`${prefix}-style-select`);
+            if (styleSelect) {
+                const animSelect = document.getElementById(`${prefix}-anim-select`);
+                const colors = [
+                    document.getElementById(`${prefix}-color-1`).value,
+                    document.getElementById(`${prefix}-color-2`).value,
+                    document.getElementById(`${prefix}-color-3`).value,
+                    document.getElementById(`${prefix}-color-4`).value
+                ];
+                localStorage.setItem(storageKey, JSON.stringify({
+                    style: styleSelect.value,
+                    anim: animSelect.value,
+                    colors: colors
+                }));
+            }
+        };
+        
+        saveCustomization('ring', 'dfwatch_custom_ring');
+        saveCustomization('badge', 'dfwatch_custom_badge');
+        
         profileEditModal.classList.add('hidden');
         refreshProfile();
         showToast(window.I18n ? window.I18n.get('toast.profile_saved') : 'Profil enregistré avec succès !');
     });
 
-    // ---- Calendar / Agenda ----
+    // ---- Avatar Upload ----
+    const avatarUploadZone = document.getElementById('avatar-upload-zone');
+    const avatarUploadInput = document.getElementById('profile-avatar-upload');
+    const avatarUploadPreview = document.getElementById('avatar-upload-preview');
+    const btnRemoveAvatar = document.getElementById('btn-remove-avatar');
+
+    if (avatarUploadZone && avatarUploadInput) {
+        avatarUploadZone.addEventListener('click', () => avatarUploadInput.click());
+        avatarUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Image trop lourde (max 2MB)');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                // Resize to 256px max for localStorage
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const maxSize = 256;
+                    let w = img.width, h = img.height;
+                    if (w > h) { h = (h / w) * maxSize; w = maxSize; }
+                    else { w = (w / h) * maxSize; h = maxSize; }
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    localStorage.setItem('dfwatch_avatar_custom', dataUrl);
+                    if (avatarUploadPreview) {
+                        avatarUploadPreview.innerHTML = `<img src="${dataUrl}" alt="Preview">`;
+                    }
+                    if (btnRemoveAvatar) btnRemoveAvatar.style.display = 'block';
+                    refreshProfile();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (btnRemoveAvatar) {
+        btnRemoveAvatar.addEventListener('click', () => {
+            localStorage.removeItem('dfwatch_avatar_custom');
+            if (avatarUploadPreview) avatarUploadPreview.innerHTML = '<span>📷</span>';
+            btnRemoveAvatar.style.display = 'none';
+            refreshProfile();
+        });
+    }
+
+    // Update avatar preview on modal open
+    const origEditBtnHandler = document.getElementById('btn-edit-profile');
+    if (origEditBtnHandler) {
+        origEditBtnHandler.addEventListener('click', () => {
+            const existing = localStorage.getItem('dfwatch_avatar_custom');
+            if (existing && avatarUploadPreview) {
+                avatarUploadPreview.innerHTML = `<img src="${existing}" alt="Preview">`;
+                if (btnRemoveAvatar) btnRemoveAvatar.style.display = 'block';
+            } else {
+                if (avatarUploadPreview) avatarUploadPreview.innerHTML = '<span>📷</span>';
+                if (btnRemoveAvatar) btnRemoveAvatar.style.display = 'none';
+            }
+        });
+    }
+
+    // ---- Profile Card Modal ----
+    const cardModal = document.getElementById('profile-card-modal');
+    const btnShareCard = document.getElementById('btn-share-profile-card');
+    const btnCardClose = document.getElementById('btn-card-close');
+    const btnCardDownload = document.getElementById('btn-card-download');
+    const btnCardShare = document.getElementById('btn-card-share');
+
+    let cardCurrentFormat = '1:1';
+    let cardCurrentTheme = 'void_neon';
+    let cardCurrentTitle = '';
+    let cardSelectedPosterIndices = [];
+    let cardProfileData = null;
+    let cardLastCanvas = null;
+    let cardShowPersonality = true;
+    let cardShowPersonalityDesc = true;
+
+    async function openCardModal() {
+        if (!cardModal || !window.ProfileCard) return;
+        cardModal.classList.remove('hidden');
+        
+        // Collect profile data
+        cardProfileData = await ProfileCard.collectProfileData();
+        cardCurrentTitle = cardProfileData.personalityTitle;
+        
+        // Populate personality suggestions
+        const personalitySelect = document.getElementById('card-personality-select');
+        const personalityCustom = document.getElementById('card-personality-custom');
+        let suggestions = [];
+        if (personalitySelect) {
+            personalitySelect.innerHTML = '';
+            suggestions = ProfileCard.generatePersonalitySuggestions(cardProfileData.stats, cardProfileData.lang);
+            // Find the best option in suggestions to get its description
+            const bestSuggestion = suggestions.find(s => s.text === cardProfileData.personalityTitle);
+            const bestDesc = bestSuggestion ? bestSuggestion.desc : (cardProfileData.lang === 'en' ? 'Passionate viewer' : 'Spectateur passionné');
+
+            // Add the best one first
+            const bestOpt = document.createElement('option');
+            bestOpt.value = cardProfileData.personalityTitle;
+            bestOpt.textContent = `⭐ ${cardProfileData.personalityTitle} - ${bestDesc}`;
+            bestOpt.dataset.desc = bestDesc;
+            bestOpt.selected = true;
+            personalitySelect.appendChild(bestOpt);
+            suggestions.forEach(s => {
+                if (s.text === cardProfileData.personalityTitle) return;
+                const opt = document.createElement('option');
+                opt.value = s.text;
+                opt.textContent = `${s.text} - ${s.desc}`;
+                opt.dataset.desc = s.desc;
+                personalitySelect.appendChild(opt);
+            });
+            personalitySelect.addEventListener('change', () => {
+                cardCurrentTitle = personalitySelect.value;
+                if (personalityCustom) personalityCustom.value = '';
+                renderCardPreview();
+            });
+        }
+        
+        const showPersonalityCheckbox = document.getElementById('card-show-personality');
+        const personalityControls = document.getElementById('card-personality-controls');
+        if (showPersonalityCheckbox) {
+            showPersonalityCheckbox.checked = true;
+            cardShowPersonality = true;
+            if (personalityControls) personalityControls.style.display = 'block';
+            showPersonalityCheckbox.addEventListener('change', () => {
+                cardShowPersonality = showPersonalityCheckbox.checked;
+                if (personalityControls) personalityControls.style.display = cardShowPersonality ? 'block' : 'none';
+                renderCardPreview();
+            });
+        }
+
+        const showPersonalityDescCheckbox = document.getElementById('card-show-personality-desc');
+        if (showPersonalityDescCheckbox) {
+            showPersonalityDescCheckbox.checked = true;
+            cardShowPersonalityDesc = true;
+            showPersonalityDescCheckbox.addEventListener('change', () => {
+                cardShowPersonalityDesc = showPersonalityDescCheckbox.checked;
+                renderCardPreview();
+            });
+        }
+
+        if (personalityCustom) {
+            personalityCustom.value = '';
+            personalityCustom.addEventListener('input', () => {
+                if (personalityCustom.value.trim()) {
+                    cardCurrentTitle = personalityCustom.value.trim();
+                    renderCardPreview();
+                }
+            });
+        }
+
+        // Populate poster selection
+        const posterContainer = document.getElementById('card-poster-selection');
+        if (posterContainer) {
+            posterContainer.innerHTML = '';
+            const savedTop10 = JSON.parse(localStorage.getItem('dfwatch_top10') || '[]');
+            cardSelectedPosterIndices = savedTop10.map((_, i) => i).slice(0, 10);
+            
+            for (let idx = 0; idx < savedTop10.length; idx++) {
+                const item = savedTop10[idx];
+                const isMovie = item.type === 'movie';
+                const dbTable = isMovie ? db.movies : db.shows;
+                const dbItem = await dbTable.where('tmdb_id').equals(item.tmdb_id).first();
+                if (!dbItem || !dbItem.poster_path) continue;
+                
+                const div = document.createElement('div');
+                div.className = 'card-poster-item' + (cardSelectedPosterIndices.includes(idx) ? ' selected' : '');
+                div.dataset.idx = idx;
+                div.innerHTML = `<img src="${TMDB.imgUrl(dbItem.poster_path, 'w92')}" alt="${dbItem.name}" loading="lazy"><div class="poster-check">✓</div>`;
+                div.addEventListener('click', () => {
+                    const i = parseInt(div.dataset.idx);
+                    if (div.classList.contains('selected')) {
+                        div.classList.remove('selected');
+                        cardSelectedPosterIndices = cardSelectedPosterIndices.filter(x => x !== i);
+                    } else {
+                        if (cardSelectedPosterIndices.length >= 10) {
+                            showToast('Maximum 10 posters');
+                            return;
+                        }
+                        div.classList.add('selected');
+                        cardSelectedPosterIndices.push(i);
+                    }
+                    renderCardPreview();
+                });
+                posterContainer.appendChild(div);
+            }
+
+            if (savedTop10.length === 0) {
+                posterContainer.innerHTML = `<p style="font-size:12px; color:var(--text-muted);">${window.I18n ? window.I18n.get('card.no_posters') : 'Ajoutez des séries ou films à votre Top 10.'}</p>`;
+            }
+        }
+
+        renderCardPreview();
+    }
+
+    async function renderCardPreview() {
+        if (!cardProfileData || !window.ProfileCard) return;
+        
+        // Load selected poster images
+        const savedTop10 = JSON.parse(localStorage.getItem('dfwatch_top10') || '[]');
+        const selectedPosters = [];
+        for (const idx of cardSelectedPosterIndices.sort((a, b) => a - b)) {
+            const item = savedTop10[idx];
+            if (!item) continue;
+            const isMovie = item.type === 'movie';
+            const dbTable = isMovie ? db.movies : db.shows;
+            const dbItem = await dbTable.where('tmdb_id').equals(item.tmdb_id).first();
+            if (dbItem && dbItem.poster_path) {
+                try {
+                    const img = await ProfileCard.loadImage(TMDB.imgUrl(dbItem.poster_path, 'w342'));
+                    selectedPosters.push(img);
+                } catch(e) {}
+            }
+        }
+        
+        let desc = undefined;
+        if (cardShowPersonalityDesc) {
+            const personalitySelect = document.getElementById('card-personality-select');
+            if (personalitySelect && personalitySelect.options.length > 0 && personalitySelect.value === cardCurrentTitle) {
+                desc = personalitySelect.options[personalitySelect.selectedIndex].dataset.desc;
+            }
+        }
+
+        const canvas = await ProfileCard.generate({
+            format: cardCurrentFormat,
+            theme: cardCurrentTheme,
+            personalityTitle: cardCurrentTitle,
+            personalityDesc: desc,
+            showPersonality: cardShowPersonality,
+            selectedPosters: selectedPosters.length > 0 ? selectedPosters : undefined,
+        });
+        
+        cardLastCanvas = canvas;
+        
+        const container = document.getElementById('card-preview-container');
+        const previewCanvas = document.getElementById('card-preview-canvas');
+        if (container) container.setAttribute('data-ratio', cardCurrentFormat);
+        if (previewCanvas) {
+            previewCanvas.width = canvas.width;
+            previewCanvas.height = canvas.height;
+            previewCanvas.getContext('2d').drawImage(canvas, 0, 0);
+        }
+    }
+
+    // Format selector
+    document.querySelectorAll('#card-format-selector .card-format-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#card-format-selector .card-format-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            cardCurrentFormat = btn.dataset.format;
+            renderCardPreview();
+        });
+    });
+
+    // Theme selector
+    document.querySelectorAll('#card-theme-selector .card-theme-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#card-theme-selector .card-theme-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            cardCurrentTheme = btn.dataset.cardTheme;
+            renderCardPreview();
+        });
+    });
+
+    if (btnShareCard) {
+        btnShareCard.addEventListener('click', () => openCardModal());
+    }
+    if (btnCardClose) {
+        btnCardClose.addEventListener('click', () => cardModal.classList.add('hidden'));
+    }
+    if (btnCardDownload) {
+        btnCardDownload.addEventListener('click', () => {
+            if (cardLastCanvas) ProfileCard.download(cardLastCanvas, cardCurrentFormat);
+        });
+    }
+    if (btnCardShare) {
+        btnCardShare.addEventListener('click', async () => {
+            if (cardLastCanvas) {
+                const shared = await ProfileCard.share(cardLastCanvas);
+                if (!shared) {
+                    // Fallback to download
+                    ProfileCard.download(cardLastCanvas, cardCurrentFormat);
+                }
+            }
+        });
+    }
+
     let calendarDate = new Date();
     
     const calPrev = document.getElementById('cal-prev');
@@ -2888,9 +3413,72 @@
     setupPullToRefresh('tab-series-watching', 'series-pull-indicator', refreshSeriesList);
     setupPullToRefresh('tab-films-watched', 'films-pull-indicator', refreshFilmsList);
 
-    // ==========================================
-    // CUSTOM LISTS
-    // ==========================================
+// ---- Avatar Particles System ----
+window.renderAvatarParticles = function(colors) {
+    const canvas = document.getElementById('profile-particles-canvas');
+    if (!canvas) return;
+    
+    // Stop old animation if exists
+    if (window._avatarParticleRaf) cancelAnimationFrame(window._avatarParticleRaf);
+    
+    if (!colors || colors.length === 0) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    canvas.width = 140; // slightly larger than 80px avatar (80 + 30 + 30)
+    canvas.height = 140;
+    
+    const particles = [];
+    const validColors = colors.filter(c => c);
+    
+    for (let i = 0; i < 40; i++) {
+        particles.push({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            angle: Math.random() * Math.PI * 2,
+            speed: 0.2 + Math.random() * 0.8,
+            radius: 1 + Math.random() * 2,
+            color: validColors[Math.floor(Math.random() * validColors.length)],
+            life: Math.random(),
+            decay: 0.005 + Math.random() * 0.015
+        });
+    }
+    
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(p => {
+            p.life -= p.decay;
+            if (p.life <= 0) {
+                p.life = 1;
+                p.x = canvas.width / 2;
+                p.y = canvas.height / 2;
+                p.angle = Math.random() * Math.PI * 2;
+            }
+            
+            p.x += Math.cos(p.angle) * p.speed;
+            p.y += Math.sin(p.angle) * p.speed;
+            
+            // Orbit effect
+            p.angle += 0.02;
+            
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.fill();
+        });
+        
+        ctx.globalAlpha = 1;
+        window._avatarParticleRaf = requestAnimationFrame(animate);
+    }
+    animate();
+};
+
+// ==================================================================================================================
     async function renderCustomLists() {
         const container = document.getElementById('custom-lists-container');
         try {

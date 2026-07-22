@@ -838,8 +838,8 @@ img { display: block; max-width: 100%; }
     font-weight: 800;
     color: #fff;
     box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
-    overflow: hidden;
     flex-shrink: 0;
+    z-index: 1;
 }
 .avatar-gradient {
     position: absolute;
@@ -2418,7 +2418,6 @@ select option, select.form-input option, select.sort-select option {
     transition: all 0.2s ease;
     min-height: 140px;
     position: relative;
-    overflow: hidden;
 }
 .list-card-v2:hover {
     transform: translateY(-4px);
@@ -2551,4 +2550,527 @@ select option, select.form-input option, select.sort-select option {
 }
 .modal-list-row.checked .list-checkbox svg {
     opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PROFILE CARD EXPORT & XP SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Avatar Animated Rings ── */
+.profile-avatar-ring-bg {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    z-index: -2;
+    opacity: 0.2;
+    transition: all 0.3s ease;
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 4px), #fff calc(100% - 3.5px));
+    mask: radial-gradient(closest-side, transparent calc(100% - 4px), #fff calc(100% - 3.5px));
+}
+
+.profile-avatar-ring {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    z-index: -1;
+    transition: all 0.3s ease;
+    /* Mask used for progress + stroke */
+    -webkit-mask: 
+        radial-gradient(closest-side, transparent calc(100% - 4px), #fff calc(100% - 3.5px)),
+        conic-gradient(#fff calc(var(--progress, 1) * 360deg), transparent 0);
+    -webkit-mask-composite: source-in;
+    mask: 
+        radial-gradient(closest-side, transparent calc(100% - 4px), #fff calc(100% - 3.5px)) intersect,
+        conic-gradient(#fff calc(var(--progress, 1) * 360deg), transparent 0);
+}
+
+.profile-rank-badge {
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    margin: 0;
+    display: inline-block;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    position: relative;
+    z-index: 1;
+}
+
+.profile-rank-badge::before {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 100px;
+    background: var(--surface-1);
+    z-index: -1;
+}
+
+/* Custom Ring Styles */
+.profile-avatar-ring[data-style="solid"],
+.profile-avatar-ring-bg[data-style="solid"],
+.profile-rank-badge[data-style="solid"] {
+    background: var(--ring-c1, #7c3aed);
+}
+
+.profile-avatar-ring[data-style="gradient"],
+.profile-avatar-ring-bg[data-style="gradient"],
+.profile-rank-badge[data-style="gradient"] {
+    background: linear-gradient(135deg, var(--ring-c1, #7c3aed), var(--ring-c2, #06b6d4));
+}
+
+.profile-avatar-ring[data-style="multicolor"],
+.profile-avatar-ring-bg[data-style="multicolor"],
+.profile-rank-badge[data-style="multicolor"] {
+    background: linear-gradient(135deg, var(--ring-c1, #f43f5e), var(--ring-c2, #8b5cf6), var(--ring-c3, #06b6d4), var(--ring-c4, #10b981));
+    background-size: 300% 300%;
+}
+
+.profile-avatar-ring[data-style="particles"],
+.profile-avatar-ring-bg[data-style="particles"],
+.profile-rank-badge[data-style="particles"] {
+    background: linear-gradient(135deg, var(--ring-c1, #f43f5e), var(--ring-c2, #06b6d4));
+}
+
+/* Custom Ring Animations */
+.profile-avatar-ring[data-anim="pulse"],
+.profile-avatar-ring-bg[data-anim="pulse"],
+.profile-rank-badge[data-anim="pulse"] {
+    animation: ring-pulse 4s ease infinite;
+}
+.profile-avatar-ring[data-anim="rotate"] {
+    background: none;
+    overflow: hidden;
+}
+.profile-avatar-ring[data-anim="rotate"]::before {
+    content: "";
+    position: absolute;
+    inset: -20px;
+    background: conic-gradient(from 0deg, var(--ring-c1, #7c3aed), var(--ring-c2, #06b6d4), var(--ring-c3, var(--ring-c1)), var(--ring-c4, var(--ring-c2)), var(--ring-c1, #7c3aed));
+    animation: ring-spin 4s linear infinite;
+    border-radius: 50%;
+    z-index: -1;
+}
+/* For bg in rotate, just use a simple gradient so it doesn't spin too crazily, or we can make it spin too! */
+.profile-avatar-ring-bg[data-anim="rotate"] {
+    background: linear-gradient(135deg, var(--ring-c1, #7c3aed), var(--ring-c2, #06b6d4));
+}
+.profile-rank-badge[data-anim="rotate"] {
+    animation: ring-pulse-strong 3s ease infinite;
+}
+.profile-avatar-ring[data-anim="blend"],
+.profile-avatar-ring-bg[data-anim="blend"],
+.profile-rank-badge[data-anim="blend"] {
+    animation: ring-pulse-strong 3s ease infinite;
+}
+.profile-avatar-ring[data-anim="particle_spin"],
+.profile-avatar-ring-bg[data-anim="particle_spin"],
+.profile-rank-badge[data-anim="particle_spin"] {
+    animation: ring-pulse-strong 2s ease infinite;
+}
+
+@keyframes ring-spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* Default Level Rings (apply to all 3) */
+.ring-noob {
+    background: linear-gradient(135deg, #9ca3af, #d1d5db, #6b7280);
+    background-size: 300% 300%;
+}
+.profile-avatar-ring.ring-noob { animation: ring-pulse 6s ease infinite; }
+
+.ring-amateur {
+    background: linear-gradient(135deg, #10b981, #34d399, #059669);
+    background-size: 300% 300%;
+}
+.profile-avatar-ring.ring-amateur { animation: ring-pulse 5s ease infinite; }
+
+.profile-avatar {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    flex-shrink: 0;
+    z-index: 1;
+}
+.avatar-gradient {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--iris-400), var(--iris-600));
+    z-index: 0;
+}
+.avatar-photo {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    z-index: 1;
+}
+#profile-avatar-initials { z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+/* Passionné: Blue */
+.ring-passionne {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa, #2563eb);
+    background-size: 300% 300%;
+}
+.profile-avatar-ring.ring-passionne { animation: ring-pulse 5s ease infinite; }
+
+/* Cinéphile: Purple */
+.ring-cinephile {
+    background: linear-gradient(135deg, #8b5cf6, #a78bfa, #7c3aed);
+    background-size: 300% 300%;
+}
+.profile-avatar-ring.ring-cinephile { animation: ring-pulse 4s ease infinite; }
+
+/* Expert: Pink/Red */
+.ring-expert {
+    background: linear-gradient(135deg, #ec4899, #f43f5e, #be185d);
+    background-size: 300% 300%;
+}
+.profile-avatar-ring.ring-expert { animation: ring-pulse 4s ease infinite; }
+
+/* Maître: Red/Orange */
+.ring-maitre {
+    background: linear-gradient(135deg, #ef4444, #f97316, #b91c1c);
+    background-size: 300% 300%;
+}
+.profile-avatar-ring.ring-maitre { animation: ring-pulse 3s ease infinite; }
+
+/* Légende: Gold */
+.ring-legende {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b, #fef08a, #d97706);
+    background-size: 300% 300%;
+    color: rgba(251, 191, 36, 0.5);
+}
+.profile-avatar-ring.ring-legende { animation: ring-pulse-strong 3s ease infinite; }
+
+/* Mythe: Cosmic/Rainbow */
+.ring-mythe {
+    background: linear-gradient(135deg, #ff0080, #7928ca, #0070f3, #00dfd8);
+    background-size: 300% 300%;
+    color: rgba(121, 40, 202, 0.5);
+}
+.profile-avatar-ring.ring-mythe { animation: ring-pulse-strong 2.5s ease infinite; }
+
+/* Hacker: Glitch/Matrix Green */
+.ring-hacker {
+    background: linear-gradient(135deg, #00ff00, #003300, #00ff66, #000000);
+    background-size: 300% 300%;
+}
+.profile-avatar-ring.ring-hacker { animation: ring-glitch 1s infinite alternate-reverse; }
+
+@keyframes ring-pulse {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes ring-pulse-strong {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes ring-glitch {
+    0% { background-position: 0% 0%; filter: hue-rotate(0deg); }
+    100% { background-position: 100% 100%; filter: hue-rotate(90deg); }
+}
+
+.avatar-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2;
+    border-radius: 50%;
+}
+.avatar-photo.hidden {
+    display: none;
+}
+
+/* ── Profile Hero Actions ── */
+.profile-hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ── XP Bar ── */
+.profile-xp-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 10px;
+}
+.xp-level-badge {
+    background: linear-gradient(135deg, var(--iris-500), var(--iris-600));
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 6px 16px;
+    border-radius: 100px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    margin: 0;
+    display: inline-block;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.xp-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface-3);
+    border-radius: 100px;
+    overflow: hidden;
+    min-width: 80px;
+}
+.xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--iris-400), var(--cyan-400));
+    border-radius: 100px;
+    transition: width 0.6s var(--ease-out);
+}
+.xp-rank {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--iris-300);
+    white-space: nowrap;
+}
+
+/* ── Avatar Upload ── */
+.avatar-upload-zone {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    border: 2px dashed var(--border-default);
+    border-radius: var(--r-12);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.avatar-upload-zone:hover {
+    border-color: var(--iris-400);
+    background: var(--iris-dim);
+}
+.avatar-upload-preview {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.avatar-upload-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ── Card Modal ── */
+#profile-card-modal .modal-content {
+    max-width: 860px;
+}
+
+.card-format-selector {
+    display: flex;
+    gap: 6px;
+}
+.card-format-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: var(--r-8);
+    border: 1px solid var(--border-default);
+    background: var(--surface-3);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+.card-format-btn:hover {
+    border-color: var(--iris-400);
+    color: var(--text-primary);
+}
+.card-format-btn.active {
+    background: var(--iris-dim);
+    border-color: var(--iris-400);
+    color: var(--iris-300);
+    box-shadow: 0 0 12px var(--iris-glow-soft);
+}
+
+.card-theme-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.card-theme-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--r-8);
+    border: 1px solid var(--border-default);
+    background: var(--surface-3);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+.card-theme-btn:hover {
+    border-color: var(--iris-400);
+    color: var(--text-primary);
+}
+.card-theme-btn.active {
+    border-color: var(--iris-400);
+    background: var(--iris-dim);
+    color: var(--iris-300);
+}
+.card-theme-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.1);
+}
+
+.card-poster-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.card-poster-item {
+    width: 48px;
+    height: 72px;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+    position: relative;
+}
+.card-poster-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.card-poster-item.selected {
+    border-color: var(--iris-400);
+    opacity: 1;
+    box-shadow: 0 0 10px var(--iris-glow);
+}
+.card-poster-item:hover {
+    opacity: 0.85;
+}
+.card-poster-item .poster-check {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--iris-400);
+    color: #fff;
+    font-size: 10px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+.card-poster-item.selected .poster-check {
+    display: flex;
+}
+
+/* ── Card Preview ── */
+.card-preview-container {
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-12);
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-height: 500px;
+}
+.card-preview-container[data-ratio="9:16"] {
+    aspect-ratio: 9 / 16;
+    max-width: 280px;
+}
+.card-preview-container[data-ratio="1:1"] {
+    aspect-ratio: 1 / 1;
+    max-width: 400px;
+}
+.card-preview-container[data-ratio="16:9"] {
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+}
+.card-preview-container canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .profile-hero {
+        flex-direction: column;
+        text-align: center;
+    }
+    .profile-hero-actions {
+        margin-left: 0;
+        width: 100%;
+        flex-direction: row;
+        justify-content: center;
+    }
+    .profile-hero-actions .action-btn {
+        flex: 1;
+        padding: 10px 12px;
+        font-size: 13px;
+        white-space: normal;
+    }
+    .profile-hero-genres {
+        justify-content: center;
+    }
+    #profile-card-modal .card-modal-body {
+        flex-direction: column;
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
+    }
+    .card-preview-area {
+        order: -1;
+        padding-bottom: 16px;
+        flex: none !important;
+        width: 100%;
+    }
+    .card-controls {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+    }
+    .card-preview-container[data-ratio="9:16"] {
+        max-width: 220px;
+    }
 }
