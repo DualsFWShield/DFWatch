@@ -3521,7 +3521,7 @@
 
     async function openCardModal() {
         if (!cardModal || !window.ProfileCard) return;
-        window.openOverlay('share-card-modal');
+        window.openOverlay('profile-card-modal');
         
         // Collect profile data
         cardProfileData = await ProfileCard.collectProfileData();
@@ -3710,7 +3710,7 @@
         btnShareCard.addEventListener('click', () => openCardModal());
     }
     if (btnCardClose) {
-        btnCardClose.addEventListener('click', () => window.closeOverlay('share-card-modal'));
+        btnCardClose.addEventListener('click', () => window.closeOverlay('profile-card-modal'));
     }
     if (btnCardDownload) {
         btnCardDownload.addEventListener('click', () => {
