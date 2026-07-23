@@ -706,7 +706,23 @@
     <div id="export-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h2 style="margin-bottom:16px;" data-i18n="profile.export_modal_title">Exporter la sauvegarde</h2>
-            <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+            
+            <div style="margin-bottom: 16px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom: 8px;">
+                    <input type="radio" name="export-format" value="app_complete" checked>
+                    <span style="font-weight: bold;" data-i18n="profile.export_format_app_complete">Application Complète</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom: 8px;">
+                    <input type="radio" name="export-format" value="algo_complete">
+                    <span style="font-weight: bold;" data-i18n="profile.export_format_algo_complete">Algorithme Complet (Réimportable)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="radio" name="export-format" value="id">
+                    <span style="font-weight: bold;" data-i18n="profile.export_format_id">Algorithme Ciblage (Data Broker)</span>
+                </label>
+            </div>
+
+            <div id="export-options-container" class="modal-body" style="display:flex; flex-direction:column; gap:12px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="export-chk-data" checked>
                     <span data-i18n="profile.export_data">Données (Historique, Listes, Statistiques)</span>
@@ -720,6 +736,11 @@
                     <span data-i18n="profile.export_cache">Cache (TMDB IDs et affiches préchargées)</span>
                 </label>
             </div>
+            
+            <div id="export-id-warning" class="hidden" style="padding-top: 12px; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 13px;">
+                <span data-i18n="profile.export_id_warning">Génère un JSON avec vos informations de profil, likes, dislikes et genres favoris. Impossible à ré-importer.</span>
+            </div>
+
             <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
                 <button class="action-btn secondary" id="btn-export-cancel" data-i18n="action.cancel">Annuler</button>
                 <button class="action-btn primary" id="btn-export-confirm" data-i18n="profile.export_btn">Générer le fichier</button>
@@ -749,6 +770,28 @@
             <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
                 <button class="action-btn secondary" id="btn-import-cancel" data-i18n="action.cancel">Annuler</button>
                 <button class="action-btn primary" id="btn-import-confirm" data-i18n="profile.import">Importer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORT ALGO MODAL -->
+    <div id="import-algo-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom:16px;">Importer l'algorithme</h2>
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">Sélectionnez le mode d'importation des données d'algorithme :</p>
+            <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="radio" name="import-algo-mode" value="merge" checked>
+                    <span>Fusionner avec les données existantes (Ajouter)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="radio" name="import-algo-mode" value="replace">
+                    <span>Remplacer (Effacer l'algorithme actuel)</span>
+                </label>
+            </div>
+            <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
+                <button class="action-btn secondary" id="btn-import-algo-cancel" data-i18n="action.cancel">Annuler</button>
+                <button class="action-btn primary" id="btn-import-algo-confirm" data-i18n="profile.import">Importer</button>
             </div>
         </div>
     </div>
@@ -902,6 +945,7 @@
     <script src="app/js/tmdb.js"></script>
     <script src="app/js/achievements.js"></script>
     <script src="app/js/import.js"></script>
+    <script src="app/js/export.js"></script>
     <script src="app/js/i18n.js"></script>
     <script src="app/js/profile-card.js"></script>
     <script src="app/js/app.js"></script>

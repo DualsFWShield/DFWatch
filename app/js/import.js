@@ -143,7 +143,43 @@ const Importer = {
             reader.onload = async (e) => {
                 try {
                     const backup = JSON.parse(e.target.result);
+                    
+                    if (backup.format === "id_broker_v1") {
+                        onProgress('Erreur: Fichier d\'export ID détecté. Impossible d\'importer des données partielles.');
+                        resolve(0);
+                        return;
+                    }
+                    
                     let importedCount = 0;
+
+                    if (backup.format === "algo_complete_v1") {
+                        const mode = options.algoMode || 'merge';
+                        onProgress(`Importation des données algorithmiques (Mode: ${mode === 'replace' ? 'Remplacer' : 'Fusionner'})...`);
+
+                        if (mode === 'replace') {
+                            await db.shows.clear();
+                            await db.watch_history.clear();
+                            await db.movies.clear();
+                            await db.movie_watches.clear();
+                            await db.recommendation_feedback.clear();
+                        }
+
+                        if (backup.data) {
+                            if (backup.data.shows) { await db.shows.bulkPut(backup.data.shows); importedCount += backup.data.shows.length; }
+                            if (backup.data.history) { await db.watch_history.bulkPut(backup.data.history); importedCount += backup.data.history.length; }
+                            if (backup.data.movies) { await db.movies.bulkPut(backup.data.movies); importedCount += backup.data.movies.length; }
+                            if (backup.data.movieWatches) { await db.movie_watches.bulkPut(backup.data.movieWatches); importedCount += backup.data.movieWatches.length; }
+                            if (backup.data.recommendation_feedback) { await db.recommendation_feedback.bulkPut(backup.data.recommendation_feedback); }
+                        }
+
+                        if (backup.settings && backup.settings.dfwatch_genres) {
+                            localStorage.setItem('dfwatch_genres', backup.settings.dfwatch_genres);
+                        }
+
+                        onProgress('Importation de l\'algorithme terminée !');
+                        resolve(importedCount);
+                        return;
+                    }
                     
                     // 1. Paramètres
                     if (options.settings && backup.settings) {
@@ -206,56 +242,6 @@ const Importer = {
             };
             reader.readAsText(file);
         });
-    },
-
-    // ---- Export ----
-    async exportDFWatch(options = { data: true, settings: true, cache: true }) {
-        const backup = {
-            version: '2.0',
-            exportedAt: new Date().toISOString()
-        };
-
-        if (options.data) {
-            backup.data = {
-                shows: await db.shows.toArray(),
-                history: await db.watch_history.toArray(),
-                movies: await db.movies.toArray(),
-                movieWatches: await db.movie_watches.toArray(),
-                recommendation_feedback: await db.recommendation_feedback.toArray(),
-                customLists: await db.custom_lists.toArray(),
-                listItems: await db.list_items.toArray(),
-                episodeNotes: await db.episode_notes.toArray()
-            };
-        }
-
-        if (options.settings) {
-            backup.settings = {
-                dfwatch_theme: localStorage.getItem('dfwatch_theme'),
-                dfwatch_lang: localStorage.getItem('dfwatch_lang'),
-                dfwatch_firstname: localStorage.getItem('dfwatch_firstname'),
-                dfwatch_lastname: localStorage.getItem('dfwatch_lastname'),
-                dfwatch_age: localStorage.getItem('dfwatch_age'),
-                dfwatch_genres: localStorage.getItem('dfwatch_genres'),
-                dfwatch_top10: localStorage.getItem('dfwatch_top10')
-            };
-        }
-
-        if (options.cache) {
-            const cachedShows = await db.shows.filter(s => !!s.tmdb_id).toArray();
-            const cachedMovies = await db.movies.filter(m => !!m.tmdb_id).toArray();
-            backup.cache = {
-                shows: cachedShows.map(s => ({ name: s.name, tvtime_id: s.tvtime_id, tmdb_id: s.tmdb_id, poster_path: s.poster_path, backdrop_path: s.backdrop_path })),
-                movies: cachedMovies.map(m => ({ name: m.name, uuid: m.uuid, tmdb_id: m.tmdb_id, poster_path: m.poster_path, backdrop_path: m.backdrop_path }))
-            };
-        }
-
-        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `dfwatch-backup-${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
     },
 
     // ---- Helpers ----

@@ -798,16 +798,6 @@ img { display: block; max-width: 100%; }
 
 /* ── 10b. RECOMMENDATION ACTIONS ──────────────────────────── */
 .recommendation-actions {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 6px;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.92) 40%);
-    z-index: 2;
     opacity: 0;
     transform: translateY(6px);
     transition: opacity var(--dur-norm) var(--ease-out), transform var(--dur-norm) var(--ease-out);
@@ -879,8 +869,9 @@ img { display: block; max-width: 100%; }
     width: 40px;
     height: 40px;
     border-color: var(--iris-400);
-    background: rgba(139, 92, 246, 0.15);
-    color: var(--iris-200);
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.6);
 }
 .thumb-btn.quick-add-btn:hover {
     color: #fff;
@@ -2151,7 +2142,7 @@ img { display: block; max-width: 100%; }
 /* Thumbs up/down */
 .recommendation-actions {
     position: absolute;
-    top: 8px; right: 8px;
+    top: 8px; left: 8px;
     display: flex;
     flex-direction: column;
     gap: 6px;
