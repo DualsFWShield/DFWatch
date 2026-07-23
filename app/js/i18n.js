@@ -82,6 +82,10 @@ const TRANSLATIONS = {
         "search.searching": "Recherche en cours...",
         "search.thumb_down": "Ne plus me recommander",
         "search.thumb_up": "J'aime ce genre",
+        "search.quick_add": "Ajout rapide",
+        "search.added_to_list": "Ajouté à votre liste",
+        "search.added_to_series": "Ajouté à vos séries",
+        "search.already_in_library": "Déjà dans votre bibliothèque",
         
         "calendar.days.mon": "Lun",
         "calendar.days.tue": "Mar",
@@ -222,6 +226,28 @@ const TRANSLATIONS = {
         "modal.add_list_new": "Nouvelle liste...",
         "modal.add_list_create": "Créer et ajouter",
         "modal.add_list_close": "Fermer",
+        
+        "modal.dob": "Date de naissance",
+        "modal.age_format": "Format de l'âge",
+        "modal.age_format_simple": "Simple (ex: 19 ans)",
+        "modal.age_format_detailed": "Détaillé (ex: 19 ans et 8 mois)",
+        "modal.age_format_precise": "Précis (ex: 19 ans, 8 mois et 6 jours)",
+        
+        "profile.complete_profile": "Complétez votre profil",
+        "profile.age_years": "{years} ans",
+        "profile.age_months": "{months} mois",
+        "profile.age_days": "{days} jours",
+        "profile.age_and": " et ",
+        "profile.age_comma": ", ",
+        
+        "series.delete_confirm": "Voulez-vous vraiment retirer \"{name}\" de votre liste ?",
+        "series.deleted": "{name} retiré",
+        "action.delete": "Supprimer",
+        
+        "search.feed_big_brother": "👁️ Nourrir Big Brother",
+        "search.bb_digesting": "Big Brother digère... {current}/{total}",
+        "search.bb_nothing": "Rien à analyser 😅",
+        "search.bb_full": "✨ Big Brother est rassasié !",
         
         "toast.seen": "{name} vu ✓",
         "toast.not_found": "Non trouvé sur TMDB",
@@ -364,6 +390,10 @@ const TRANSLATIONS = {
         "search.searching": "Searching...",
         "search.thumb_down": "Don't recommend this again",
         "search.thumb_up": "I like this genre",
+        "search.quick_add": "Quick add",
+        "search.added_to_list": "Added to your list",
+        "search.added_to_series": "Added to your shows",
+        "search.already_in_library": "Already in your library",
         
         "calendar.days.mon": "Mon",
         "calendar.days.tue": "Tue",
@@ -504,6 +534,28 @@ const TRANSLATIONS = {
         "modal.add_list_new": "New list...",
         "modal.add_list_create": "Create and add",
         "modal.add_list_close": "Close",
+        
+        "modal.dob": "Date of birth",
+        "modal.age_format": "Age format",
+        "modal.age_format_simple": "Simple (e.g. 19 yo)",
+        "modal.age_format_detailed": "Detailed (e.g. 19 yo and 8 months)",
+        "modal.age_format_precise": "Precise (e.g. 19 yo, 8 months and 6 days)",
+        
+        "profile.complete_profile": "Complete your profile",
+        "profile.age_years": "{years} yo",
+        "profile.age_months": "{months} months",
+        "profile.age_days": "{days} days",
+        "profile.age_and": " and ",
+        "profile.age_comma": ", ",
+        
+        "series.delete_confirm": "Are you sure you want to remove \"{name}\" from your list?",
+        "series.deleted": "{name} removed",
+        "action.delete": "Delete",
+        
+        "search.feed_big_brother": "👁️ Feed Big Brother",
+        "search.bb_digesting": "Big Brother is digesting... {current}/{total}",
+        "search.bb_nothing": "Nothing to analyze 😅",
+        "search.bb_full": "✨ Big Brother is full!",
         
         "toast.seen": "{name} watched ✓",
         "toast.not_found": "Not found on TMDB",
