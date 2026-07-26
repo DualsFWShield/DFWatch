@@ -1928,9 +1928,10 @@
             return b.id - a.id; // fallback to added_desc
         });
 
-        watchingList.innerHTML = '';
-        finishedList.innerHTML = '';
-        upcomingList.innerHTML = '';
+        // We will build fragments to avoid duplicates from concurrent calls and prevent flickering
+        const watchingFrag = document.createDocumentFragment();
+        const finishedFrag = document.createDocumentFragment();
+        const upcomingFrag = document.createDocumentFragment();
 
         let watchingCount = 0, finishedCount = 0, upcomingCount = 0;
 
@@ -1971,32 +1972,26 @@
                                 const total = details.number_of_episodes || 0;
                                 const nextAir = details.next_episode_to_air ? details.next_episode_to_air.air_date : null;
                                 const shouldBeFinished = doneEps >= total && total > 0;
+                                const isFirstSync = !show.nb_episodes_total;
                                 const genres = details.genres ? details.genres.map(g => g.name) : [];
                                 
-                                await db.shows.update(show.id, { 
+                                const updates = { 
                                     nb_episodes_total: total,
                                     next_air_date: nextAir,
-                                    is_finished: shouldBeFinished ? 1 : 0,
                                     last_sync: now,
                                     genres: genres
-                                });
+                                };
+                                if (isFirstSync) updates.is_finished = shouldBeFinished ? 1 : 0;
+
+                                await db.shows.update(show.id, updates);
                                 show.nb_episodes_total = total;
                                 show.next_air_date = nextAir;
-                                show.is_finished = shouldBeFinished ? 1 : 0;
+                                if (isFirstSync) show.is_finished = shouldBeFinished ? 1 : 0;
                                 show.genres = genres;
                                 refreshSeriesList(); // Re-render to move to correct tab
                             }
                         } catch(e) {}
                     }, Math.random() * 5000 + 1000); // spread over 1-6 seconds
-                }
-            } else if (!isAlreadyFinished) {
-                // Auto-correct is_finished if we have nb_episodes_total cached (only for non-finished shows)
-                if (show.nb_episodes_total > 0) {
-                    const shouldBeFinished = doneEps >= show.nb_episodes_total;
-                    if (!shouldBeFinished !== !show.is_finished) {
-                        show.is_finished = shouldBeFinished ? 1 : 0;
-                        db.shows.update(show.id, { is_finished: show.is_finished }); // fire and forget
-                    }
                 }
             }
 
@@ -2104,10 +2099,10 @@
                 }
                 
                 if (category === 'finished') {
-                    finishedList.appendChild(card);
+                    finishedFrag.appendChild(card);
                     finishedCount++;
                 } else {
-                    upcomingList.appendChild(card);
+                    upcomingFrag.appendChild(card);
                     upcomingCount++;
                 }
             } else {
@@ -2145,7 +2140,7 @@
                     const checkBtn = card.querySelector('.ep-check');
                     checkBtn.classList.add('checked');
                     await db.watch_history.add({
-                        show_tvtime_id: show.tvtime_id || '',
+                        show_tvtime_id: show.tvtime_id ? String(show.tvtime_id) : '',
                         show_name: show.name,
                         season_number: nextSeason,
                         episode_number: nextEp,
@@ -2155,14 +2150,29 @@
                         runtime: 0
                     });
                     showToast(window.I18n ? window.I18n.get('toast.seen', { name: show.name }) : `${show.name} S${nextSeason}E${nextEp} vu ✓`);
+                    
+                    const newDone = doneEps + 1;
+                    if (show.nb_episodes_total > 0 && newDone >= show.nb_episodes_total) {
+                        await db.shows.update(show.id, { is_finished: 1 });
+                        show.is_finished = 1;
+                        showToast(`"${show.name}" marquée comme terminée automatiquement !`);
+                    }
                     setTimeout(() => refreshSeriesList(), 600);
                 });
                 
-                watchingList.appendChild(card);
+                watchingFrag.appendChild(card);
                 watchingCount++;
             }
         }
         
+        watchingList.innerHTML = '';
+        finishedList.innerHTML = '';
+        upcomingList.innerHTML = '';
+        
+        watchingList.appendChild(watchingFrag);
+        finishedList.appendChild(finishedFrag);
+        upcomingList.appendChild(upcomingFrag);
+
         if (watchingCount === 0) watchingList.innerHTML = `<div class="empty-state"><h3>${window.I18n ? window.I18n.get('series.empty_watching') : 'Aucune série en cours'}</h3></div>`;
         if (finishedCount === 0) finishedList.innerHTML = `<div class="empty-state"><h3>${window.I18n ? window.I18n.get('series.empty_finished') : 'Aucune série terminée'}</h3></div>`;
         if (upcomingCount === 0) upcomingList.innerHTML = `<div class="empty-state"><h3>${window.I18n ? window.I18n.get('series.empty_upcoming') : 'Rien à venir'}</h3></div>`;
