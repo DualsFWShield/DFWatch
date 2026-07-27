@@ -1575,7 +1575,7 @@
                         nb_episodes_total: undefined // reset this so it recalculates
                     });
                 }
-                showToast('Identification mise à jour !');
+                showToast(window.I18n ? window.I18n.get('toast.id_updated') : 'Identification mise à jour !');
                 closeDetail();
                 refreshSeriesList();
             }
@@ -1609,14 +1609,14 @@
                             last_sync: Date.now(), genres: genres
                         });
                     }
-                    showToast('Données actualisées !');
+                    showToast(window.I18n ? window.I18n.get('toast.data_updated') : 'Données actualisées !');
                     refreshSeriesList();
                     renderShowDetail(details); // Re-render detail view
                 } else {
-                    showToast('Impossible de récupérer les données.');
+                    showToast(window.I18n ? window.I18n.get('toast.data_error') : 'Impossible de récupérer les données.');
                 }
             } catch (e) {
-                showToast('Erreur lors de la synchronisation.');
+                showToast(window.I18n ? window.I18n.get('toast.sync_error') : 'Erreur lors de la synchronisation.');
             }
             this.disabled = false;
             this.textContent = '🔄 Actualiser les données';
@@ -1635,7 +1635,7 @@
                 // Fallback: copy to clipboard
                 try {
                     await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-                    showToast('Lien copié dans le presse-papier !');
+                    showToast(window.I18n ? window.I18n.get('toast.link_copied') : 'Lien copié dans le presse-papier !');
                 } catch (e) {
                     console.error('Error updating watch history', e);
                 }
@@ -1810,7 +1810,7 @@
                         backdrop_path: result.backdrop_path
                     });
                 }
-                showToast('Identification mise à jour !');
+                showToast(window.I18n ? window.I18n.get('toast.id_updated') : 'Identification mise à jour !');
                 closeDetail();
                 refreshFilmsList();
             }
@@ -1828,8 +1828,8 @@
             } else {
                 try {
                     await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-                    showToast('Lien copié dans le presse-papier !');
-                } catch(e) { showToast('Impossible de partager.'); }
+                    showToast(window.I18n ? window.I18n.get('toast.link_copied') : 'Lien copié dans le presse-papier !');
+                } catch(e) { showToast(window.I18n ? window.I18n.get('toast.share_error') : 'Impossible de partager.'); }
             }
         });
 

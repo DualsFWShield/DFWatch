@@ -92,9 +92,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnClearDB.addEventListener('click', async () => {
-        if (await window.customConfirm("Êtes-vous sûr de vouloir effacer TOUTES vos données ? Cette action est irréversible.", "Suppression des données", "Effacer", "Annuler")) {
+        const confirmMsg = window.I18n ? window.I18n.get('profile.clear_data_prompt') : "Êtes-vous sûr de vouloir effacer TOUTES vos données ? Cette action est irréversible.";
+        const titleMsg = window.I18n ? window.I18n.get('lists.delete_title') : "Suppression des données";
+        const btnDeleteMsg = window.I18n ? window.I18n.get('lists.delete_btn') : "Effacer";
+        const btnCancelMsg = window.I18n ? window.I18n.get('lists.cancel_btn') : "Annuler";
+        if (await window.customConfirm(confirmMsg, titleMsg, btnDeleteMsg, btnCancelMsg)) {
             await DBService.clearAll();
-            alert("Base de données effacée.");
+            alert(window.I18n ? window.I18n.get('toast.saved') : "Base de données effacée.");
             updateDashboard();
         }
     });

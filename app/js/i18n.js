@@ -9,6 +9,7 @@ const TRANSLATIONS = {
         "nav.lists": "Listes",
         "nav.explore": "Explorer",
         "nav.calendar": "Calendrier",
+        "nav.panoptic": "Panoptic",
         
         "lists.favoris": "Favoris",
         "lists.add_favoris": "Ajouter aux favoris",
@@ -106,7 +107,7 @@ const TRANSLATIONS = {
         "mood.epic": "Épique & Fantastique",
         "mood.indie": "Indépendant & Auteur",
         "mood.nostalgia": "Nostalgie",
-        "mood.mindfuck": "Retourne-cerveau (Mindfuck)",
+        "mood.mindfuck": "Retourne-cerveau (déroutante)",
         "mood.tearjerker": "Sortir les mouchoirs",
         
         "calendar.days.mon": "Lun",
@@ -186,6 +187,7 @@ const TRANSLATIONS = {
         "profile.top10": "Mon Top 10",
         "profile.theme": "Thème visuel",
         "profile.system": "Système & Données",
+        "profile.language": "Langue",
         "profile.format": "Format d'import",
         "profile.drop": "Glissez vos fichiers (CSV ou JSON) ici ou <strong>cliquez</strong>",
         "profile.import": "Importer",
@@ -291,6 +293,12 @@ const TRANSLATIONS = {
         "toast.season_seen": "Saison {season} marquée comme vue",
         "toast.season_unseen": "Saison {season} : une vue retirée",
         "toast.season_all": "{show} - Saison {season} entière",
+        "toast.id_updated": "Identification mise à jour !",
+        "toast.data_updated": "Données actualisées !",
+        "toast.data_error": "Impossible de récupérer les données.",
+        "toast.sync_error": "Erreur lors de la synchronisation.",
+        "toast.link_copied": "Lien copié dans le presse-papier !",
+        "toast.share_error": "Impossible de partager.",
         
         "action.syncing": "Synchronisation en cours...",
         "action.sync_global_prompt": "Voulez-vous vraiment actualiser toutes vos données depuis TMDB ? (Cela peut prendre plusieurs secondes)",
@@ -335,6 +343,42 @@ const TRANSLATIONS = {
         "modal.avatar_remove": "Supprimer la photo",
         "modal.avatar_ring": "Bordure d'Avatar",
         "modal.avatar_ring_desc": "Débloquez de nouvelles bordures en gagnant des niveaux.",
+        
+        "panoptic.title": "Panoptic",
+        "panoptic.subtitle": "L'œil voit tout. Que désirez-vous observer ?",
+        "panoptic.mode_solo": "Pour Moi",
+        "panoptic.mode_group": "En Groupe",
+        "panoptic.bb_desc": "Laisser Panoptic discuter avec Big Brother",
+        "panoptic.max_runtime": "Durée Maximale",
+        "panoptic.streaming_platforms": "Plateformes de Streaming",
+        "panoptic.region_be": "Belgique (BE)",
+        "panoptic.region_fr": "France (FR)",
+        "panoptic.region_ch": "Suisse (CH)",
+        "panoptic.region_ca": "Canada (CA)",
+        "panoptic.region_us": "États-Unis (US)",
+        "panoptic.any_platform": "Peu importe la plateforme (toutes)",
+        "panoptic.desired_genres": "Genres Souhaités",
+        "panoptic.pistes_title": "Pistes (Films de référence)",
+        "panoptic.pistes_desc": "Ajoutez jusqu'à 10 films qui correspondent à ce que vous cherchez.",
+        "panoptic.search_movie_placeholder": "Rechercher un film...",
+        "panoptic.bannis_title": "Films Bannis (À éviter)",
+        "panoptic.bannis_desc": "Ajoutez jusqu'à 10 films qui définissent ce que vous ne voulez PAS voir.",
+        "panoptic.btn_search": "Interroger Panoptic",
+        "panoptic.connecting": "Connexion à Panoptic...",
+        "panoptic.no_results": "Aucun résultat trouvé pour ces critères.",
+        "panoptic.error": "Erreur lors de la communication avec Panoptic.",
+        "panoptic.max_movies": "Maximum {max} films autorisés.",
+        "panoptic.revelation": "RÉVÉLATION",
+        "panoptic.pass_title": "Je passe",
+        "panoptic.like_title": "Intéressant (mais on continue)",
+        "panoptic.accept_title": "C'est celui-ci !",
+        "panoptic.click_details": "Cliquez pour voir les détails",
+        "panoptic.search_exhausted": "Recherche Épuisée",
+        "panoptic.all_rejected": "Vous avez rejeté toutes les propositions.",
+        "panoptic.analysis_done": "Analyse Terminée",
+        "panoptic.final_results": "Voici vos résultats finaux.",
+        "panoptic.chosen": "✅ Choisi",
+        "panoptic.liked": "👍🏻 Aimé",
     },
     en: {
         "nav.series": "Shows",
@@ -344,6 +388,7 @@ const TRANSLATIONS = {
         "nav.lists": "Lists",
         "nav.explore": "Explore",
         "nav.calendar": "Calendar",
+        "nav.panoptic": "Panoptic",
         
         "lists.favoris": "Favorites",
         "lists.add_favoris": "Add to favorites",
@@ -521,6 +566,7 @@ const TRANSLATIONS = {
         "profile.top10": "My Top 10",
         "profile.theme": "Visual Theme",
         "profile.system": "System & Data",
+        "profile.language": "Language",
         "profile.format": "Import Format",
         "profile.drop": "Drop files (CSV or JSON) here or <strong>click</strong>",
         "profile.import": "Import",
@@ -626,6 +672,12 @@ const TRANSLATIONS = {
         "toast.season_seen": "Season {season} marked as seen",
         "toast.season_unseen": "Season {season}: one view removed",
         "toast.season_all": "{show} - Season {season} entirely",
+        "toast.id_updated": "Match updated!",
+        "toast.data_updated": "Data updated!",
+        "toast.data_error": "Unable to fetch data.",
+        "toast.sync_error": "Error during synchronization.",
+        "toast.link_copied": "Link copied to clipboard!",
+        "toast.share_error": "Unable to share.",
         
         "action.syncing": "Syncing...",
         "action.sync_global_prompt": "Do you really want to update all your data from TMDB? (This may take several seconds)",
@@ -670,6 +722,42 @@ const TRANSLATIONS = {
         "modal.avatar_remove": "Remove photo",
         "modal.avatar_ring": "Avatar Ring",
         "modal.avatar_ring_desc": "Unlock new rings by gaining levels.",
+        
+        "panoptic.title": "Panoptic",
+        "panoptic.subtitle": "The eye sees all. What do you wish to observe?",
+        "panoptic.mode_solo": "For Me",
+        "panoptic.mode_group": "In a Group",
+        "panoptic.bb_desc": "Let Panoptic talk with Big Brother",
+        "panoptic.max_runtime": "Maximum Duration",
+        "panoptic.streaming_platforms": "Streaming Platforms",
+        "panoptic.region_be": "Belgium (BE)",
+        "panoptic.region_fr": "France (FR)",
+        "panoptic.region_ch": "Switzerland (CH)",
+        "panoptic.region_ca": "Canada (CA)",
+        "panoptic.region_us": "United States (US)",
+        "panoptic.any_platform": "Any platform (all)",
+        "panoptic.desired_genres": "Desired Genres",
+        "panoptic.pistes_title": "Tracks (Reference Movies)",
+        "panoptic.pistes_desc": "Add up to 10 movies that match what you are looking for.",
+        "panoptic.search_movie_placeholder": "Search a movie...",
+        "panoptic.bannis_title": "Banned Movies (To Avoid)",
+        "panoptic.bannis_desc": "Add up to 10 movies defining what you do NOT want to see.",
+        "panoptic.btn_search": "Interrogate Panoptic",
+        "panoptic.connecting": "Connecting to Panoptic...",
+        "panoptic.no_results": "No results found for these criteria.",
+        "panoptic.error": "Error communicating with Panoptic.",
+        "panoptic.max_movies": "Maximum {max} movies allowed.",
+        "panoptic.revelation": "REVELATION",
+        "panoptic.pass_title": "Pass",
+        "panoptic.like_title": "Interesting (keep going)",
+        "panoptic.accept_title": "This is the one!",
+        "panoptic.click_details": "Click to view details",
+        "panoptic.search_exhausted": "Search Exhausted",
+        "panoptic.all_rejected": "You rejected all suggestions.",
+        "panoptic.analysis_done": "Analysis Complete",
+        "panoptic.final_results": "Here are your final results.",
+        "panoptic.chosen": "✅ Chosen",
+        "panoptic.liked": "👍🏻 Liked",
     }
 };
 
@@ -713,6 +801,13 @@ const I18n = {
             const key = el.getAttribute('data-i18n-placeholder');
             if (TRANSLATIONS[this.lang][key]) {
                 el.placeholder = TRANSLATIONS[this.lang][key];
+            }
+        });
+        
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            const key = el.getAttribute('data-i18n-title');
+            if (TRANSLATIONS[this.lang][key]) {
+                el.title = TRANSLATIONS[this.lang][key];
             }
         });
         

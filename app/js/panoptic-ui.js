@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     auto.querySelectorAll('.pan-auto-item').forEach(item => {
                         item.addEventListener('click', (ev) => {
                             if (listArray.length >= maxItems) {
-                                alert(`Maximum ${maxItems} films autorisés.`);
+                                alert(window.I18n ? window.I18n.get('panoptic.max_movies', { max: maxItems }) : `Maximum ${maxItems} films autorisés.`);
                             } else {
                                 const t = ev.currentTarget;
                                 listArray.push({ id: t.getAttribute('data-id'), title: t.getAttribute('data-title') });
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
             providers: anyProvider.checked ? [] : Array.from(selectedProviders)
         };
 
-        btnSearch.textContent = 'Connexion à Panoptic...';
+        btnSearch.textContent = window.I18n ? window.I18n.get('panoptic.connecting') : 'Connexion à Panoptic...';
         btnSearch.disabled = true;
 
         try {
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             likedItems = [];
             
             if (currentResults.length === 0) {
-                alert('Aucun résultat trouvé pour ces critères.');
+                alert(window.I18n ? window.I18n.get('panoptic.no_results') : 'Aucun résultat trouvé pour ces critères.');
             } else {
                 resultsOverlay.classList.remove('hidden');
                 document.body.style.overflow = 'hidden';
@@ -240,9 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {
             console.error('Panoptic Error:', e);
-            alert('Erreur lors de la communication avec Panoptic.');
+            alert(window.I18n ? window.I18n.get('panoptic.error') : 'Erreur lors de la communication avec Panoptic.');
         } finally {
-            btnSearch.textContent = 'Interroger Panoptic';
+            btnSearch.textContent = window.I18n ? window.I18n.get('panoptic.btn_search') : 'Interroger Panoptic';
             btnSearch.disabled = false;
         }
     });
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 style="margin: 0; color: white; font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">${title}</h3>
                     <p style="margin: 4px 0 0 0; color: #ff5a00; font-size: 14px; font-weight: 500;">⭐ ${item.vote_average ? item.vote_average.toFixed(1) : '?'} <span style="color:#888;">${year ? '• ' + year : ''}</span></p>
                     <p style="margin: 8px 0 0 0; color: #ccc; font-size: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${item.overview || ''}</p>
-                    <p style="margin-top: 8px; font-size: 10px; color: #666; font-style: italic;">Cliquez pour voir les détails</p>
+                    <p style="margin-top: 8px; font-size: 10px; color: #666; font-style: italic;">${window.I18n ? window.I18n.get('panoptic.click_details') : 'Cliquez pour voir les détails'}</p>
                 </div>
             </div>
         `;
@@ -317,8 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (total.length === 0) {
             cardContainer.innerHTML = `
                 <div style="width: 100%; text-align: center;">
-                    <h3 style="color: #ef4444; margin-bottom: 20px; font-size: 24px;">Recherche Épuisée</h3>
-                    <p style="color: #888; font-size: 16px;">Vous avez rejeté toutes les propositions.</p>
+                    <h3 style="color: #ef4444; margin-bottom: 20px; font-size: 24px;">${window.I18n ? window.I18n.get('panoptic.search_exhausted') : 'Recherche Épuisée'}</h3>
+                    <p style="color: #888; font-size: 16px;">${window.I18n ? window.I18n.get('panoptic.all_rejected') : 'Vous avez rejeté toutes les propositions.'}</p>
                 </div>
             `;
             return;
@@ -326,8 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cardContainer.innerHTML = `
             <div style="width: 100%; text-align: center; display: flex; flex-direction: column; max-height: 80vh;">
-                <h3 style="color: #ffffff; margin-bottom: 8px; font-size: 24px;">Analyse Terminée</h3>
-                <p style="color: #888; margin-bottom: 24px;">Voici vos résultats finaux.</p>
+                <h3 style="color: #ffffff; margin-bottom: 8px; font-size: 24px;">${window.I18n ? window.I18n.get('panoptic.analysis_done') : 'Analyse Terminée'}</h3>
+                <p style="color: #888; margin-bottom: 24px;">${window.I18n ? window.I18n.get('panoptic.final_results') : 'Voici vos résultats finaux.'}</p>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; overflow-y: auto; padding: 10px; flex: 1; align-content: start; text-align: left;">
                     ${total.map(item => `
                         <div style="display: flex; align-items: center; gap: 16px; background: #1a1a1a; padding: 12px; border-radius: 24px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05); border: 1px solid ${acceptedItems.includes(item) ? 'rgba(255,90,0,0.5)' : 'rgba(255,255,255,0.02)'}; cursor: pointer; transition: transform 0.2s;" onclick="if(window.openDetail) window.openDetail({id: ${item.id}, name: \`${(item.title||item.name||'').replace(/`/g, '')}\`, backdrop_path: '${item.backdrop_path}'}, 'movie')">
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div style="font-size: 13px; color: #888;">⭐ ${item.vote_average?.toFixed(1) || '?'}</div>
                             </div>
                             <div style="padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 500; background: ${acceptedItems.includes(item) ? '#ff5a00' : '#2a2a2a'}; color: ${acceptedItems.includes(item) ? '#fff' : '#888'};">
-                                ${acceptedItems.includes(item) ? '✅ Choisi' : '👍🏻 Aimé'}
+                                ${acceptedItems.includes(item) ? (window.I18n ? window.I18n.get('panoptic.chosen') : '✅ Choisi') : (window.I18n ? window.I18n.get('panoptic.liked') : '👍🏻 Aimé')}
                             </div>
                         </div>
                     `).join('')}
