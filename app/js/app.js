@@ -11,6 +11,12 @@
 
     function navigateTo(target, fromPopState = false) {
         if (typeof closeDetail === 'function') closeDetail();
+        // Close Panoptic overlay if it's open
+        const panOverlay = document.getElementById('panoptic-results-overlay');
+        if (panOverlay && !panOverlay.classList.contains('hidden')) {
+            panOverlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
         // Sync both navs
         document.querySelectorAll('.nav-btn, .sidebar-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll(`.nav-btn[data-page="${target}"], .sidebar-btn[data-page="${target}"]`).forEach(b => b.classList.add('active'));

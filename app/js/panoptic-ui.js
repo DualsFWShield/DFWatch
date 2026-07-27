@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const year = (item.release_date || item.first_air_date || '').substring(0, 4);
 
         cardContainer.innerHTML = `
-            <div class="pan-card" style="width: 100%; max-width: 320px; aspect-ratio: 2/3; background-image: url('${imgUrl}'); background-size: cover; background-position: center; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; touch-action: none;">
+            <div class="pan-card" style="width: 100%; max-width: 420px; aspect-ratio: 2/3; background-image: url('${imgUrl}'); background-size: cover; background-position: center; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; touch-action: none;">
                 <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
                     <h3 style="margin: 0; color: white; font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">${title}</h3>
                     <p style="margin: 4px 0 0 0; color: #ff5a00; font-size: 14px; font-weight: 500;">⭐ ${item.vote_average ? item.vote_average.toFixed(1) : '?'} <span style="color:#888;">${year ? '• ' + year : ''}</span></p>
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="width: 100%; text-align: center; display: flex; flex-direction: column; max-height: 80vh;">
                 <h3 style="color: #ffffff; margin-bottom: 8px; font-size: 24px;">Analyse Terminée</h3>
                 <p style="color: #888; margin-bottom: 24px;">Voici vos résultats finaux.</p>
-                <div style="display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding: 10px; flex: 1;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; overflow-y: auto; padding: 10px; flex: 1; align-content: start; text-align: left;">
                     ${total.map(item => `
                         <div style="display: flex; align-items: center; gap: 16px; background: #1a1a1a; padding: 12px; border-radius: 24px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05); border: 1px solid ${acceptedItems.includes(item) ? 'rgba(255,90,0,0.5)' : 'rgba(255,255,255,0.02)'}; cursor: pointer; transition: transform 0.2s;" onclick="if(window.openDetail) window.openDetail({id: ${item.id}, name: \`${(item.title||item.name||'').replace(/`/g, '')}\`, backdrop_path: '${item.backdrop_path}'}, 'movie')">
                             <img src="${window.TMDB ? window.TMDB.imgUrl(item.poster_path, 'w92') : ''}" style="width: 50px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
