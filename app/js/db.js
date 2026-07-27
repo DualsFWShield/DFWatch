@@ -119,3 +119,5 @@ const DB = {
         return db.movies.toArray();
     }
 };
+
+window.db = db;

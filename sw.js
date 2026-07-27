@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dfwatch-v1';
+const CACHE_NAME = 'dfwatch-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,6 +9,12 @@ const ASSETS_TO_CACHE = [
   './app/js/tmdb.js',
   './app/js/achievements.js',
   './app/js/import.js',
+  './app/js/export.js',
+  './app/js/i18n.js',
+  './app/js/profile-card.js',
+  './app/js/vendor/recommender.js',
+  './app/js/vendor/panoptic.js',
+  './app/js/panoptic-ui.js',
   'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js',
   'https://unpkg.com/dexie@3.2.4/dist/dexie.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap'

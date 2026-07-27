@@ -30,6 +30,7 @@ const _TMDB = {
 
     async search(query, type = 'multi') {
         if (!query || query.length < 2) return [];
+
         const data = await this._fetch(`/search/${type}?query=${encodeURIComponent(query)}&page=1`);
         return data ? (data.results || []).slice(0, 20) : [];
     },
@@ -55,15 +56,42 @@ const _TMDB = {
         if (filters.sort) qs += `&sort_by=${filters.sort}`;
         else qs += `&sort_by=popularity.desc`;
         
-        const data = await this._fetch(`/discover/${type}?page=1${qs}`);
+        if (filters.runtimeMax) {
+            // Soft filter for Panoptic or hard filter depending on use
+            qs += `&with_runtime.lte=${filters.runtimeMax}`;
+        }
+        if (filters.watchProviders) {
+            qs += `&with_watch_providers=${filters.watchProviders}`;
+        }
+        if (filters.watchRegion) {
+            qs += `&watch_region=${filters.watchRegion}`;
+        }
+        if (filters.watchMonetizationTypes) {
+            qs += `&with_watch_monetization_types=${filters.watchMonetizationTypes}`;
+        }
+        if (filters.withoutKeywords) {
+            qs += `&without_keywords=${filters.withoutKeywords}`;
+        }
+        if (filters.page) {
+            qs += `&page=${filters.page}`;
+        } else {
+            qs += `&page=1`;
+        }
+        
+        const data = await this._fetch(`/discover/${type}?${qs.substring(1)}`);
         if (!data) return [];
         // Add media_type so the cards render correctly since discover doesn't return it
         return (data.results || []).map(item => ({...item, media_type: type})).slice(0, 20);
     },
 
-    async getShowDetails(id) { return this._fetch(`/tv/${id}?append_to_response=credits,videos,watch/providers,content_ratings`); },
-    async getMovieDetails(id) { return this._fetch(`/movie/${id}?append_to_response=credits,videos,watch/providers,release_dates`); },
+    async getShowDetails(id) { return this._fetch(`/tv/${id}?append_to_response=credits,videos,watch/providers,content_ratings,keywords`); },
+    async getMovieDetails(id) { return this._fetch(`/movie/${id}?append_to_response=credits,videos,watch/providers,release_dates,keywords`); },
     async getSeasonDetails(id, season) { return this._fetch(`/tv/${id}/season/${season}`); },
+
+    async getWatchProviders(region = 'FR', type = 'movie') {
+        const data = await this._fetch(`/watch/providers/${type}?watch_region=${region}`);
+        return data && data.results ? data.results : [];
+    },
 
     async getRecommendations(id, type = 'movie') {
         const data = await this._fetch(`/${type}/${id}/recommendations`);
@@ -275,15 +303,20 @@ const TMDB = {
         return _TMDB.discover(type, filters);
     },
 
+    async getWatchProviders(region = 'FR', type = 'movie') {
+        return _TMDB.getWatchProviders(region, type);
+    },
+
     async findShowByName(name) {
         const tmdb = await _TMDB.findShowByName(name);
         if (tmdb) return tmdb;
         return _TVDB.findShowByName(name);
     },
-
     async findMovieByName(name) {
         const tmdb = await _TMDB.findMovieByName(name);
         if (tmdb) return tmdb;
         return _TVDB.findMovieByName(name);
     }
 };
+
+window.TMDB = TMDB;

@@ -27,10 +27,19 @@
         if (target === 'stats') refreshStats();
         if (target === 'series') refreshSeriesList();
         if (target === 'films') refreshFilmsList();
-        if (target === 'lists') renderCustomLists();
         if (target === 'search') initSearch();
-        if (target === 'calendar') refreshCalendar();
+        if (target === 'calendar') {
+            refreshCalendar();
+            renderCustomLists();
+        }
+        if (target === 'lists') {
+            // Redirect lists to calendar (they are now merged)
+            navigateTo('calendar');
+        }
     }
+    
+    // Expose globally for inline event handlers in index.html
+    window.appNavigateTo = navigateTo;
 
     // ---- Navigation & Overlay Logic ----
     window.modalStack = [];
@@ -196,6 +205,11 @@
             tab.classList.add('active');
             currentSearchType = tab.dataset.searchType;
             
+            const moodContainer = document.getElementById('bb-mood-container');
+            if (moodContainer) {
+                moodContainer.style.display = currentSearchType === 'foryou' ? 'block' : 'none';
+            }
+            
             const q = document.getElementById('search-input').value.trim();
             if (currentSearchType === 'foryou') {
                 document.getElementById('search-input').value = '';
@@ -206,6 +220,15 @@
             }
         });
     });
+    
+    const moodSelect = document.getElementById('bb-mood-select');
+    if (moodSelect) {
+        moodSelect.addEventListener('change', () => {
+            if (currentSearchType === 'foryou') {
+                loadRecommendations();
+            }
+        });
+    }
 
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
@@ -231,6 +254,8 @@
         const q = searchInput.value.trim();
         
         if (currentSearchType === 'foryou' && q.length > 0) {
+            const moodContainer = document.getElementById('bb-mood-container');
+            if (moodContainer) moodContainer.style.display = 'none';
             document.querySelector('.search-tab[data-search-type="multi"]').click();
             return;
         }
@@ -292,10 +317,12 @@
                 db.recommendation_feedback.toArray()
             ]);
             const ownedIds = new Set([...shows.map(s => s.tmdb_id), ...movies.map(m => m.tmdb_id)].filter(Boolean));
+            const ownedNames = new Set([...shows.map(s => s.name?.toLowerCase()), ...movies.map(m => m.name?.toLowerCase())].filter(Boolean));
             const dislikedIds = new Set(feedback.filter(f => f.feedback_value === -1).map(f => f.tmdb_id));
 
             for (const item of recs.slice(0, 10)) {
-                if (!item || !item.id || ownedIds.has(item.id) || dislikedIds.has(item.id)) continue;
+                const itemName = (item.name || item.title || '').toLowerCase();
+                if (!item || !item.id || ownedIds.has(item.id) || dislikedIds.has(item.id) || (itemName && ownedNames.has(itemName))) continue;
                 
                 const existing = await db.recommender_candidates.where('tmdb_id').equals(item.id).first();
                 if (existing) {
@@ -305,13 +332,20 @@
                     });
                 } else {
                     const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
+                    // Fetch full details to get keywords, actors, directors for affinity
+                    let fullItem = item;
+                    try {
+                        const details = mediaType === 'tv' ? await TMDB.getShowDetails(item.id) : await TMDB.getMovieDetails(item.id);
+                        if (details) fullItem = { ...item, ...details }; // merge to keep basic props if missing
+                    } catch(err) {}
+                    
                     // Store the full TMDB object as properties
                     await db.recommender_candidates.add({
                         tmdb_id: item.id,
                         type: mediaType,
                         score_base: weight,
                         last_updated: Date.now(),
-                        item_data: item
+                        item_data: fullItem
                     });
                 }
             }
@@ -354,10 +388,35 @@
         async getCandidates() {
             return db.recommender_candidates.toArray();
         },
-        async getOwnedIds() {
+        async getOwnedItems() {
             const shows = await db.shows.toArray();
             const movies = await db.movies.toArray();
-            return new Set([...shows.map(s => s.tmdb_id), ...movies.map(m => m.tmdb_id)].filter(Boolean));
+            return {
+                ids: new Set([...shows.map(s => s.tmdb_id), ...movies.map(m => m.tmdb_id)].filter(Boolean)),
+                names: new Set([...shows.map(s => s.name?.toLowerCase()), ...movies.map(m => m.name?.toLowerCase())].filter(Boolean))
+            };
+        },
+        async getRewatchCandidates() {
+            // Find movies watched more than a year ago to resurface them
+            const movies = await db.movies.toArray();
+            const topOld = movies.filter(m => m.status === 'watched' && m.user_rating >= 3);
+            // We just pick a random sample of 20 to avoid bloating candidates
+            const shuffled = topOld.sort(() => 0.5 - Math.random()).slice(0, 20);
+            return shuffled.map(m => ({
+                tmdb_id: m.tmdb_id,
+                type: 'movie',
+                score_base: 0.5,
+                is_rewatch: true,
+                item_data: {
+                    id: m.tmdb_id,
+                    name: m.name, title: m.name,
+                    poster_path: m.poster_path, backdrop_path: m.backdrop_path,
+                    release_date: m.release_date,
+                    genre_ids: m.genre_ids || [],
+                    vote_average: m.user_rating ? m.user_rating * 2 : 7.0,
+                    media_type: 'movie'
+                }
+            }));
         },
         async getDislikedIds() {
             const feedback = await db.recommendation_feedback.toArray();
@@ -382,15 +441,26 @@
                 for (const item of mix) {
                     if (!item || !item.id) continue;
                     const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
+                    
+                    let fullItem = item;
+                    try {
+                        const details = mediaType === 'tv' ? await TMDB.getShowDetails(item.id) : await TMDB.getMovieDetails(item.id);
+                        if (details) fullItem = { ...item, ...details };
+                    } catch(err) {}
+
                     await db.recommender_candidates.put({
                         tmdb_id: item.id,
                         type: mediaType,
                         score_base: 1,
                         last_updated: Date.now(),
-                        item_data: item
+                        item_data: fullItem
                     });
                 }
             }
+
+            // --- MOOD SELECTION ---
+            const currentMood = document.getElementById('bb-mood-select') ? document.getElementById('bb-mood-select').value : 'normal';
+            _recommenderEngine.config.mood = currentMood;
 
             const { results: finalResults } = await _recommenderEngine.recommend(_recommenderAdapter);
 
@@ -538,10 +608,26 @@
             // Dislike — stores genre_ids for genre affinity learning
             actionsDiv.querySelector('.thumb-down').addEventListener('click', async (e) => {
                 e.stopPropagation();
-                await db.recommendation_feedback.put({
-                    tmdb_id: item.id, type: mediaType, feedback_value: -1,
-                    genre_ids: item.genre_ids || []
-                });
+                const storeFeedback = async () => {
+                    let keywords = []; let directors = []; let actors = [];
+                    try {
+                        const details = mediaType === 'tv' ? await TMDB.getShowDetails(item.id) : await TMDB.getMovieDetails(item.id);
+                        if (details) {
+                            if (details.keywords && details.keywords.results) keywords = details.keywords.results.map(k => k.id);
+                            else if (details.keywords && details.keywords.keywords) keywords = details.keywords.keywords.map(k => k.id);
+                            if (details.credits) {
+                                if (details.credits.crew) directors = details.credits.crew.filter(c => c.job === 'Director').map(c => c.id);
+                                if (details.credits.cast) actors = details.credits.cast.slice(0, 3).map(c => c.id);
+                            }
+                        }
+                    } catch(err) {}
+                    await db.recommendation_feedback.put({
+                        tmdb_id: item.id, type: mediaType, feedback_value: -1,
+                        genre_ids: item.genre_ids || [],
+                        keywords, directors, actors, timestamp: Date.now()
+                    });
+                };
+                storeFeedback();
                 if (typeof feedBigBrother === 'function') feedBigBrother(item.id, mediaType, -0.5); // fetch alternatives for things similar to what they dislike? better to just feed 0 or omit. Actually let's not feed on dislike.
                 div.style.transition = 'opacity 0.3s, transform 0.3s';
                 div.style.opacity = '0';
@@ -594,10 +680,26 @@
             // Like — stores genre_ids for genre affinity learning
             actionsDiv.querySelector('.thumb-up').addEventListener('click', async (e) => {
                 e.stopPropagation();
-                await db.recommendation_feedback.put({
-                    tmdb_id: item.id, type: mediaType, feedback_value: 1,
-                    genre_ids: item.genre_ids || []
-                });
+                const storeFeedback = async () => {
+                    let keywords = []; let directors = []; let actors = [];
+                    try {
+                        const details = mediaType === 'tv' ? await TMDB.getShowDetails(item.id) : await TMDB.getMovieDetails(item.id);
+                        if (details) {
+                            if (details.keywords && details.keywords.results) keywords = details.keywords.results.map(k => k.id);
+                            else if (details.keywords && details.keywords.keywords) keywords = details.keywords.keywords.map(k => k.id);
+                            if (details.credits) {
+                                if (details.credits.crew) directors = details.credits.crew.filter(c => c.job === 'Director').map(c => c.id);
+                                if (details.credits.cast) actors = details.credits.cast.slice(0, 3).map(c => c.id);
+                            }
+                        }
+                    } catch(err) {}
+                    await db.recommendation_feedback.put({
+                        tmdb_id: item.id, type: mediaType, feedback_value: 1,
+                        genre_ids: item.genre_ids || [],
+                        keywords, directors, actors, timestamp: Date.now()
+                    });
+                };
+                storeFeedback();
                 if (typeof feedBigBrother === 'function') feedBigBrother(item.id, mediaType, 3.0);
                 const btn = e.currentTarget;
                 btn.classList.add('liked');
@@ -608,11 +710,11 @@
 
         if (isRecommendation) {
             div.addEventListener('click', async () => {
-                const existing = await db.recommendation_feedback.where({ tmdb_id: item.id }).first();
+                const existing = await db.recommendation_feedback.where('tmdb_id').equals(item.id).first();
                 if (!existing) {
                     await db.recommendation_feedback.put({
                         tmdb_id: item.id, type: mediaType, feedback_value: 0,
-                        genre_ids: item.genre_ids || []
+                        genre_ids: item.genre_ids || [], timestamp: Date.now()
                     });
                 }
                 openDetail(item, mediaType);
@@ -4121,7 +4223,7 @@ window.renderAvatarParticles = function(colors) {
 
     document.getElementById('btn-back-lists').addEventListener('click', () => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-lists').classList.add('active');
+        document.getElementById('page-calendar').classList.add('active');
         renderCustomLists();
     });
 
@@ -4213,8 +4315,6 @@ window.renderAvatarParticles = function(colors) {
             });
         });
     }
-
-    document.querySelector('[data-page="lists"]').addEventListener('click', () => renderCustomLists());
 
     async function showAddToListModal(tmdbId, mediaType) {
         const modal = document.getElementById('add-to-list-modal');
@@ -4487,5 +4587,8 @@ window.renderAvatarParticles = function(colors) {
             }
         }
     }
+
+    // Expose for external modules (like panoptic-ui.js)
+    window.openDetail = openDetail;
 
 })();
