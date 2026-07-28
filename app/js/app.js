@@ -302,8 +302,8 @@
         });
     }
 
-    // ---- Recommender Engine (vendor) ----
-    const _recommenderEngine = new Recommender();
+    // ---- BigBrother Engine (vendor) ----
+    const _bigBrotherEngine = new BigBrother();
 
     /** 
      * Big Brother Background Worker 
@@ -330,9 +330,9 @@
                 const itemName = (item.name || item.title || '').toLowerCase();
                 if (!item || !item.id || ownedIds.has(item.id) || dislikedIds.has(item.id) || (itemName && ownedNames.has(itemName))) continue;
                 
-                const existing = await db.recommender_candidates.where('tmdb_id').equals(item.id).first();
+                const existing = await db.bigbrother_candidates.where('tmdb_id').equals(item.id).first();
                 if (existing) {
-                    await db.recommender_candidates.update(existing.id, {
+                    await db.bigbrother_candidates.update(existing.id, {
                         score_base: existing.score_base + weight,
                         last_updated: Date.now()
                     });
@@ -346,7 +346,7 @@
                     } catch(err) {}
                     
                     // Store the full TMDB object as properties
-                    await db.recommender_candidates.add({
+                    await db.bigbrother_candidates.add({
                         tmdb_id: item.id,
                         type: mediaType,
                         score_base: weight,
@@ -357,20 +357,20 @@
             }
             
             // Purge strategy: Keep only top 500 candidates if it grows too large
-            const count = await db.recommender_candidates.count();
+            const count = await db.bigbrother_candidates.count();
             if (count > 500) {
-                const all = await db.recommender_candidates.toArray();
+                const all = await db.bigbrother_candidates.toArray();
                 all.sort((a, b) => b.score_base - a.score_base);
                 const toDelete = all.slice(500).map(c => c.id);
-                await db.recommender_candidates.bulkDelete(toDelete);
+                await db.bigbrother_candidates.bulkDelete(toDelete);
             }
         } catch (e) {
             console.error("Big Brother feed error:", e);
         }
     }
 
-    /** Data adapter that bridges the Recommender engine with DFWatch's DB. */
-    const _recommenderAdapter = {
+    /** Data adapter that bridges the BigBrother engine with DFWatch's DB. */
+    const _bigBrotherAdapter = {
         async getTopPicks() {
             const top10 = JSON.parse(localStorage.getItem('dfwatch_top10') || '[]');
             // Map tmdb_id → id (the engine expects { id, type })
@@ -392,7 +392,7 @@
             ];
         },
         async getCandidates() {
-            return db.recommender_candidates.toArray();
+            return db.bigbrother_candidates.toArray();
         },
         async getOwnedItems() {
             const shows = await db.shows.toArray();
@@ -436,9 +436,9 @@
 
         try {
             // Cold Start Check
-            const candidates = await db.recommender_candidates.toArray();
+            const candidates = await db.bigbrother_candidates.toArray();
             if (candidates.length === 0) {
-                searchResults.innerHTML = `<div class="empty-state"><p>${window.I18n ? window.I18n.get('search.searching') : 'Initialisation du moteur de recommandation...'}</p></div>`;
+                searchResults.innerHTML = `<div class="empty-state"><div class="bb-eye-pulse" style="font-size:32px; margin-bottom:16px;">👁️</div><p>${window.I18n ? window.I18n.get('search.searching') : "Big Brother s'éveille..."}</p></div>`;
                 const [movies, shows] = await Promise.all([
                     TMDB.discover('movie'),
                     TMDB.discover('tv')
@@ -454,7 +454,7 @@
                         if (details) fullItem = { ...item, ...details };
                     } catch(err) {}
 
-                    await db.recommender_candidates.put({
+                    await db.bigbrother_candidates.put({
                         tmdb_id: item.id,
                         type: mediaType,
                         score_base: 1,
@@ -466,12 +466,12 @@
 
             // --- MOOD SELECTION ---
             const currentMood = document.getElementById('bb-mood-select') ? document.getElementById('bb-mood-select').value : 'normal';
-            _recommenderEngine.config.mood = currentMood;
+            _bigBrotherEngine.config.mood = currentMood;
 
-            const { results: finalResults } = await _recommenderEngine.recommend(_recommenderAdapter);
+            const { results: finalResults } = await _bigBrotherEngine.recommend(_bigBrotherAdapter);
 
             if (finalResults.length === 0) {
-                searchResults.innerHTML = `<div class='empty-state'><div class='empty-icon'>⭐</div><h3>${window.I18n ? window.I18n.get('search.not_enough_data') : 'Pas encore assez de données'}</h3><p>${window.I18n ? window.I18n.get('search.not_enough_data_desc') : "Notez ou ajoutez quelques films/séries pour débloquer l'algorithme de recommandation !"}</p></div>`;
+                searchResults.innerHTML = `<div class='empty-state'><div class='empty-icon bb-eye-pulse'>👁️</div><h3>${window.I18n ? window.I18n.get('search.not_enough_data') : 'Big Brother observe...'}</h3><p>${window.I18n ? window.I18n.get('search.not_enough_data_desc') : "Nourrissez-le en notant ou ajoutant quelques films/séries pour débloquer ses recommandations."}</p></div>`;
                 return;
             }
 
@@ -1231,7 +1231,7 @@
             ${tmdbHeatmapHtml}
             ${personalHeatmapHtml}
 
-            <div class="detail-section">
+            <div class="detail-section" id="detail-tv-tracker">
                 <h3>${window.I18n ? window.I18n.get('detail.seasons') : 'Saisons'}</h3>
                 ${seasonsHTML}
             </div>

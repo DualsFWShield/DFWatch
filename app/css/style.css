@@ -2636,6 +2636,201 @@ select option, select.form-input option, select.sort-select option {
     justify-content: center;
     transition: all 0.2s;
 }
+.heatmap-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+.heatmap-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.heatmap-legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+.heatmap-container {
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+.heatmap-table {
+    border-collapse: separate;
+    border-spacing: 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+.heatmap-table th, .heatmap-table td {
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+}
+.heatmap-table th {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px;
+    min-width: 32px;
+}
+.heatmap-cell {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--r-4);
+    text-align: center;
+    vertical-align: middle;
+    color: #1a1a1a; /* Dark text for contrast on bright colors */
+    font-weight: 600;
+}
+.bg-awesome { background-color: #3b8b60; color: #fff; } 
+.bg-great { background-color: #55c87e; } 
+.bg-good { background-color: #ffe35e; } 
+.bg-regular { background-color: #faa143; } 
+.bg-bad { background-color: #e54d4d; color: #fff; } 
+.bg-garbage { background-color: #6a4478; color: #fff; } 
+.bg-empty { background-color: var(--surface-3); color: var(--text-muted); font-weight:normal; }
+
+/* ── LISTES UI REFONTE ──────────────────────────────────────── */
+.lists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+    padding: 16px 0;
+}
+
+.list-card-v2 {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-12);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 140px;
+    position: relative;
+}
+.list-card-v2:hover {
+    transform: translateY(-4px);
+    border-color: var(--iris-400);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.list-card-v2 .list-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+.list-card-v2 h3 {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+.list-card-v2 p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.list-card-v2.favoris {
+    background: linear-gradient(135deg, var(--surface-2) 0%, rgba(220, 38, 38, 0.1) 100%);
+    border-color: rgba(220, 38, 38, 0.3);
+}
+.list-card-v2.favoris:hover {
+    border-color: #ef4444;
+    box-shadow: 0 8px 16px rgba(220, 38, 38, 0.15);
+}
+.list-card-v2.favoris .list-icon {
+    color: #ef4444;
+}
+
+.list-card-v2.create-new {
+    background: transparent;
+    border: 2px dashed var(--border-strong);
+}
+.list-card-v2.create-new:hover {
+    border-color: var(--iris-400);
+    background: var(--surface-2);
+}
+
+.btn-delete-list-v2 {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0;
+}
+.list-card-v2:hover .btn-delete-list-v2 {
+    opacity: 1;
+}
+.btn-delete-list-v2:hover {
+    background: #ef4444;
+    color: #fff;
+}
+
+/* ── MODALE AJOUT LISTE REFONTE ─────────────────────────────── */
+.modal-list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-8);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.modal-list-row:hover {
+    background: var(--surface-3);
+}
+.modal-list-row.is-favoris {
+    border-left: 3px solid #ef4444;
+}
+.modal-list-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.modal-list-icon {
+    font-size: 20px;
+}
+.modal-list-text h4 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+.modal-list-text p {
+    margin: 2px 0 0 0;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+/* Custom Checkbox / Toggle */
+.list-checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border-strong);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
 .modal-list-row.checked .list-checkbox {
     background: var(--iris-500);
     border-color: var(--iris-500);
@@ -2755,7 +2950,6 @@ select option, select.form-input option, select.sort-select option {
     border-radius: 50%;
     z-index: -1;
 }
-/* For bg in rotate, just use a simple gradient so it doesn't spin too crazily, or we can make it spin too! */
 .profile-avatar-ring-bg[data-anim="rotate"] {
     background: linear-gradient(135deg, var(--ring-c1, #7c3aed), var(--ring-c2, #06b6d4));
 }
@@ -2812,10 +3006,16 @@ select option, select.form-input option, select.sort-select option {
     z-index: 0;
 }
 .avatar-photo {
-    width: 100%; height: 100%;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
+    z-index: 2;
     border-radius: 50%;
-    z-index: 1;
+}
+.avatar-photo.hidden {
+    display: none;
 }
 #profile-avatar-initials { z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
 
@@ -2885,19 +3085,6 @@ select option, select.form-input option, select.sort-select option {
 @keyframes ring-glitch {
     0% { background-position: 0% 0%; filter: hue-rotate(0deg); }
     100% { background-position: 100% 100%; filter: hue-rotate(90deg); }
-}
-
-.avatar-photo {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 2;
-    border-radius: 50%;
-}
-.avatar-photo.hidden {
-    display: none;
 }
 
 /* ── Profile Hero Actions ── */
@@ -3174,4 +3361,65 @@ select option, select.form-input option, select.sort-select option {
     .card-preview-container[data-ratio="9:16"] {
         max-width: 220px;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TUTORIAL (DRIVER.JS OVERRIDES)
+   ═══════════════════════════════════════════════════════════════ */
+body.tutorial-active .driver-active-element {
+    pointer-events: none !important;
+}
+
+.mystic-driver-popover {
+    background: var(--surface-3) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--iris-400) !important;
+    box-shadow: 0 0 20px var(--iris-glow) !important;
+    border-radius: 12px !important;
+    font-family: 'Inter', sans-serif !important;
+}
+.mystic-driver-popover .driver-popover-title {
+    color: var(--iris-300) !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 18px !important;
+}
+.mystic-driver-popover .driver-popover-description {
+    color: var(--text-secondary) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+.mystic-driver-popover .driver-popover-footer button {
+    background: var(--surface-4) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    text-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+.mystic-driver-popover .driver-popover-footer button:hover {
+    background: var(--iris-500) !important;
+    border-color: var(--iris-400) !important;
+}
+.mystic-driver-popover .driver-popover-navigation-btns {
+    gap: 8px !important;
+}
+.driver-popover-arrow {
+    border-color: var(--surface-3) !important;
+}
+.driver-active-element {
+    box-shadow: 0 0 0 4px var(--iris-glow) !important;
+    border-radius: 8px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BIG BROTHER / PANOPTIC LORE
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes bbPulse {
+    0% { transform: scale(1); filter: drop-shadow(0 0 5px var(--iris-400)); }
+    50% { transform: scale(1.1); filter: drop-shadow(0 0 15px var(--iris-300)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 5px var(--iris-400)); }
+}
+.bb-eye-pulse {
+    animation: bbPulse 3s infinite ease-in-out;
 }

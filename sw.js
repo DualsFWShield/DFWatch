@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dfwatch-v3';
+const CACHE_NAME = 'dfwatch-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -12,7 +12,8 @@ const ASSETS_TO_CACHE = [
   './app/js/export.js',
   './app/js/i18n.js',
   './app/js/profile-card.js',
-  './app/js/vendor/recommender.js',
+  './app/js/vendor/bigbrother.js',
+  './app/js/tutorial.js',
   './app/js/vendor/panoptic.js',
   './app/js/panoptic-ui.js',
   'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js',

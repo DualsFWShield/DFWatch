@@ -16,7 +16,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app/js/vendor/papaparse.min.js"></script>
     <script src="app/js/vendor/dexie.js"></script>
-    <script src="app/js/vendor/recommender.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" />
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <script src="app/js/vendor/bigbrother.js"></script>
     <link rel="stylesheet" href="app/css/style.css">
 </head>
 <body>
@@ -529,7 +531,8 @@
                                 <h3 style="font-size:13px; color:var(--text-muted); margin-bottom:12px;" data-i18n="profile.maintenance">Maintenance</h3>
                                 <button id="btn-force-update" class="action-btn" style="width:100%; margin-bottom:12px; background:var(--iris-400); color:white; border:none; font-size:13px;" data-i18n="profile.force_update">Forcer la mise à jour (Vider le cache PWA)</button>
                                 <button id="btn-sync-all-tmdb" class="action-btn secondary" style="width:100%; font-size:12px; margin-bottom:12px;" data-i18n="profile.sync_all">🔄 Actualiser toutes les données TMDB</button>
-                                <button id="btn-sync-finished" class="action-btn secondary" style="width:100%; font-size:12px;" data-i18n="profile.recalc_status">Recalculer statuts des séries</button>
+                                <button id="btn-sync-finished" class="action-btn secondary" style="width:100%; font-size:12px; margin-bottom:12px;" data-i18n="profile.recalc_status">Recalculer statuts des séries</button>
+                                <button id="btn-replay-tutorial" class="action-btn secondary" style="width:100%; font-size:12px;" data-i18n="profile.replay_tutorial">Revoir le tutoriel</button>
                                 
                                 <hr class="divider" style="margin:20px 0;">
                                 
@@ -1258,6 +1261,7 @@
     <script src="app/js/vendor/panoptic.js"></script>
     <script src="app/js/panoptic-ui.js"></script>
     <script src="app/js/app.js"></script>
+    <script src="app/js/tutorial.js"></script>
     <script>
         let refreshing = false;
         window.updateApp = function() {
