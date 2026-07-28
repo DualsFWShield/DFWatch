@@ -10,6 +10,8 @@
         document.body.classList.add('tutorial-active');
 
         const driverFn = window.driver.js.driver;
+        const getNavBtn = (page) => window.innerWidth <= 768 ? `.nav-btn[data-page="${page}"]` : `.sidebar-btn[data-page="${page}"]`;
+
         const driverObj = driverFn({
             showProgress: true,
             animate: true,
@@ -23,7 +25,7 @@
                     }
                 },
                 {
-                    element: '.nav-btn[data-page="search"], .sidebar-btn[data-page="search"]',
+                    element: getNavBtn('search'),
                     popover: {
                         title: 'Explorer',
                         description: "C'est ici que vous pouvez rechercher n'importe quel film ou série pour l'ajouter à votre collection.",
@@ -121,7 +123,7 @@
                     }
                 },
                 {
-                    element: '.nav-btn[data-page="panoptic"], .sidebar-btn[data-page="panoptic"]',
+                    element: getNavBtn('panoptic'),
                     popover: {
                         title: 'L\'œil qui voit tout 👁️',
                         description: "Voici Panoptic. Notre outil mystique pour trouver rapidement quelque chose à regarder.",
@@ -141,10 +143,34 @@
                     }
                 },
                 {
-                    element: '.nav-btn[data-page="profile"], .sidebar-btn[data-page="profile"]',
+                    element: getNavBtn('calendar'),
+                    popover: {
+                        title: 'Votre Calendrier',
+                        description: "Suivez les prochaines sorties de vos séries et films favoris. Vous y trouverez aussi vos listes personnalisées.",
+                        side: "top",
+                        onNextClick: () => {
+                            if(window.appNavigateTo) window.appNavigateTo('calendar');
+                            setTimeout(() => driverObj.moveNext(), 300);
+                        }
+                    }
+                },
+                {
+                    element: getNavBtn('stats'),
                     popover: {
                         title: 'Vos Statistiques',
-                        description: "Enfin, le Profil regroupe toutes vos statistiques de visionnage et vos succès débloqués.",
+                        description: "Découvrez vos statistiques de visionnage, votre temps passé, et débloquez des succès amusants !",
+                        side: "top",
+                        onNextClick: () => {
+                            if(window.appNavigateTo) window.appNavigateTo('stats');
+                            setTimeout(() => driverObj.moveNext(), 300);
+                        }
+                    }
+                },
+                {
+                    element: getNavBtn('profile'),
+                    popover: {
+                        title: 'Votre Profil',
+                        description: "Personnalisez votre expérience, choisissez un thème, et importez ou exportez vos données.",
                         side: "top",
                         onNextClick: () => {
                             if(window.appNavigateTo) window.appNavigateTo('profile');

@@ -3423,3 +3423,60 @@ body.tutorial-active .driver-active-element {
 .bb-eye-pulse {
     animation: bbPulse 3s infinite ease-in-out;
 }
+
+/* =========================================================
+   TUTORIAL / DRIVER.JS OVERRIDES
+   ========================================================= */
+
+/* Neutralize buttons when tutorial is active */
+body.tutorial-active .detail-actions {
+    pointer-events: none !important;
+}
+
+/* Improve popover button styles */
+.mystic-driver-popover {
+    background: var(--surface-1, #13131a) !important;
+    color: var(--text-primary, #e2e8f0) !important;
+    border: 1px solid var(--border-subtle, #334155) !important;
+    border-radius: var(--r-12, 12px) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+}
+
+.mystic-driver-popover .driver-popover-title {
+    color: var(--iris-400, #a78bfa) !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+
+.mystic-driver-popover .driver-popover-description {
+    color: var(--text-secondary, #94a3b8) !important;
+    font-size: 14px !important;
+}
+
+.mystic-driver-popover .driver-popover-footer button {
+    background: var(--surface-2, #1e293b) !important;
+    color: var(--text-primary, #e2e8f0) !important;
+    border: 1px solid var(--border-default, #475569) !important;
+    border-radius: var(--r-8, 8px) !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.mystic-driver-popover .driver-popover-footer button:hover {
+    background: var(--surface-3, #334155) !important;
+    border-color: var(--border-hover, #64748b) !important;
+}
+
+.mystic-driver-popover .driver-popover-footer .driver-popover-next-btn {
+    background: var(--iris-500, #8b5cf6) !important;
+    border-color: var(--iris-400, #a78bfa) !important;
+    color: white !important;
+}
+
+.mystic-driver-popover .driver-popover-footer .driver-popover-next-btn:hover {
+    background: var(--iris-400, #a78bfa) !important;
+}
