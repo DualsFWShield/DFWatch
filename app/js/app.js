@@ -2067,7 +2067,7 @@
             const now = new Date().getTime();
             const lastSync = show.last_sync || 0;
             const isAlreadyFinished = show.is_finished === 1;
-            const needsSync = !show.nb_episodes_total || (now - lastSync) > 86400000;
+            const needsSync = !show.nb_episodes_total || !show.seasons_data || (now - lastSync) > 86400000;
             // Skip auto-sync for finished series — use manual "Recalculer" to re-check them
             if (needsSync && !isAlreadyFinished) {
                 if (!window._syncingShows) window._syncingShows = new Set();
@@ -2082,12 +2082,17 @@
                                 const shouldBeFinished = doneEps >= total && total > 0;
                                 const isFirstSync = !show.nb_episodes_total;
                                 const genres = details.genres ? details.genres.map(g => g.name) : [];
+                                const seasons_data = details.seasons ? details.seasons.map(s => ({
+                                    season_number: s.season_number,
+                                    episode_count: s.episode_count
+                                })) : [];
                                 
                                 const updates = { 
                                     nb_episodes_total: total,
                                     next_air_date: nextAir,
                                     last_sync: now,
-                                    genres: genres
+                                    genres: genres,
+                                    seasons_data: seasons_data
                                 };
                                 if (isFirstSync) updates.is_finished = shouldBeFinished ? 1 : 0;
 
@@ -2096,6 +2101,7 @@
                                 show.next_air_date = nextAir;
                                 if (isFirstSync) show.is_finished = shouldBeFinished ? 1 : 0;
                                 show.genres = genres;
+                                show.seasons_data = seasons_data;
                                 refreshSeriesList(); // Re-render to move to correct tab
                             }
                         } catch(e) {}
@@ -2103,8 +2109,15 @@
                 }
             }
 
-            const nextEp = lastEp + 1;
-            const nextSeason = lastSeason || 1;
+            let nextEp = lastEp + 1;
+            let nextSeason = lastSeason || 1;
+            if (show.seasons_data) {
+                const currentSeasonData = show.seasons_data.find(s => s.season_number === (lastSeason || 1));
+                if (currentSeasonData && nextEp > currentSeasonData.episode_count && currentSeasonData.episode_count > 0) {
+                    nextEp = 1;
+                    nextSeason = (lastSeason || 1) + 1;
+                }
+            }
             const remaining = (show.nb_episodes_seen || episodesWatched) > 0 ? `+${show.nb_episodes_seen || episodesWatched}` : '';
             
             // Logic for categories
