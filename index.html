@@ -823,6 +823,93 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SHARE CARD OVERLAY -->
+            <div id="share-card-overlay" class="detail-overlay hidden" style="z-index: 100000; background: var(--bg-body);">
+                <div class="detail-content" style="display:flex; flex-direction:column; padding: 20px; box-sizing: border-box;">
+                    <button class="detail-back" id="share-card-back" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.5); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; color: white; z-index: 10;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    
+                    <h2 style="margin-top: 40px; margin-bottom: 20px; text-align: center;">Générer une Carte</h2>
+                    
+                    <!-- Preview Area -->
+                    <div id="share-card-preview-container" style="display: flex; justify-content: center; margin-bottom: 24px; overflow: hidden; border-radius: var(--r-16);">
+                        <div id="share-card-canvas-area" style="position: relative; width: 300px; min-height: 450px; background: linear-gradient(135deg, #1c1c28, #2a2a35); border-radius: 16px; padding: 20px; color: white; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden;">
+                            <div id="share-card-bg-blur" style="position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; background-size: cover; background-position: center; filter: blur(25px); opacity: 0.25; z-index: 0;"></div>
+                            <div id="share-card-bg-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(20, 20, 30, 0.55); z-index: 0;"></div>
+                            
+                            <img src="logo/DFWatch-wnobg.png" alt="DFWatch" style="height: 24px; position: relative; z-index: 1; margin-bottom: 12px; opacity: 0.8;" id="share-card-logo">
+                            
+                            <div style="z-index: 1; position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; flex: 1; justify-content: center;">
+                                <img id="share-card-poster" src="" style="width: 160px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-bottom: 16px;">
+                                <h3 id="share-card-title" style="margin: 0 0 8px 0; text-align: center; font-size: 18px; font-weight: 700; line-height: 1.2; color: #ffffff;">Titre</h3>
+                                
+                                <div id="share-card-meta" style="display: flex; gap: 6px; font-size: 11px; color: #d1d5db; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; align-items: center;">
+                                    <span id="share-card-year">2024</span>
+                                    <span class="share-card-sep" style="color: #6b7280;">·</span>
+                                    <span id="share-card-duration">120 min</span>
+                                    <span class="share-card-sep" style="color: #6b7280;">·</span>
+                                    <span id="share-card-pegi" style="font-weight: 600;">12+</span>
+                                </div>
+                                
+                                <div id="share-card-genres" style="font-size: 11px; color: #b8bcc5; text-align: center; margin-bottom: 16px; max-width: 90%;">Action, Aventure</div>
+                            </div>
+                            
+                            <div id="share-card-ratings-container" style="position: relative; z-index: 1; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding-top: 16px; border-top: 1px solid #3a3a4a;">
+                                <div id="share-card-user-rating-container">
+                                    <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Ma Note</div>
+                                    <div id="share-card-user-rating" style="color: #34d399; font-size: 18px; letter-spacing: 2px;">★★★★★</div>
+                                </div>
+                                <div id="share-card-commu-rating-container" style="text-align: right;">
+                                    <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Score Commu</div>
+                                    <div id="share-card-commu-rating" style="font-size: 16px; font-weight: 700; color: #fbbf24;">85%</div>
+                                </div>
+                            </div>
+                            <div id="share-card-url" style="position: relative; z-index: 1; width: 100%; text-align: center; font-size: 10px; color: #6b7280; margin-top: 16px; letter-spacing: 1px; font-weight: 500;">dfwatch.dualsfwshield.be</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Settings -->
+                    <div style="background: var(--surface-2); padding: 16px; border-radius: var(--r-12); margin-bottom: 24px;">
+                        <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Éléments à afficher</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" id="toggle-card-logo" checked> Logo DFWatch
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" id="toggle-card-year" checked> Année
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" id="toggle-card-duration" checked> Durée
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" id="toggle-card-pegi" checked> PEGI
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" id="toggle-card-genres" checked> Genres
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" id="toggle-card-user-rating" checked> Ma Note
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" id="toggle-card-commu-rating" checked> Score Commu
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <button id="btn-share-card-share" class="action-btn primary" style="flex: 1; padding: 14px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            Partager
+                        </button>
+                        <button id="btn-share-card-download" class="action-btn secondary" style="flex: 1; padding: 14px; font-size: 14px; font-weight: 600; background: var(--surface-3); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Télécharger
+                        </button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -1260,6 +1347,7 @@
     <script src="app/js/profile-card.js"></script>
     <script src="app/js/vendor/panoptic.js"></script>
     <script src="app/js/panoptic-ui.js"></script>
+    <script src="app/js/vendor/html2canvas.min.js"></script>
     <script src="app/js/app.js"></script>
     <script src="app/js/tutorial.js"></script>
     <script>

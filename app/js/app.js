@@ -332,7 +332,7 @@
                 
                 const existing = await db.bigbrother_candidates.where('tmdb_id').equals(item.id).first();
                 if (existing) {
-                    await db.bigbrother_candidates.update(existing.id, {
+                    await db.bigbrother_candidates.update(existing.tmdb_id, {
                         score_base: existing.score_base + weight,
                         last_updated: Date.now()
                     });
@@ -1623,22 +1623,10 @@
         });
 
         // Share button
-        document.getElementById('btn-share-show').addEventListener('click', async function() {
-            const shareData = {
-                title: `${title} — DFWatch`,
-                text: `Je suis ${title} sur DFWatch ! ${genres ? '(' + genres + ')' : ''}`,
-                url: `https://www.themoviedb.org/tv/${show.id}`
-            };
-            if (navigator.share) {
-                try { await navigator.share(shareData); } catch (e) { /* user cancelled */ }
-            } else {
-                // Fallback: copy to clipboard
-                try {
-                    await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-                    showToast(window.I18n ? window.I18n.get('toast.link_copied') : 'Lien copié dans le presse-papier !');
-                } catch (e) {
-                    console.error('Error updating watch history', e);
-                }
+        // Share button
+        document.getElementById('btn-share-show').addEventListener('click', function() {
+            if (typeof showShareCardModal === 'function') {
+                showShareCardModal(show, 'tv', userRating);
             }
         });
 
@@ -1816,20 +1804,10 @@
             }
         });
 
-        // Share movie
-        document.getElementById('btn-share-movie').addEventListener('click', async function() {
-            const shareData = {
-                title: `${title} — DFWatch`,
-                text: `J'ai vu ${title} sur DFWatch ! ${genres ? '(' + genres + ')' : ''}`,
-                url: `https://www.themoviedb.org/movie/${movie.id}`
-            };
-            if (navigator.share) {
-                try { await navigator.share(shareData); } catch (e) {}
-            } else {
-                try {
-                    await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-                    showToast(window.I18n ? window.I18n.get('toast.link_copied') : 'Lien copié dans le presse-papier !');
-                } catch(e) { showToast(window.I18n ? window.I18n.get('toast.share_error') : 'Impossible de partager.'); }
+        // Share button
+        document.getElementById('btn-share-movie').addEventListener('click', function() {
+            if (typeof showShareCardModal === 'function') {
+                showShareCardModal(movie, 'movie', userRating);
             }
         });
 
@@ -4605,6 +4583,279 @@ window.renderAvatarParticles = function(colors) {
                 });
             }
         }
+    }
+
+    // ---- Share Card Logic ----
+    let currentShareCardItem = null;
+    let currentShareCardType = null;
+    let currentShareCardUserRating = 0;
+
+    async function fetchAsDataURL(url) {
+        if (!url) return '';
+        try {
+            // Append cache buster to force a fresh CORS request
+            const fetchUrl = url + (url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+            const response = await fetch(fetchUrl, {
+                mode: 'cors',
+                cache: 'no-cache'
+            });
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (e) {
+            console.error('Failed to fetch image as data URL', e);
+            return url;
+        }
+    }
+
+    function getPEGIText(item, mediaType) {
+        let cert = '';
+        if (mediaType === 'tv' && item.content_ratings && item.content_ratings.results) {
+            const fr = item.content_ratings.results.find(r => r.iso_3166_1 === 'FR');
+            const us = item.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+            const target = fr || us || item.content_ratings.results[0];
+            if (target) cert = target.rating;
+        } else if (mediaType === 'movie' && item.release_dates && item.release_dates.results) {
+            const fr = item.release_dates.results.find(r => r.iso_3166_1 === 'FR');
+            const us = item.release_dates.results.find(r => r.iso_3166_1 === 'US');
+            const target = fr || us || item.release_dates.results[0];
+            if (target && target.release_dates && target.release_dates.length > 0) {
+                cert = target.release_dates[0].certification;
+            }
+        }
+        if (!cert && item.adult) cert = '18';
+        if (!cert) return 'TP'; // Tout public
+
+        const c = cert.toLowerCase();
+        if (c.includes('18') || c === 'r' || c === 'nc-17' || c === 'tv-ma') return '18+';
+        if (c.includes('16') || c === '15') return '16+';
+        if (c.includes('12') || c.includes('13') || c === 'tv-14' || c === 'pg-13') return '12+';
+        if (c.includes('7') || c.includes('10') || c === 'tv-pg' || c === 'pg') return '7+';
+        return cert;
+    }
+
+    function showShareCardModal(item, mediaType, userRating) {
+        currentShareCardItem = item;
+        currentShareCardType = mediaType;
+        currentShareCardUserRating = userRating;
+
+        const title = item.name || item.title || 'Sans titre';
+        const year = ((mediaType === 'tv' ? item.first_air_date : item.release_date) || '').split('-')[0] || '';
+        const genres = (item.genres || []).map(g => g.name).join(', ');
+        
+        let durationStr = '';
+        if (mediaType === 'tv' && item.episode_run_time && item.episode_run_time.length > 0) {
+            durationStr = `${item.episode_run_time[0]} min`;
+        } else if (mediaType === 'movie' && item.runtime) {
+            durationStr = `${item.runtime} min`;
+        }
+
+        const pegi = getPEGIText(item, mediaType);
+        const commuRating = item.vote_average ? (item.vote_average * 10).toFixed(0) + '%' : '';
+        const posterUrl = item.poster_path ? TMDB.imgUrl(item.poster_path, 'w500') : '';
+        const backdropUrl = item.backdrop_path ? TMDB.imgUrl(item.backdrop_path, 'w500') : '';
+
+        // Update preview HTML
+        document.getElementById('share-card-title').textContent = title;
+        document.getElementById('share-card-year').textContent = year;
+        document.getElementById('share-card-duration').textContent = durationStr;
+        document.getElementById('share-card-pegi').textContent = pegi;
+        document.getElementById('share-card-genres').textContent = genres;
+        document.getElementById('share-card-commu-rating').textContent = commuRating;
+        
+        const posterEl = document.getElementById('share-card-poster');
+        const bgBlur = document.getElementById('share-card-bg-blur');
+        
+        posterEl.src = '';
+        bgBlur.style.backgroundImage = 'none';
+
+        if (posterUrl) {
+            posterEl.style.display = 'block';
+            fetchAsDataURL(posterUrl).then(dataUrl => {
+                posterEl.src = dataUrl;
+            });
+        } else {
+            posterEl.style.display = 'none';
+        }
+
+        if (backdropUrl) {
+            fetchAsDataURL(backdropUrl).then(dataUrl => {
+                bgBlur.style.backgroundImage = `url(${dataUrl})`;
+            });
+        } else if (posterUrl) {
+            fetchAsDataURL(posterUrl).then(dataUrl => {
+                bgBlur.style.backgroundImage = `url(${dataUrl})`;
+            });
+        }
+
+        let userRatingHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            userRatingHtml += i <= userRating ? '★' : '☆';
+        }
+        document.getElementById('share-card-user-rating').textContent = userRatingHtml;
+
+        // Reset toggles and update visibility
+        const toggles = [
+            'logo', 'year', 'duration', 'pegi', 'genres', 'user-rating', 'commu-rating'
+        ];
+        toggles.forEach(id => {
+            const checkbox = document.getElementById(`toggle-card-${id}`);
+            if (checkbox) {
+                // hide fields that don't have data
+                const valueHasData = (id === 'year' && year) || 
+                                     (id === 'duration' && durationStr) ||
+                                     (id === 'pegi' && pegi) ||
+                                     (id === 'genres' && genres) ||
+                                     (id === 'commu-rating' && commuRating) ||
+                                     (id === 'user-rating' || id === 'logo'); // User rating and logo always have *some* state
+                
+                if (!valueHasData) {
+                    checkbox.checked = false;
+                    checkbox.parentElement.style.display = 'none';
+                } else {
+                    checkbox.checked = true;
+                    checkbox.parentElement.style.display = 'flex';
+                }
+            }
+        });
+        updateShareCardPreview();
+
+        window.openOverlay('share-card-overlay');
+    }
+
+    function updateShareCardPreview() {
+        const logo = document.getElementById('toggle-card-logo').checked;
+        const year = document.getElementById('toggle-card-year').checked;
+        const duration = document.getElementById('toggle-card-duration').checked;
+        const pegi = document.getElementById('toggle-card-pegi').checked;
+        const genres = document.getElementById('toggle-card-genres').checked;
+        const userRating = document.getElementById('toggle-card-user-rating').checked;
+        const commuRating = document.getElementById('toggle-card-commu-rating').checked;
+
+        document.getElementById('share-card-logo').style.display = logo ? 'block' : 'none';
+        document.getElementById('share-card-year').style.display = year ? 'inline' : 'none';
+        document.getElementById('share-card-duration').style.display = duration ? 'inline' : 'none';
+        document.getElementById('share-card-pegi').style.display = pegi ? 'inline' : 'none';
+        document.getElementById('share-card-genres').style.display = genres ? 'block' : 'none';
+        
+        document.getElementById('share-card-user-rating-container').style.display = userRating ? 'block' : 'none';
+        document.getElementById('share-card-commu-rating-container').style.display = commuRating ? 'block' : 'none';
+        
+        // Manage dot separators visibility
+        const seps = document.querySelectorAll('#share-card-meta .share-card-sep');
+        // sep0 is between year and duration, sep1 is between duration and pegi
+        if (seps.length >= 2) {
+            seps[0].style.display = (year && duration) ? 'inline' : 'none';
+            seps[1].style.display = ((year || duration) && pegi) ? 'inline' : 'none';
+        }
+
+        // Hide the whole meta line if year, duration, and pegi are all hidden
+        if (!year && !duration && !pegi) {
+            document.getElementById('share-card-meta').style.display = 'none';
+        } else {
+            document.getElementById('share-card-meta').style.display = 'flex';
+        }
+
+        // Hide the whole ratings container if both are hidden
+        if (!userRating && !commuRating) {
+            document.getElementById('share-card-ratings-container').style.display = 'none';
+        } else {
+            document.getElementById('share-card-ratings-container').style.display = 'flex';
+        }
+    }
+
+    // Toggle listeners
+    ['logo', 'year', 'duration', 'pegi', 'genres', 'user-rating', 'commu-rating'].forEach(id => {
+        const checkbox = document.getElementById(`toggle-card-${id}`);
+        if (checkbox) {
+            checkbox.addEventListener('change', updateShareCardPreview);
+        }
+    });
+
+    document.getElementById('share-card-back').addEventListener('click', () => {
+        window.closeOverlay('share-card-overlay');
+    });
+
+    async function generateShareCanvas(btnElement) {
+        if (typeof html2canvas === 'undefined') {
+            showToast('L\'outil de génération n\'est pas chargé.');
+            return null;
+        }
+
+        const canvasArea = document.getElementById('share-card-canvas-area');
+        const originalHtml = btnElement.innerHTML;
+        
+        try {
+            btnElement.textContent = 'Génération...';
+            btnElement.disabled = true;
+
+            const canvas = await html2canvas(canvasArea, {
+                scale: 2, // Higher resolution
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#13131a',
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: document.documentElement.scrollWidth,
+                windowHeight: document.documentElement.scrollHeight
+            });
+            return canvas;
+        } catch (e) {
+            console.error('Error generating card:', e);
+            showToast('Erreur lors de la génération de l\'image.');
+            return null;
+        } finally {
+            btnElement.innerHTML = originalHtml;
+            btnElement.disabled = false;
+        }
+    }
+
+    document.getElementById('btn-share-card-share').addEventListener('click', async function() {
+        const canvas = await generateShareCanvas(this);
+        if (!canvas) return;
+
+        // Try to share via Web Share API
+        if (navigator.share && navigator.canShare) {
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], 'dfwatch-share.png', { type: 'image/png' });
+                const shareData = {
+                    files: [file],
+                    title: `${currentShareCardItem.name || currentShareCardItem.title} - DFWatch`,
+                    text: `Découvrez mon avis sur ${currentShareCardItem.name || currentShareCardItem.title} !`
+                };
+                if (navigator.canShare(shareData)) {
+                    try {
+                        await navigator.share(shareData);
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            showToast('Erreur lors du partage.');
+                        }
+                    }
+                } else {
+                    showToast('Partage de fichier non supporté sur ce navigateur.');
+                }
+            }, 'image/png');
+        } else {
+            showToast('L\'API de partage n\'est pas supportée sur cet appareil.');
+        }
+    });
+
+    document.getElementById('btn-share-card-download').addEventListener('click', async function() {
+        const canvas = await generateShareCanvas(this);
+        if (!canvas) return;
+        downloadCanvas(canvas);
+    });
+
+    function downloadCanvas(canvas) {
+        const link = document.createElement('a');
+        link.download = `DFWatch-${currentShareCardItem.name || currentShareCardItem.title}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('Image téléchargée !');
     }
 
     // Expose for external modules (like panoptic-ui.js)
