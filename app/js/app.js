@@ -2119,7 +2119,13 @@
         let watchingCount = 0, finishedCount = 0, upcomingCount = 0;
 
         for (const show of shows) {
-            const history = await db.watch_history.where('show_name').equals(show.name).toArray();
+            let history = [];
+            if (show.tvtime_id) {
+                history = await db.watch_history.where('show_tvtime_id').equals(String(show.tvtime_id)).toArray();
+            }
+            if (history.length === 0) {
+                history = await db.watch_history.where('show_name').equals(show.name).toArray();
+            }
             const episodesWatched = history.length;
             const posterUrl = show.poster_path ? TMDB.imgUrl(show.poster_path, 'w185') : null;
 
