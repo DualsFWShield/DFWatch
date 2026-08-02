@@ -3503,10 +3503,15 @@ body.tutorial-active .detail-actions {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
 }
-
-/* ── ANTI-SPOIL MODE ── */
-body.no-spoil .season-ep-row.unseen .ep-overview,
-body.no-spoil .season-ep-row.unseen .ep-name {
+.card-preview-container[data-ratio="9:16"] {
+    aspect-ratio: 9 / 16;
+    max-width: 280px;
+}
+.card-preview-container[data-ratio="1:1"] {
+    aspect-ratio: 1 / 1;
+    max-width: 400px;
+}
+.card-preview-container[data-ratio="16:9"] {
     aspect-ratio: 16 / 9;
     max-width: 100%;
 }

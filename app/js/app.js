@@ -1527,6 +1527,9 @@
                     }
                     for (const r of records) await db.watch_history.delete(r.id);
                     btn.classList.remove('checked');
+                    
+                    const row = btn.closest('.season-ep-row');
+                    if (row) row.classList.add('unseen');
                 } else {
                     // Check
                     await db.watch_history.add({
@@ -1536,6 +1539,9 @@
                         rewatch_count: 0, runtime: runtime * 60
                     });
                     btn.classList.add('checked');
+                    
+                    const row = btn.closest('.season-ep-row');
+                    if (row) row.classList.remove('unseen');
                 }
 
                 // Update season progress

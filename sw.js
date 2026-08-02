@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dfwatch-v6';
+const CACHE_NAME = 'dfwatch-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
