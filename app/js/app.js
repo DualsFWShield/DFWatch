@@ -123,9 +123,25 @@
         langSelect.value = window.I18n.lang;
         langSelect.addEventListener('change', (e) => {
             window.I18n.setLang(e.target.value);
-            // Re-render UI that depends on JS strings
             refreshProfile();
             refreshStats();
+        });
+    }
+
+    // Anti-Spoil Init
+    const isNoSpoil = localStorage.getItem('dfwatch_no_spoil') === 'true';
+    if (isNoSpoil) document.body.classList.add('no-spoil');
+    else document.body.classList.remove('no-spoil');
+
+    const noSpoilCheckbox = document.getElementById('dfwatch-no-spoil');
+    if (noSpoilCheckbox) {
+        noSpoilCheckbox.checked = isNoSpoil;
+        
+        noSpoilCheckbox.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            localStorage.setItem('dfwatch_no_spoil', checked);
+            if (checked) document.body.classList.add('no-spoil');
+            else document.body.classList.remove('no-spoil');
         });
     }
 
@@ -384,12 +400,67 @@
             return all.filter(f => f.feedback_value === 1);
         },
         async getHighlyRatedItems() {
-            const topShows = await db.shows.where('user_rating').above(3).toArray();
-            const topMovies = await db.movies.where('user_rating').above(3).toArray();
-            return [
-                ...topShows.map(s => ({ tmdb_id: s.tmdb_id, type: 'tv', genre_ids: s.genre_ids || [] })),
-                ...topMovies.map(m => ({ tmdb_id: m.tmdb_id, type: 'movie', genre_ids: m.genre_ids || [] }))
-            ];
+            let topShows = await db.shows.where('user_rating').above(3).toArray();
+            let topMovies = await db.movies.where('user_rating').above(3).toArray();
+            
+            // If they haven't rated anything, fallback to watched items
+            if (topShows.length === 0) {
+                topShows = await db.shows.filter(s => s.is_followed === 1 || s.is_favorited === 1).toArray();
+            }
+            if (topMovies.length === 0) {
+                topMovies = await db.movies.filter(m => m.status === 'watched').toArray();
+            }
+            
+            // Limit to 20 to avoid spamming TMDB on load
+            topShows = topShows.slice(0, 20);
+            topMovies = topMovies.slice(0, 20);
+            const TMDB_GENRES = { "Action":10759, "Adventure":10759, "Animation":16, "Comedy":35, "Crime":80, "Documentary":99, "Drama":18, "Family":10751, "Kids":10762, "Mystery":9648, "News":10763, "Reality":10764, "Sci-Fi":10765, "Fantasy":10765, "Soap":10766, "Talk":10767, "War":10768, "Politics":10768, "Western":37 };
+
+            const results = [];
+            for (const s of topShows) {
+                if (!s.genre_ids || s.genre_ids.length === 0 || s.genre_ids.some(id => typeof id !== 'number')) {
+                    try {
+                        const details = await window.TMDB.getShowDetails(s.tmdb_id);
+                        if (details && details.genres) {
+                            s.genre_ids = details.genres.map(g => g.id || TMDB_GENRES[g.name] || g.name).filter(id => typeof id === 'number');
+                            if (s.genre_ids.length === 0) s.genre_ids = [-1]; // mark as fetched but empty
+                            s.first_air_date = details.first_air_date;
+                            await db.shows.update(s.id, { genre_ids: s.genre_ids, first_air_date: s.first_air_date });
+                        } else {
+                            await db.shows.update(s.id, { genre_ids: [-1] });
+                            s.genre_ids = [-1];
+                        }
+                    } catch(e) {
+                        await db.shows.update(s.id, { genre_ids: [-1] });
+                        s.genre_ids = [-1];
+                    }
+                }
+                const gIds = (s.genre_ids || []).filter(id => typeof id === 'number' && id !== -1);
+                results.push({ tmdb_id: s.tmdb_id, type: 'tv', genre_ids: gIds, release_date: s.first_air_date || s.release_date });
+            }
+            
+            for (const m of topMovies) {
+                if (!m.genre_ids || m.genre_ids.length === 0 || m.genre_ids.some(id => typeof id !== 'number')) {
+                    try {
+                        const details = await window.TMDB.getMovieDetails(m.tmdb_id);
+                        if (details && details.genres) {
+                            m.genre_ids = details.genres.map(g => g.id || TMDB_GENRES[g.name] || g.name).filter(id => typeof id === 'number');
+                            if (m.genre_ids.length === 0) m.genre_ids = [-1];
+                            m.release_date = details.release_date;
+                            await db.movies.update(m.id, { genre_ids: m.genre_ids, release_date: m.release_date });
+                        } else {
+                            await db.movies.update(m.id, { genre_ids: [-1] });
+                            m.genre_ids = [-1];
+                        }
+                    } catch(e){
+                        await db.movies.update(m.id, { genre_ids: [-1] });
+                        m.genre_ids = [-1];
+                    }
+                }
+                const gIds = (m.genre_ids || []).filter(id => typeof id === 'number' && id !== -1);
+                results.push({ tmdb_id: m.tmdb_id, type: 'movie', genre_ids: gIds, release_date: m.release_date });
+            }
+            return results;
         },
         async getCandidates() {
             return db.bigbrother_candidates.toArray();
@@ -465,7 +536,27 @@
             }
 
             // --- MOOD SELECTION ---
-            const currentMood = document.getElementById('bb-mood-select') ? document.getElementById('bb-mood-select').value : 'normal';
+            let currentMood = document.getElementById('bb-mood-select') ? document.getElementById('bb-mood-select').value : 'normal';
+            
+            // Auto Mood Logic
+            const autoMoodToggle = document.getElementById('dfwatch-auto-mood');
+            const autoMoodEnabled = autoMoodToggle ? autoMoodToggle.checked : true;
+            if (autoMoodEnabled) {
+                const now = new Date();
+                const day = now.getDay();
+                const hour = now.getHours();
+                const isWeekend = day === 0 || day === 6 || (day === 5 && hour >= 18);
+                const isEvening = hour >= 18;
+                
+                if (isWeekend) currentMood = 'weekend';
+                else if (isEvening) currentMood = 'weeknight';
+                else currentMood = 'normal';
+                
+                if (document.getElementById('bb-mood-select')) {
+                    document.getElementById('bb-mood-select').value = currentMood;
+                }
+            }
+
             _bigBrotherEngine.config.mood = currentMood;
 
             const { results: finalResults } = await _bigBrotherEngine.recommend(_bigBrotherAdapter);
@@ -1065,7 +1156,7 @@
                 const epMetaParts = [airDateStr, runtimeStr].filter(Boolean).join(' · ');
 
                 epsHTML += `
-                    <div class="season-ep-row">
+                    <div class="season-ep-row ${!checked ? 'unseen' : ''}">
                         <span class="ep-num">${ep.episode_number}</span>
                         <div class="ep-details-col">
                             <span class="ep-name">${ep.name || `Épisode ${ep.episode_number}`} ${rewatchBadge}</span>
@@ -2895,6 +2986,67 @@
         });
     }
 
+    // ---- Wrapped Logic ----
+    const btnShowWrapped = document.getElementById('btn-show-wrapped');
+    const wrappedYearLabel = document.getElementById('wrapped-year-label');
+    const currentYearStr = new Date().getFullYear().toString();
+    if (wrappedYearLabel) wrappedYearLabel.textContent = currentYearStr;
+
+    if (btnShowWrapped) {
+        btnShowWrapped.addEventListener('click', async () => {
+            const year = currentYearStr;
+            document.getElementById('wrapped-year-title').textContent = year;
+            const content = document.getElementById('wrapped-content');
+            content.innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-secondary);">Calcul de votre année...</div>';
+            window.openOverlay('wrapped-modal');
+            
+            // Collect stats for current year
+            const history = await db.watch_history.toArray();
+            const yearHistory = history.filter(h => h.watched_at && h.watched_at.startsWith(year));
+            
+            let totalEpisodes = yearHistory.length;
+            let totalEpMinutes = 0;
+            let showWatchCount = {};
+            
+            yearHistory.forEach(h => {
+                let rt = parseInt(h.runtime, 10);
+                if (isNaN(rt)) rt = 45;
+                totalEpMinutes += rt;
+                showWatchCount[h.show_name] = (showWatchCount[h.show_name] || 0) + 1;
+            });
+            
+            const topShows = Object.entries(showWatchCount).sort((a,b) => b[1] - a[1]).slice(0, 3);
+            
+            const mHistory = await db.movie_watches.toArray();
+            const yearMovies = mHistory.filter(m => m.watched_at && m.watched_at.startsWith(year));
+            let totalMovies = yearMovies.length;
+            
+            const totalHours = Math.floor(totalEpMinutes / 60);
+            
+            let html = `
+                <div style="display:flex; justify-content:space-between; text-align:center; background:var(--surface-2); padding: 16px; border-radius: var(--r-12);">
+                    <div><div style="font-size:24px; font-weight:800; color:var(--iris-400);">${totalEpisodes}</div><div style="font-size:12px; color:var(--text-secondary);">Épisodes</div></div>
+                    <div><div style="font-size:24px; font-weight:800; color:var(--cyan-400);">${totalMovies}</div><div style="font-size:12px; color:var(--text-secondary);">Films</div></div>
+                    <div><div style="font-size:24px; font-weight:800; color:var(--text-primary);">${totalHours}h</div><div style="font-size:12px; color:var(--text-secondary);">Séries</div></div>
+                </div>
+                <div>
+                    <h3 style="font-size:16px; margin-bottom:12px; color:var(--text-primary);">Séries les plus dévorées</h3>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+            `;
+            if(topShows.length === 0) {
+                html += `<div style="padding:12px; text-align:center; color:var(--text-muted);">Aucune donnée pour cette année.</div>`;
+            }
+            topShows.forEach((s, idx) => {
+                html += `<div style="display:flex; justify-content:space-between; padding: 12px; background:var(--surface-3); border-radius:var(--r-8);">
+                    <span style="font-weight:600; color:var(--text-primary);">#${idx+1} ${s[0]}</span>
+                    <span style="color:var(--text-muted);">${s[1]} épisodes</span>
+                </div>`;
+            });
+            html += `</div></div>`;
+            content.innerHTML = html;
+        });
+    }
+
     async function refreshStats() {
         const achs = await Achievements.evaluate();
         
@@ -2925,6 +3077,56 @@
 
         // Render Chart
         await renderStatsChart();
+
+        // Render BB Dashboard
+        const bbContainer = document.getElementById('bb-dashboard-container');
+        if (bbContainer) {
+            try {
+                const affinities = await _bigBrotherEngine.buildProfile(_bigBrotherAdapter);
+                
+                const GENRES_MAP = {
+                    28: 'Action', 12: 'Aventure', 16: 'Animation', 35: 'Comédie', 80: 'Crime',
+                    99: 'Documentaire', 18: 'Drame', 10751: 'Familial', 14: 'Fantastique',
+                    36: 'Histoire', 27: 'Horreur', 10402: 'Musique', 9648: 'Mystère',
+                    10749: 'Romance', 878: 'Science-Fiction', 10770: 'Téléfilm', 53: 'Thriller',
+                    10752: 'Guerre', 37: 'Western', 10759: 'Action & Aventure',
+                    10762: 'Kids', 10763: 'News', 10764: 'Reality', 10765: 'Sci-Fi & Fantasy',
+                    10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics'
+                };
+
+                // Top 3 genres
+                let topGenres = Object.entries(affinities.genre)
+                    .sort((a,b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([id, score]) => {
+                        const name = GENRES_MAP[id] || `Genre ${id}`;
+                        return `<li>${name} <span style="color:var(--text-muted);">(${(score).toFixed(1)})</span></li>`;
+                    }).join('');
+                
+                // Top Decades
+                let topDecades = Object.entries(affinities.decade || {})
+                    .sort((a,b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([decade, score]) => `<li>Années ${decade} <span style="color:var(--text-muted);">(${(score).toFixed(1)})</span></li>`)
+                    .join('');
+
+                bbContainer.innerHTML = `
+                    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:140px; background:var(--surface-3); padding:12px; border-radius:var(--r-8);">
+                            <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--text-muted); display:flex; align-items:center; gap:8px;"><span>🎭</span> Top Genres</h4>
+                            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--text-primary);">${topGenres || '<li>Pas assez de données</li>'}</ul>
+                        </div>
+                        <div style="flex:1; min-width:140px; background:var(--surface-3); padding:12px; border-radius:var(--r-8);">
+                            <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--text-muted); display:flex; align-items:center; gap:8px;"><span>⏳</span> Décennies Favorites</h4>
+                            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--text-primary);">${topDecades || '<li>Pas assez de données</li>'}</ul>
+                        </div>
+                    </div>
+                `;
+            } catch(e) {
+                console.error(e);
+                bbContainer.innerHTML = `<p style="color:var(--text-muted); font-size:13px; text-align:center;">Impossible de charger les données.</p>`;
+            }
+        }
 
         // Render achievements
         const container = document.getElementById('achievements-container');
@@ -3313,6 +3515,7 @@
         });
     };
 
+    // Share Achievement removed as requested
     // ---- Toast ----
     window.showToast = function(msg, duration = 3000) {
         const toast = document.getElementById('toast');
@@ -3323,6 +3526,49 @@
             toast.classList.remove('show');
             setTimeout(() => toast.classList.add('hidden'), 300);
         }, duration);
+    };
+
+    window.showAchievementToast = function(def) {
+        const toast = document.createElement('div');
+        toast.className = 'achievement-toast show';
+        toast.innerHTML = `
+            <div class="ach-icon" style="font-size:36px; filter:drop-shadow(0 0 15px var(--iris-glow));">${def.icon}</div>
+            <div class="ach-text" style="display:flex; flex-direction:column; gap:2px;">
+                <span style="font-size:11px; color:var(--iris-400); font-weight:800; letter-spacing:1px; text-transform:uppercase;">Nouveau Succès Débloqué !</span>
+                <span style="font-size:16px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.5);">${def.name}</span>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        // Simple DOM confetti burst from the center top
+        for(let i=0; i<20; i++) {
+            const conf = document.createElement('div');
+            conf.textContent = ['✨','🎉','🎊','🔥','⭐'][Math.floor(Math.random()*5)];
+            conf.style.position = 'fixed';
+            conf.style.left = '50%';
+            conf.style.top = '60px';
+            conf.style.fontSize = (12 + Math.random()*16) + 'px';
+            conf.style.pointerEvents = 'none';
+            conf.style.zIndex = '5001';
+            conf.style.transition = 'all 1.5s cubic-bezier(.25,.8,.25,1)';
+            document.body.appendChild(conf);
+            
+            // Next frame trigger animation
+            requestAnimationFrame(() => {
+                const angle = (Math.random() * Math.PI) - (Math.PI/2); // Spread upward/sideways
+                const dist = 60 + Math.random() * 150;
+                conf.style.transform = `translate(calc(-50% + ${Math.sin(angle)*dist}px), ${-Math.cos(angle)*dist + (Math.random()*50)}px) scale(${Math.random()*0.5 + 0.5}) rotate(${Math.random()*360}deg)`;
+                conf.style.opacity = '0';
+            });
+            
+            setTimeout(() => conf.remove(), 1600);
+        }
+
+        // Auto remove
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 600);
+        }, 5000);
     };
 
     // ---- Update sidebar mini-stats ----
@@ -3904,19 +4150,25 @@
             const isToday = dateObj.toDateString() === today.toDateString();
             const hasEvents = dayEvents.length > 0;
             
-            let dots = '';
-            let bgImage = '';
+            let postersHtml = '';
             if (hasEvents) {
-                dots = '<div class="cal-dots" style="position:relative; z-index:2;">' + dayEvents.map(e => `<span class="cal-dot ${e.type}"></span>`).join('') + '</div>';
-                const firstWithPoster = dayEvents.find(e => e.poster);
-                if (firstWithPoster) {
-                    bgImage = `background-image: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 50%), url('${TMDB.imgUrl(firstWithPoster.poster, 'w185')}'); background-size: cover; background-position: center; border: none;`;
+                const eventsWithPosters = dayEvents.filter(e => e.poster);
+                if (eventsWithPosters.length > 0) {
+                    const displayCount = Math.min(3, eventsWithPosters.length);
+                    const toShow = eventsWithPosters.slice(0, displayCount);
+                    postersHtml = '<div class="cal-mini-posters">' + toShow.map(e => `<img src="${TMDB.imgUrl(e.poster, 'w92')}" alt="" loading="lazy">`).join('');
+                    if (dayEvents.length > displayCount) {
+                        postersHtml += `<div class="cal-more">+${dayEvents.length - displayCount}</div>`;
+                    }
+                    postersHtml += '</div>';
+                } else {
+                    postersHtml = '<div class="cal-dots" style="position:relative; z-index:2;">' + dayEvents.map(e => `<span class="cal-dot ${e.type}"></span>`).join('') + '</div>';
                 }
             }
             
-            gridHTML += `<div class="cal-day ${isToday ? 'today' : ''} ${hasEvents ? 'has-events' : ''}" data-date="${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}" style="${bgImage}">
-                <span style="position:relative; z-index:2; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${day}</span>
-                ${dots}
+            gridHTML += `<div class="cal-day ${isToday ? 'today' : ''} ${hasEvents ? 'has-events' : ''}" data-date="${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}">
+                <span class="cal-day-num">${day}</span>
+                ${postersHtml}
             </div>`;
         }
         

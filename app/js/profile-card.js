@@ -586,7 +586,7 @@ const ProfileCard = (() => {
     }
 
     async function renderCard(data) {
-        const format = CARD_FORMATS[data.format] || CARD_FORMATS['9:16'];
+        const format = CARD_FORMATS[data.format] || CARD_FORMATS['1:1'];
         const theme = CARD_THEMES[data.theme] || CARD_THEMES.void_neon;
         const { width, height } = format;
         const canvas = document.createElement('canvas');

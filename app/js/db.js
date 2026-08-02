@@ -83,7 +83,12 @@ const DB = {
             db.movies.clear(),
             db.watch_history.clear(),
             db.movie_watches.clear(),
-            db.achievements.clear()
+            db.achievements.clear(),
+            db.recommendation_feedback.clear(),
+            db.custom_lists.clear(),
+            db.list_items.clear(),
+            db.episode_notes.clear(),
+            db.bigbrother_candidates.clear()
         ]);
     },
 
@@ -134,3 +139,4 @@ const DB = {
 };
 
 window.db = db;
+window.DB = DB;

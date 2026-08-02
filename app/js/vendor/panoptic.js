@@ -10,13 +10,20 @@
     }
 
     PanopticEngine.prototype.interrogate = async function (criteria) {
-        // criteria: { genres: [], pistes: [], bannis: [], region: 'BE', providers: [], runtimeMax: 120, mode: 'solo'|'group', useBB: true }
-        
         let allCandidates = [];
+        const mType = criteria.mediaType || 'movie';
 
-        // 1. Fetch from Discover (up to 3 pages for more candidates)
+        let queryGenres = [];
+        if (criteria.mode === 'group' && criteria.groupParticipants) {
+            const allSelectedGenres = [];
+            criteria.groupParticipants.forEach(p => allSelectedGenres.push(...p.genres));
+            queryGenres = [...new Set(allSelectedGenres)];
+        } else {
+            queryGenres = criteria.genres || [];
+        }
+
         const discoverOpts = {
-            genre: criteria.genres && criteria.genres.length > 0 ? criteria.genres.join('|') : null,
+            genre: queryGenres.length > 0 ? queryGenres.join('|') : null,
             runtimeMax: criteria.runtimeMax
         };
         if (criteria.providers && criteria.providers.length > 0) {
@@ -25,9 +32,10 @@
             discoverOpts.watchMonetizationTypes = 'flatrate';
         }
 
-        for (let p = 1; p <= 3; p++) {
+        const startP = criteria.startPage || 1;
+        for (let p = startP; p <= startP + 2; p++) {
             discoverOpts.page = p;
-            const discoverResults = await this.options.tmdb.discover('movie', discoverOpts);
+            const discoverResults = await this.options.tmdb.discover(mType, discoverOpts);
             if (discoverResults && discoverResults.length > 0) {
                 allCandidates = allCandidates.concat(discoverResults);
             } else {
@@ -38,7 +46,7 @@
         // 2. Fetch recommendations from Pistes
         if (criteria.pistes && criteria.pistes.length > 0) {
             for (const piste of criteria.pistes) {
-                const recs = await this.options.tmdb.getRecommendations(piste.id, 'movie');
+                const recs = await this.options.tmdb.getRecommendations(piste.id, mType);
                 if (recs && recs.length > 0) {
                     allCandidates = allCandidates.concat(recs);
                 }
@@ -57,10 +65,15 @@
         // 3. Filter out Bannis IDs and already seen
         const bannedIds = new Set(criteria.bannis ? criteria.bannis.map(b => parseInt(b.id, 10)) : []);
         let movies = [];
+        let shows = [];
         if (this.options.db) {
-            movies = await this.options.db.movies.toArray();
+            if (mType === 'movie') {
+                movies = await this.options.db.movies.toArray();
+            } else {
+                shows = await this.options.db.shows.toArray();
+            }
         }
-        const seenIds = new Set(movies.map(m => m.tmdb_id));
+        const seenIds = new Set(mType === 'movie' ? movies.map(m => m.tmdb_id) : shows.map(s => s.tmdb_id));
         
         let filtered = allCandidates.filter(c => !seenIds.has(c.id) && !bannedIds.has(c.id));
 
@@ -72,7 +85,7 @@
         for (const item of filtered) {
             if (!item || !item.id) continue;
             try {
-                const details = await this.options.tmdb.getMovieDetails(item.id);
+                const details = await this.options.tmdb.getMovieDetails(item.id, mType);
                 fullCandidates.push(details ? { ...item, ...details } : item);
             } catch (e) {
                 fullCandidates.push(item);
@@ -96,12 +109,9 @@
         let bannedGenres = new Set();
         if (criteria.bannis && criteria.bannis.length > 0) {
             for (const b of criteria.bannis) {
-                try {
-                    const details = await this.options.tmdb.getMovieDetails(b.id);
-                    if (details && details.genres) {
-                        details.genres.forEach(g => bannedGenres.add(g.id));
-                    }
-                } catch(e) {}
+                if (b.genre_ids && Array.isArray(b.genre_ids)) {
+                    b.genre_ids.forEach(gid => bannedGenres.add(gid));
+                }
             }
         }
 
@@ -137,7 +147,21 @@
             c._panScore *= (c.vote_average ? (c.vote_average / 10) : 0.5);
 
             if (criteria.mode === 'group') {
-                c._panScore *= (0.8 + Math.random() * 0.4);
+                if (criteria.groupParticipants) {
+                    let matchedParticipants = 0;
+                    const cGids = c.genres ? c.genres.map(g => g.id.toString()) : (c.genre_ids ? c.genre_ids.map(String) : []);
+                    criteria.groupParticipants.forEach(p => {
+                        const hasOverlap = p.genres.some(g => cGids.includes(g.toString()));
+                        if (hasOverlap) matchedParticipants++;
+                    });
+                    const matchRatio = criteria.groupParticipants.length > 0 ? matchedParticipants / criteria.groupParticipants.length : 0;
+                    c._panScore *= (0.5 + matchRatio);
+                    c.groupMatchRatio = matchRatio;
+                    c.matchedParticipants = matchedParticipants;
+                    c.totalParticipants = criteria.groupParticipants.length;
+                } else {
+                    c._panScore *= (0.8 + Math.random() * 0.4);
+                }
             }
             
             // Provider filter check for Pistes and double check discover
@@ -168,7 +192,16 @@
         fullCandidates = fullCandidates.filter(c => c._panScore > 0);
         fullCandidates.sort((a, b) => b._panScore - a._panScore);
 
-        return fullCandidates; 
+        // Calculate confidence score (normalized 0-100%)
+        // Assuming a really good score is ~1.5
+        fullCandidates.forEach(c => {
+            c.confidence = Math.min(100, Math.round((c._panScore / 1.5) * 100));
+        });
+
+        return {
+            results: fullCandidates,
+            hasMore: allCandidates.length > 0
+        };
     };
 
     if (typeof module !== 'undefined' && module.exports) module.exports = PanopticEngine;

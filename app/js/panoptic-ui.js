@@ -4,7 +4,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const bbToggleContainer = document.getElementById('pan-bb-toggle-container');
     const panUseBb = document.getElementById('pan-use-bb');
     
+    const btnMediaMovie = document.getElementById('pan-media-movie');
+    const btnMediaTv = document.getElementById('pan-media-tv');
+    let currentMediaType = 'movie';
+
+    btnMediaMovie?.addEventListener('click', () => {
+        currentMediaType = 'movie';
+        btnMediaMovie.classList.add('active');
+        btnMediaTv.classList.remove('active');
+        if (typeof pistes !== 'undefined') pistes.length = 0;
+        if (typeof bannis !== 'undefined') bannis.length = 0;
+        document.getElementById('pan-chips-pistes').innerHTML = '';
+        document.getElementById('pan-chips-bannis').innerHTML = '';
+    });
+
+    btnMediaTv?.addEventListener('click', () => {
+        currentMediaType = 'tv';
+        btnMediaTv.classList.add('active');
+        btnMediaMovie.classList.remove('active');
+        if (typeof pistes !== 'undefined') pistes.length = 0;
+        if (typeof bannis !== 'undefined') bannis.length = 0;
+        document.getElementById('pan-chips-pistes').innerHTML = '';
+        document.getElementById('pan-chips-bannis').innerHTML = '';
+    });
+    
     let currentMode = 'solo';
+    let groupParticipants = [];
+    const groupUi = document.getElementById('pan-group-ui');
+    const groupCount = document.getElementById('pan-group-count');
+    const groupList = document.getElementById('pan-group-list');
+    const btnAddParticipant = document.getElementById('pan-btn-add-participant');
+
+    btnAddParticipant?.addEventListener('click', () => {
+        const activeBtns = Array.from(document.querySelectorAll('.pan-genre-btn.active'));
+        const activeGenres = activeBtns.map(b => b.dataset.val);
+        if (activeGenres.length === 0) {
+            alert('Veuillez sélectionner au moins un genre.');
+            return;
+        }
+        groupParticipants.push({
+            id: groupParticipants.length + 1,
+            genres: activeGenres
+        });
+        
+        if(groupCount) groupCount.textContent = groupParticipants.length;
+        if(groupList) {
+            const pill = document.createElement('div');
+            pill.style = 'background:var(--iris-400); color:#fff; font-size:11px; padding:2px 8px; border-radius:8px;';
+            pill.textContent = `Joueur ${groupParticipants.length} (${activeGenres.length})`;
+            groupList.appendChild(pill);
+        }
+        
+        document.querySelectorAll('.pan-genre-btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.background = 'transparent';
+            btn.style.color = '#888';
+            btn.style.borderColor = '#444';
+        });
+    });
 
     btnSolo?.addEventListener('click', () => {
         currentMode = 'solo';
@@ -12,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGroup.classList.remove('active');
         bbToggleContainer.style.opacity = '1';
         panUseBb.disabled = false;
+        if(groupUi) groupUi.classList.add('hidden');
     });
 
     btnGroup?.addEventListener('click', () => {
@@ -21,6 +79,16 @@ document.addEventListener('DOMContentLoaded', () => {
         bbToggleContainer.style.opacity = '0.5';
         panUseBb.disabled = true;
         panUseBb.checked = false;
+        if(groupUi) groupUi.classList.remove('hidden');
+        groupParticipants = [];
+        if(groupCount) groupCount.textContent = '0';
+        if(groupList) groupList.innerHTML = '';
+        document.querySelectorAll('.pan-genre-btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.background = 'transparent';
+            btn.style.color = '#888';
+            btn.style.borderColor = '#444';
+        });
     });
 
     const runtimeRange = document.getElementById('pan-runtime');
@@ -92,11 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             timeout = setTimeout(async () => {
                 if (!window.TMDB) return;
-                const results = await window.TMDB.search(val, 'movie');
+                const results = await window.TMDB.search(val, currentMediaType);
                 if (results && results.length > 0) {
                     auto.innerHTML = results.slice(0, 5).map(r => `
-                        <div class="pan-auto-item" style="padding: 8px; border-bottom: 1px solid #444; cursor: pointer; font-size: 12px; color: #fff;" data-id="${r.id}" data-title="${(r.title || r.name).replace(/"/g, '&quot;')}">
-                            ${r.title || r.name} ${(r.release_date || '').substring(0,4)}
+                        <div class="pan-auto-item" style="padding: 8px; border-bottom: 1px solid #444; cursor: pointer; font-size: 12px; color: #fff;" data-id="${r.id}" data-title="${(r.title || r.name).replace(/"/g, '&quot;')}" data-genres="${JSON.stringify(r.genre_ids || [])}">
+                            ${r.title || r.name} ${(r.release_date || r.first_air_date || '').substring(0,4)}
                         </div>
                     `).join('');
                     auto.style.display = 'block';
@@ -104,10 +172,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     auto.querySelectorAll('.pan-auto-item').forEach(item => {
                         item.addEventListener('click', (ev) => {
                             if (listArray.length >= maxItems) {
-                                alert(window.I18n ? window.I18n.get('panoptic.max_movies', { max: maxItems }) : `Maximum ${maxItems} films autorisés.`);
+                                alert(window.I18n ? window.I18n.get('panoptic.max_movies', { max: maxItems }) : `Maximum ${maxItems} autorisé.`);
                             } else {
                                 const t = ev.currentTarget;
-                                listArray.push({ id: t.getAttribute('data-id'), title: t.getAttribute('data-title') });
+                                listArray.push({ 
+                                    id: t.getAttribute('data-id'), 
+                                    title: t.getAttribute('data-title'),
+                                    genre_ids: JSON.parse(t.getAttribute('data-genres') || '[]')
+                                });
                                 renderChips();
                             }
                             input.value = '';
@@ -205,26 +277,57 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentIndex = 0;
     let acceptedItems = [];
     let likedItems = [];
+    
+    let currentStartPage = 1;
+    let hasMorePages = false;
 
-    btnSearch?.addEventListener('click', async () => {
-        const activeGenres = Array.from(document.querySelectorAll('.pan-genre-btn.active')).map(btn => btn.getAttribute('data-val'));
+    async function executePanopticSearch(isEncore = false) {
+        let activeGenres = Array.from(document.querySelectorAll('.pan-genre-btn.active')).map(btn => btn.getAttribute('data-val'));
+        let finalGroupParticipants = [...groupParticipants];
+        
+        if (currentMode === 'group') {
+            if (activeGenres.length > 0) {
+                finalGroupParticipants.push({
+                    id: finalGroupParticipants.length + 1,
+                    genres: activeGenres
+                });
+            }
+            if (finalGroupParticipants.length === 0) {
+                alert('Veuillez ajouter des participants avec leurs genres pour lancer la recherche.');
+                return;
+            }
+        }
+        
+        if (!isEncore) currentStartPage = 1;
         
         const criteria = {
+            mediaType: currentMediaType,
             mode: currentMode,
             useBB: panUseBb.checked,
             runtimeMax: parseInt(runtimeRange.value, 10),
-            genres: activeGenres,
+            genres: currentMode === 'group' ? [] : activeGenres,
+            groupParticipants: currentMode === 'group' ? finalGroupParticipants : null,
             pistes: pistes,
             bannis: bannis,
             region: providerRegion.value,
-            providers: anyProvider.checked ? [] : Array.from(selectedProviders)
+            providers: anyProvider.checked ? [] : Array.from(selectedProviders),
+            startPage: currentStartPage
         };
 
         btnSearch.textContent = window.I18n ? window.I18n.get('panoptic.connecting') : 'Connexion à Panoptic...';
         btnSearch.disabled = true;
 
         try {
-            currentResults = await engine.interrogate(criteria);
+            const resp = await engine.interrogate(criteria);
+            // Engine v2 returns { results, hasMore }
+            if (resp.results) {
+                currentResults = resp.results;
+                hasMorePages = resp.hasMore;
+            } else {
+                currentResults = resp;
+                hasMorePages = false;
+            }
+            
             currentIndex = 0;
             acceptedItems = [];
             likedItems = [];
@@ -245,6 +348,60 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSearch.textContent = window.I18n ? window.I18n.get('panoptic.btn_search') : 'Interroger Panoptic';
             btnSearch.disabled = false;
         }
+    }
+
+    btnSearch?.addEventListener('click', () => executePanopticSearch(false));
+
+    // Next Episode Mode
+    const btnNextEpisode = document.getElementById('pan-btn-next-episode');
+    btnNextEpisode?.addEventListener('click', async () => {
+        if (!window.db || !window.TMDB) return;
+        const shows = await window.db.shows.where('is_followed').equals(1).toArray();
+        const activeShows = shows.filter(s => s.is_finished === 0 && s.status !== 'completed');
+        if (activeShows.length === 0) {
+            alert(window.I18n ? window.I18n.get('panoptic.no_active_shows') : 'Aucune série en cours.');
+            return;
+        }
+
+        btnNextEpisode.textContent = window.I18n ? window.I18n.get('panoptic.connecting') : 'Connexion...';
+        btnNextEpisode.disabled = true;
+
+        try {
+            let fullCandidates = [];
+            for (const s of activeShows) {
+                if (!s.tmdb_id) continue;
+                try {
+                    const details = await window.TMDB.getShowDetails(s.tmdb_id);
+                    if (details) {
+                        details.media_type = 'tv';
+                        details._panScore = 1.0 + ((s.user_rating || 5) / 10);
+                        details.confidence = Math.min(100, Math.round(details._panScore * 50));
+                        fullCandidates.push(details);
+                    }
+                } catch(e) {}
+            }
+            fullCandidates.sort((a,b) => b._panScore - a._panScore);
+            
+            currentResults = fullCandidates;
+            currentIndex = 0;
+            acceptedItems = [];
+            likedItems = [];
+            hasMorePages = false;
+            currentMediaType = 'tv';
+            
+            if (currentResults.length > 0) {
+                resultsOverlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                const actionArea = document.querySelector('.pan-action-area');
+                if (actionArea) actionArea.style.display = 'flex';
+                showCurrentCard();
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            btnNextEpisode.textContent = window.I18n ? window.I18n.get('panoptic.next_episode') : '🎬 Que regarder ce soir ? (Séries en cours)';
+            btnNextEpisode.disabled = false;
+        }
     });
 
     btnClose?.addEventListener('click', () => {
@@ -262,12 +419,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgUrl = window.TMDB ? window.TMDB.imgUrl(item.poster_path, 'w500') : '';
         const title = item.title || item.name;
         const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+        
+        let consensusBadge = '';
+        if (currentMode === 'group' && item.matchedParticipants !== undefined) {
+            consensusBadge = `<span style="background: rgba(167, 139, 250, 0.2); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.5); padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px;">🤝 ${item.matchedParticipants}/${item.totalParticipants} votes</span>`;
+        }
 
         cardContainer.innerHTML = `
             <div class="pan-card" style="width: 100%; max-width: 420px; aspect-ratio: 2/3; background-image: url('${imgUrl}'); background-size: cover; background-position: center; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; touch-action: none;">
                 <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
                     <h3 style="margin: 0; color: white; font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">${title}</h3>
-                    <p style="margin: 4px 0 0 0; color: #ff5a00; font-size: 14px; font-weight: 500;">⭐ ${item.vote_average ? item.vote_average.toFixed(1) : '?'} <span style="color:#888;">${year ? '• ' + year : ''}</span></p>
+                    <p style="margin: 4px 0 0 0; color: #ff5a00; font-size: 14px; font-weight: 500;">⭐ ${item.vote_average ? item.vote_average.toFixed(1) : '?'} <span style="color:#888;">${year ? '• ' + year : ''}</span> ${item.confidence ? `<span style="background: rgba(255,85,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px;">🎯 Match ${item.confidence}%</span>` : ''} ${consensusBadge}</p>
                     <p style="margin: 8px 0 0 0; color: #ccc; font-size: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${item.overview || ''}</p>
                     <p style="margin-top: 8px; font-size: 10px; color: #666; font-style: italic;">${window.I18n ? window.I18n.get('panoptic.click_details') : 'Cliquez pour voir les détails'}</p>
                 </div>
@@ -319,8 +481,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="width: 100%; text-align: center;">
                     <h3 style="color: #ef4444; margin-bottom: 20px; font-size: 24px;">${window.I18n ? window.I18n.get('panoptic.search_exhausted') : 'Recherche Épuisée'}</h3>
                     <p style="color: #888; font-size: 16px;">${window.I18n ? window.I18n.get('panoptic.all_rejected') : 'Vous avez rejeté toutes les propositions.'}</p>
+                    ${hasMorePages ? `<button id="pan-btn-encore" style="margin-top: 24px; background: #ff5500; color: white; border: none; border-radius: 24px; padding: 12px 24px; font-size: 16px; font-weight: 600; cursor: pointer;">🔄 Chercher Encore</button>` : ''}
                 </div>
             `;
+            
+            const btnEncore = document.getElementById('pan-btn-encore');
+            if (btnEncore) {
+                btnEncore.addEventListener('click', () => {
+                    currentStartPage += 3;
+                    executePanopticSearch(true);
+                });
+            }
             return;
         }
 
@@ -330,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p style="color: #888; margin-bottom: 24px;">${window.I18n ? window.I18n.get('panoptic.final_results') : 'Voici vos résultats finaux.'}</p>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; overflow-y: auto; padding: 10px; flex: 1; align-content: start; text-align: left;">
                     ${total.map(item => `
-                        <div style="display: flex; align-items: center; gap: 16px; background: #1a1a1a; padding: 12px; border-radius: 24px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05); border: 1px solid ${acceptedItems.includes(item) ? 'rgba(255,90,0,0.5)' : 'rgba(255,255,255,0.02)'}; cursor: pointer; transition: transform 0.2s;" onclick="if(window.openDetail) window.openDetail({id: ${item.id}, name: \`${(item.title||item.name||'').replace(/`/g, '')}\`, backdrop_path: '${item.backdrop_path}'}, 'movie')">
+                        <div style="display: flex; align-items: center; gap: 16px; background: #1a1a1a; padding: 12px; border-radius: 24px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05); border: 1px solid ${acceptedItems.includes(item) ? 'rgba(255,90,0,0.5)' : 'rgba(255,255,255,0.02)'}; cursor: pointer; transition: transform 0.2s;" onclick="if(window.openDetail) window.openDetail({id: ${item.id}, name: \`${(item.title||item.name||'').replace(/`/g, '')}\`, backdrop_path: '${item.backdrop_path}'}, '${currentMediaType}')">
                             <img src="${window.TMDB ? window.TMDB.imgUrl(item.poster_path, 'w92') : ''}" style="width: 50px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                             <div style="text-align: left; flex: 1;">
                                 <div style="font-weight: 600; color: white; font-size: 16px; margin-bottom: 4px;">${item.title || item.name}</div>
@@ -390,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Click!
             const item = currentResults[currentIndex];
             if (window.openDetail && item) {
-                window.openDetail({id: item.id, name: (item.title||item.name||'').replace(/`/g, ''), backdrop_path: item.backdrop_path}, 'movie');
+                window.openDetail({id: item.id, name: (item.title||item.name||'').replace(/`/g, ''), backdrop_path: item.backdrop_path}, currentMediaType);
             }
             swipeCard.style.transform = 'translate(0px, 0px) rotate(0deg)';
             swipeCard = null;

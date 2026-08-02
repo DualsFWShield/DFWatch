@@ -1,9 +1,10 @@
-const CACHE_NAME = 'dfwatch-v5';
+const CACHE_NAME = 'dfwatch-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './app/css/style.css',
+  './app/css/driver.css',
   './app/js/app.js',
   './app/js/db.js',
   './app/js/tmdb.js',
@@ -16,8 +17,11 @@ const ASSETS_TO_CACHE = [
   './app/js/tutorial.js',
   './app/js/vendor/panoptic.js',
   './app/js/panoptic-ui.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js',
-  'https://unpkg.com/dexie@3.2.4/dist/dexie.js',
+  './app/js/vendor/papaparse.min.js',
+  './app/js/vendor/dexie.js',
+  './app/js/vendor/driver.js.iife.js',
+  './app/js/vendor/html2canvas.min.js',
+  'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap'
 ];
 
@@ -48,7 +52,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.url.includes('api.themoviedb.org')) {
+  if (event.request.url.includes('api.themoviedb.org') || event.request.url.includes('api4.thetvdb.com')) {
     // API calls bypass cache
     return;
   }

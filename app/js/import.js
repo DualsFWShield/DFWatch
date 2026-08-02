@@ -231,6 +231,7 @@ const Importer = {
                         if (backup.data.customLists) { await db.custom_lists.clear(); await db.custom_lists.bulkAdd(backup.data.customLists); }
                         if (backup.data.listItems) { await db.list_items.clear(); await db.list_items.bulkAdd(backup.data.listItems); }
                         if (backup.data.episodeNotes) { await db.episode_notes.clear(); await db.episode_notes.bulkAdd(backup.data.episodeNotes); }
+                        if (backup.data.bigbrotherCandidates) { await db.bigbrother_candidates.clear(); await db.bigbrother_candidates.bulkAdd(backup.data.bigbrotherCandidates); }
                     }
                     
                     onProgress('Importation terminée !');

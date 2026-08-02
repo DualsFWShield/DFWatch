@@ -233,6 +233,19 @@ const Achievements = {
                 }
             } catch (e) {}
         });
+        // Speed Run detection: 3+ episodes watched within a 1-hour window
+        const sortedDates = [...history]
+            .filter(r => r.watched_at)
+            .map(r => { try { return new Date(r.watched_at); } catch(e) { return null; } })
+            .filter(d => d && !isNaN(d.getTime()))
+            .sort((a, b) => a - b);
+        for (let i = 0; i <= sortedDates.length - 3 && !hasSpeedRun; i++) {
+            // Check if 3 consecutive episodes fit within 1 hour
+            if (sortedDates[i + 2] - sortedDates[i] <= 3600000) {
+                hasSpeedRun = true;
+            }
+        }
+
         // Weekend: watched on both sat and sun of the same weekend
         for (const sat of satSeen) {
             const nextDay = new Date(sat);
@@ -270,8 +283,30 @@ const Achievements = {
         // Genre & country diversity (from stored TMDB data)
         const uniqueGenres = new Set();
         const uniqueCountries = new Set();
-        // These would be populated if we store genre/country info from TMDB
-        // For now, count distinct genre names we might have stored
+        // Populate genres from shows and movies
+        [...allShows, ...allMovies].forEach(item => {
+            if (item.genres && Array.isArray(item.genres)) {
+                item.genres.forEach(g => {
+                    const name = typeof g === 'string' ? g : (g ? g.name : null);
+                    if (name && name !== 'null') uniqueGenres.add(name);
+                });
+            }
+            // Populate countries from origin_country
+            if (item.origin_country && Array.isArray(item.origin_country)) {
+                item.origin_country.forEach(c => {
+                    if (c) uniqueCountries.add(c);
+                });
+            } else if (typeof item.origin_country === 'string' && item.origin_country) {
+                uniqueCountries.add(item.origin_country);
+            }
+            // Also check production_countries for movies
+            if (item.production_countries && Array.isArray(item.production_countries)) {
+                item.production_countries.forEach(c => {
+                    const code = typeof c === 'string' ? c : (c ? c.iso_3166_1 : null);
+                    if (code) uniqueCountries.add(code);
+                });
+            }
+        });
 
         const stats = {
             episodes: seriesStats.count,
@@ -307,6 +342,7 @@ const Achievements = {
             const existing = await db.achievements.get(def.id);
             if (unlocked && (!existing || !existing.unlocked)) {
                 await db.achievements.put({ id: def.id, unlocked: 1, unlocked_at: new Date().toISOString() });
+                if (window.showAchievementToast) window.showAchievementToast(def);
             } else if (!existing) {
                 await db.achievements.put({ id: def.id, unlocked: 0, unlocked_at: null });
             }

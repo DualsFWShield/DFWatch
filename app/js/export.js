@@ -16,7 +16,8 @@ const Exporter = {
                 recommendation_feedback: await db.recommendation_feedback.toArray(),
                 customLists: await db.custom_lists.toArray(),
                 listItems: await db.list_items.toArray(),
-                episodeNotes: await db.episode_notes.toArray()
+                episodeNotes: await db.episode_notes.toArray(),
+                bigbrotherCandidates: await db.bigbrother_candidates.toArray()
             };
         }
 

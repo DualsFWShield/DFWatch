@@ -3480,3 +3480,271 @@ body.tutorial-active .detail-actions {
 .mystic-driver-popover .driver-popover-footer .driver-popover-next-btn:hover {
     background: var(--iris-400, #a78bfa) !important;
 }
+
+.achievement-toast {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-30px) scale(0.9);
+    z-index: 5000;
+    padding: 16px 24px;
+    border-radius: var(--r-12);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%);
+    border: 1px solid var(--iris-400);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(124,58,237,0.2), 0 0 30px var(--iris-glow);
+}
+.achievement-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* ── ANTI-SPOIL MODE ── */
+body.no-spoil .season-ep-row.unseen .ep-overview,
+body.no-spoil .season-ep-row.unseen .ep-name {
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+}
+.card-preview-container canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .profile-hero {
+        flex-direction: column;
+        text-align: center;
+    }
+    .profile-hero-actions {
+        margin-left: 0;
+        width: 100%;
+        flex-direction: row;
+        justify-content: center;
+    }
+    .profile-hero-actions .action-btn {
+        flex: 1;
+        padding: 10px 12px;
+        font-size: 13px;
+        white-space: normal;
+    }
+    .profile-hero-genres {
+        justify-content: center;
+    }
+    #profile-card-modal .card-modal-body {
+        flex-direction: column;
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
+    }
+    .card-preview-area {
+        order: -1;
+        padding-bottom: 16px;
+        flex: none !important;
+        width: 100%;
+    }
+    .card-controls {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+    }
+    .card-preview-container[data-ratio="9:16"] {
+        max-width: 220px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TUTORIAL (DRIVER.JS OVERRIDES)
+   ═══════════════════════════════════════════════════════════════ */
+body.tutorial-active .driver-active-element {
+    pointer-events: none !important;
+}
+
+.mystic-driver-popover {
+    background: var(--surface-3) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--iris-400) !important;
+    box-shadow: 0 0 20px var(--iris-glow) !important;
+    border-radius: 12px !important;
+    font-family: 'Inter', sans-serif !important;
+}
+.mystic-driver-popover .driver-popover-title {
+    color: var(--iris-300) !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 18px !important;
+}
+.mystic-driver-popover .driver-popover-description {
+    color: var(--text-secondary) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+.mystic-driver-popover .driver-popover-footer button {
+    background: var(--surface-4) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    text-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+.mystic-driver-popover .driver-popover-footer button:hover {
+    background: var(--iris-500) !important;
+    border-color: var(--iris-400) !important;
+}
+.mystic-driver-popover .driver-popover-navigation-btns {
+    gap: 8px !important;
+}
+.driver-popover-arrow {
+    border-color: var(--surface-3) !important;
+}
+.driver-active-element {
+    box-shadow: 0 0 0 4px var(--iris-glow) !important;
+    border-radius: 8px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BIG BROTHER / PANOPTIC LORE
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes bbPulse {
+    0% { transform: scale(1); filter: drop-shadow(0 0 5px var(--iris-400)); }
+    50% { transform: scale(1.1); filter: drop-shadow(0 0 15px var(--iris-300)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 5px var(--iris-400)); }
+}
+.bb-eye-pulse {
+    animation: bbPulse 3s infinite ease-in-out;
+}
+
+/* =========================================================
+   TUTORIAL / DRIVER.JS OVERRIDES
+   ========================================================= */
+
+/* Neutralize buttons when tutorial is active */
+body.tutorial-active .detail-actions {
+    pointer-events: none !important;
+}
+
+/* Improve popover button styles */
+.mystic-driver-popover {
+    background: var(--surface-1, #13131a) !important;
+    color: var(--text-primary, #e2e8f0) !important;
+    border: 1px solid var(--border-subtle, #334155) !important;
+    border-radius: var(--r-12, 12px) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+}
+
+.mystic-driver-popover .driver-popover-title {
+    color: var(--iris-400, #a78bfa) !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+
+.mystic-driver-popover .driver-popover-description {
+    color: var(--text-secondary, #94a3b8) !important;
+    font-size: 14px !important;
+}
+
+.mystic-driver-popover .driver-popover-footer button {
+    background: var(--surface-2, #1e293b) !important;
+    color: var(--text-primary, #e2e8f0) !important;
+    border: 1px solid var(--border-default, #475569) !important;
+    border-radius: var(--r-8, 8px) !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.mystic-driver-popover .driver-popover-footer button:hover {
+    background: var(--surface-3, #334155) !important;
+    border-color: var(--border-hover, #64748b) !important;
+}
+
+.mystic-driver-popover .driver-popover-footer .driver-popover-next-btn {
+    background: var(--iris-500, #8b5cf6) !important;
+    border-color: var(--iris-400, #a78bfa) !important;
+    color: white !important;
+}
+
+.mystic-driver-popover .driver-popover-footer .driver-popover-next-btn:hover {
+    background: var(--iris-400, #a78bfa) !important;
+}
+
+.achievement-toast {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-30px) scale(0.9);
+    z-index: 5000;
+    padding: 16px 24px;
+    border-radius: var(--r-12);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%);
+    border: 1px solid var(--iris-400);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(124,58,237,0.2), 0 0 30px var(--iris-glow);
+}
+.achievement-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* ── ANTI-SPOIL MODE ── */
+body.no-spoil .season-ep-row.unseen .ep-overview,
+body.no-spoil .season-ep-row.unseen .ep-name {
+    filter: blur(6px);
+    opacity: 0.7;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+    user-select: none;
+}
+body.no-spoil .season-ep-row.unseen:hover .ep-overview,
+body.no-spoil .season-ep-row.unseen:hover .ep-name {
+    filter: blur(0);
+    opacity: 1;
+}
+
+/* ── CALENDAR MINI POSTERS ── */
+.cal-day {
+    position: relative;
+    overflow: hidden;
+}
+.cal-day-num {
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+.cal-mini-posters {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 1;
+}
+.cal-mini-posters img {
+    flex: 1;
+    height: 100%;
+    object-fit: cover;
+    min-width: 0;
+}
+.cal-more {
+    position: absolute;
+    bottom: 2px; right: 2px;
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 4px;
+    border-radius: 4px;
+    z-index: 2;
+}

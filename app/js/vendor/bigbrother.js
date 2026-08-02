@@ -55,14 +55,12 @@
         this.config = deepMerge(DEFAULTS, config || {});
     }
 
-    BigBrother.prototype.recommend = async function (adapter) {
+    BigBrother.prototype.buildProfile = async function(adapter) {
         const cfg = this.config;
-        const debug = { candidateCount: 0, affinities: {} };
-
-        // ── Phase 1: Build Big Brother Profile 
         const genreAffinity = {};
         const keywordAffinity = {};
         const peopleAffinity = {};
+        const decadeAffinity = {};
 
         const processItem = (item, weight, decay = 1.0) => {
             const finalWeight = weight * decay;
@@ -70,6 +68,15 @@
             if (item.keywords) item.keywords.forEach(id => { keywordAffinity[id] = (keywordAffinity[id] || 0) + finalWeight; });
             if (item.directors) item.directors.forEach(id => { peopleAffinity[id] = (peopleAffinity[id] || 0) + finalWeight; });
             if (item.actors) item.actors.forEach(id => { peopleAffinity[id] = (peopleAffinity[id] || 0) + finalWeight; });
+            
+            const yearStr = item.release_date || item.first_air_date;
+            if (yearStr) {
+                const year = parseInt(yearStr.split('-')[0], 10);
+                if (!isNaN(year)) {
+                    const decade = Math.floor(year / 10) * 10;
+                    decadeAffinity[decade] = (decadeAffinity[decade] || 0) + finalWeight;
+                }
+            }
         };
 
         const allFeedback = await adapter.getAllFeedback();
@@ -80,7 +87,6 @@
             const weight = f.feedback_value === 1 ? cfg.genre.likeWeight : (f.feedback_value === -1 ? cfg.genre.dislikeWeight : 0);
             if (weight === 0) return;
             
-            // Temporal Decay: older likes count for less (down to 0.5x after 1 year)
             let decay = 1.0;
             if (f.timestamp) {
                 const age = now - f.timestamp;
@@ -97,7 +103,18 @@
         const topPicks = await adapter.getTopPicks();
         topPicks.forEach(item => processItem(item, cfg.genre.topPickWeight));
 
-        debug.affinities = { genre: genreAffinity, keyword: keywordAffinity, people: peopleAffinity };
+        this.lastAffinities = { genre: genreAffinity, keyword: keywordAffinity, people: peopleAffinity, decade: decadeAffinity };
+        return this.lastAffinities;
+    };
+
+    BigBrother.prototype.recommend = async function (adapter) {
+        const cfg = this.config;
+        const debug = { candidateCount: 0, affinities: {} };
+
+        // ── Phase 1: Build Big Brother Profile 
+        const affinities = await this.buildProfile(adapter);
+        const { genre: genreAffinity, keyword: keywordAffinity, people: peopleAffinity, decade: decadeAffinity } = affinities;
+        debug.affinities = affinities;
 
         // ── Phase 2: Fetch Local Candidates ────────────────────
         let candidates = await adapter.getCandidates();
@@ -180,15 +197,22 @@
                 if (hasPeopleBonus) score *= 1.20; // +20% bonus
             }
 
-            // 3c. Passe-droit Chef-d'œuvre & Old content penalty
+            // 3c. Passe-droit Chef-d'œuvre & Old content penalty & Decade Affinity
             let itemYearStr = item.release_date || item.first_air_date || '';
             if (itemYearStr) {
                 let itemYear = parseInt(itemYearStr.split('-')[0], 10);
-                if (!isNaN(itemYear) && itemYear < (birthYear - 5)) {
-                    if (isMasterpiece) {
-                        score *= 0.8; // Light penalty for true classics
-                    } else {
-                        score *= 0.2; // Heavy penalty for average old movies
+                if (!isNaN(itemYear)) {
+                    const decade = Math.floor(itemYear / 10) * 10;
+                    if (decadeAffinity[decade]) {
+                        const decadeScore = decadeAffinity[decade];
+                        score *= clamp(1.0 + decadeScore * 0.05, 0.8, 1.3);
+                    }
+                    if (itemYear < (birthYear - 5)) {
+                        if (isMasterpiece) {
+                            score *= 0.8; // Light penalty for true classics
+                        } else {
+                            score *= 0.2; // Heavy penalty for average old movies
+                        }
                     }
                 }
             }
@@ -277,9 +301,8 @@
         return { results, debug };
     };
 
-    BigBrother.prototype.getGenreAffinity = async function (adapter) {
-        // (Truncated for brevity, but same logic as before for debug UI)
-        return {};
+    BigBrother.prototype.getGenreAffinity = function() {
+        return this.lastAffinities || null;
     };
 
     BigBrother.DEFAULTS = DEFAULTS;
