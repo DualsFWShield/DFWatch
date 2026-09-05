@@ -209,6 +209,11 @@ const TRANSLATIONS = {
         "profile.export_format_app_complete": "Application Complète",
         "profile.export_format_algo_complete": "Algorithme Complet (Réimportable)",
         "profile.export_format_id": "Format ID (Ciblage)",
+        "profile.export_format_letterboxd": "Format Letterboxd (Films — CSV)",
+        "profile.export_format_trakt": "Format Trakt (Films & Séries — CSV)",
+        "toast.offline": "Mode hors-ligne actif (données locales uniquement)",
+        "toast.online": "Connexion Internet rétablie !",
+        "toast.network_required": "Cette fonctionnalité nécessite une connexion Internet.",
         "profile.export_id_warning": "Génère un JSON avec vos informations de profil, likes, dislikes et genres favoris. Impossible à ré-importer.",
         "profile.export_data": "Données (Historique, Listes, Statistiques)",
         "profile.export_settings": "Paramètres (Thème, Profil, Top 10)",
@@ -588,6 +593,11 @@ const TRANSLATIONS = {
         "profile.export_format_app_complete": "Full Application",
         "profile.export_format_algo_complete": "Full Algorithm (Re-importable)",
         "profile.export_format_id": "ID Format (Targeting)",
+        "profile.export_format_letterboxd": "Letterboxd Format (Movies — CSV)",
+        "profile.export_format_trakt": "Trakt Format (Movies & Shows — CSV)",
+        "toast.offline": "Offline mode active (local data only)",
+        "toast.online": "Internet connection restored!",
+        "toast.network_required": "This feature requires an active internet connection.",
         "profile.export_id_warning": "Generates a JSON with your profile info, likes, dislikes, and favorite genres. Cannot be re-imported.",
         "profile.export_data": "Data (History, Lists, Stats)",
         "profile.export_settings": "Settings (Theme, Profile, Top 10)",
@@ -778,9 +788,11 @@ const I18n = {
     },
     
     get(key, params = {}) {
-        let text = TRANSLATIONS[this.lang][key] || key;
+        let text = (TRANSLATIONS[this.lang] && TRANSLATIONS[this.lang][key])
+                || (TRANSLATIONS['fr'] && TRANSLATIONS['fr'][key])
+                || key;
         for (const [k, v] of Object.entries(params)) {
-            text = text.replace(`{${k}}`, v);
+            text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
         }
         return text;
     },

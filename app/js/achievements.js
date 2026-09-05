@@ -333,22 +333,41 @@ const Achievements = {
             hasExported
         };
 
-        // ---- Evaluate each achievement ----
+        // ---- Evaluate each achievement (batch optimized) ----
+        const existingList = await db.achievements.toArray();
+        const existingMap = new Map(existingList.map(a => [a.id, a]));
+        const toPut = [];
         const results = [];
+        const newlyUnlocked = [];
+
         for (const def of ACHIEVEMENTS_DEFS) {
             let unlocked = false;
-            try { unlocked = def.check(stats); } catch (e) {}
+            try { unlocked = Boolean(def.check(stats)); } catch (e) {}
 
-            const existing = await db.achievements.get(def.id);
+            const existing = existingMap.get(def.id);
+            let finalUnlocked = existing ? existing.unlocked : 0;
+            let finalUnlockedAt = existing ? existing.unlocked_at : null;
+
             if (unlocked && (!existing || !existing.unlocked)) {
-                await db.achievements.put({ id: def.id, unlocked: 1, unlocked_at: new Date().toISOString() });
-                if (window.showAchievementToast) window.showAchievementToast(def);
+                finalUnlocked = 1;
+                finalUnlockedAt = new Date().toISOString();
+                toPut.push({ id: def.id, unlocked: 1, unlocked_at: finalUnlockedAt });
+                newlyUnlocked.push(def);
             } else if (!existing) {
-                await db.achievements.put({ id: def.id, unlocked: 0, unlocked_at: null });
+                toPut.push({ id: def.id, unlocked: 0, unlocked_at: null });
             }
-            const stored = await db.achievements.get(def.id);
-            results.push({ ...def, unlocked: stored ? stored.unlocked : 0, unlocked_at: stored?.unlocked_at });
+
+            results.push({ ...def, unlocked: finalUnlocked, unlocked_at: finalUnlockedAt });
         }
+
+        if (toPut.length > 0) {
+            await db.achievements.bulkPut(toPut);
+        }
+
+        newlyUnlocked.forEach(def => {
+            if (window.showAchievementToast) window.showAchievementToast(def);
+        });
+
         return results;
     },
 

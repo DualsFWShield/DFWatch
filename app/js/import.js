@@ -189,7 +189,21 @@ const Importer = {
                         }
                     }
                     
-                    // 2. Cache
+                    // 2. Données (restaurées en premier pour ne pas écraser le cache ensuite)
+                    if (options.data && backup.data) {
+                        onProgress('Restauration des données...');
+                        if (backup.data.shows) { await db.shows.clear(); await db.shows.bulkAdd(backup.data.shows); importedCount += backup.data.shows.length; }
+                        if (backup.data.history) { await db.watch_history.clear(); await db.watch_history.bulkAdd(backup.data.history); importedCount += backup.data.history.length; }
+                        if (backup.data.movies) { await db.movies.clear(); await db.movies.bulkAdd(backup.data.movies); importedCount += backup.data.movies.length; }
+                        if (backup.data.movieWatches) { await db.movie_watches.clear(); await db.movie_watches.bulkAdd(backup.data.movieWatches); importedCount += backup.data.movieWatches.length; }
+                        if (backup.data.recommendation_feedback) { await db.recommendation_feedback.clear(); await db.recommendation_feedback.bulkAdd(backup.data.recommendation_feedback); }
+                        if (backup.data.customLists) { await db.custom_lists.clear(); await db.custom_lists.bulkAdd(backup.data.customLists); }
+                        if (backup.data.listItems) { await db.list_items.clear(); await db.list_items.bulkAdd(backup.data.listItems); }
+                        if (backup.data.episodeNotes) { await db.episode_notes.clear(); await db.episode_notes.bulkAdd(backup.data.episodeNotes); }
+                        if (backup.data.bigbrotherCandidates) { await db.bigbrother_candidates.clear(); await db.bigbrother_candidates.bulkAdd(backup.data.bigbrotherCandidates); }
+                    }
+                    
+                    // 3. Cache (appliqué sur les données fraîches)
                     if (options.cache && backup.cache) {
                         onProgress('Restauration du cache...');
                         if (backup.cache.shows) {
@@ -218,20 +232,6 @@ const Importer = {
                                 }
                             }
                         }
-                    }
-                    
-                    // 3. Données
-                    if (options.data && backup.data) {
-                        onProgress('Restauration des données...');
-                        if (backup.data.shows) { await db.shows.clear(); await db.shows.bulkAdd(backup.data.shows); importedCount += backup.data.shows.length; }
-                        if (backup.data.history) { await db.watch_history.clear(); await db.watch_history.bulkAdd(backup.data.history); importedCount += backup.data.history.length; }
-                        if (backup.data.movies) { await db.movies.clear(); await db.movies.bulkAdd(backup.data.movies); importedCount += backup.data.movies.length; }
-                        if (backup.data.movieWatches) { await db.movie_watches.clear(); await db.movie_watches.bulkAdd(backup.data.movieWatches); importedCount += backup.data.movieWatches.length; }
-                        if (backup.data.recommendation_feedback) { await db.recommendation_feedback.clear(); await db.recommendation_feedback.bulkAdd(backup.data.recommendation_feedback); }
-                        if (backup.data.customLists) { await db.custom_lists.clear(); await db.custom_lists.bulkAdd(backup.data.customLists); }
-                        if (backup.data.listItems) { await db.list_items.clear(); await db.list_items.bulkAdd(backup.data.listItems); }
-                        if (backup.data.episodeNotes) { await db.episode_notes.clear(); await db.episode_notes.bulkAdd(backup.data.episodeNotes); }
-                        if (backup.data.bigbrotherCandidates) { await db.bigbrother_candidates.clear(); await db.bigbrother_candidates.bulkAdd(backup.data.bigbrotherCandidates); }
                     }
                     
                     onProgress('Importation terminée !');

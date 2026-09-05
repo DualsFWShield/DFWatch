@@ -1,5 +1,5 @@
-const CACHE_NAME = 'dfwatch-v7';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'dfwatch-v8';
+const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
@@ -20,17 +20,28 @@ const ASSETS_TO_CACHE = [
   './app/js/vendor/papaparse.min.js',
   './app/js/vendor/dexie.js',
   './app/js/vendor/driver.js.iife.js',
-  './app/js/vendor/html2canvas.min.js',
+  './app/js/vendor/html2canvas.min.js'
+];
+
+const OPTIONAL_EXTERNAL_ASSETS = [
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(ASSETS_TO_CACHE);
-      })
+    caches.open(CACHE_NAME).then(async cache => {
+      // 1. Cache essential local core assets
+      await cache.addAll(CORE_ASSETS);
+      // 2. Cache optional external assets without blocking install on network failure
+      for (const url of OPTIONAL_EXTERNAL_ASSETS) {
+        try {
+          await cache.add(url);
+        } catch (e) {
+          console.warn('[SW] Non-critical asset cache skipped:', url);
+        }
+      }
+    })
   );
 });
 

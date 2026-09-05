@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build:web": "node scripts/build.js",
-    "cap:init": "npx cap init DFWatch io.github.noah.dfwatch --web-dir dist",
+    "cap:init": "npx cap init DFWatch com.dualsfwshield.dfwatch --web-dir dist",
     "cap:sync": "npx cap sync android",
     "build:android:local": "npm run build:web && npx cap sync android",
-    "setup:android": "npm install && npm run build:web && npx cap init DFWatch io.github.noah.dfwatch --web-dir dist && npm install @capacitor/android && npx cap add android"
+    "setup:android": "npm install && npm run build:web && npx cap init DFWatch com.dualsfwshield.dfwatch --web-dir dist && npm install @capacitor/android && npx cap add android"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",

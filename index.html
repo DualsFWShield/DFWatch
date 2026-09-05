@@ -1142,6 +1142,7 @@
     </div>
 
     <div id="toast" class="toast hidden"></div>
+    <div id="offline-indicator" class="offline-pill hidden"><span class="offline-dot"></span> <span data-i18n="toast.offline">Mode hors-ligne actif (données locales uniquement)</span></div>
 
     <!-- EXPORT MODAL -->
     <div id="export-modal" class="modal-overlay hidden">
@@ -1157,9 +1158,17 @@
                     <input type="radio" name="export-format" value="algo_complete">
                     <span style="font-weight: bold;" data-i18n="profile.export_format_algo_complete">Algorithme Complet (Réimportable)</span>
                 </label>
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom: 8px;">
                     <input type="radio" name="export-format" value="id">
                     <span style="font-weight: bold;" data-i18n="profile.export_format_id">Algorithme Ciblage (Data Broker)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom: 8px;">
+                    <input type="radio" name="export-format" value="letterboxd">
+                    <span style="font-weight: bold;" data-i18n="profile.export_format_letterboxd">Format Letterboxd (Films — CSV)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="radio" name="export-format" value="trakt">
+                    <span style="font-weight: bold;" data-i18n="profile.export_format_trakt">Format Trakt (Films & Séries — CSV)</span>
                 </label>
             </div>
 
@@ -1253,7 +1262,7 @@
     <div id="wrapped-modal" class="detail-overlay hidden">
         <div class="settings-card glass-panel" style="max-width: 600px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 32px; background: linear-gradient(135deg, var(--surface-1), var(--surface-3)); border: 2px solid var(--iris-400); box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 40px rgba(124,58,237,0.2);">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px;">
-                <h2 style="font-size: 32px; margin: 0; background: linear-gradient(90deg, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Wrapped <span id="wrapped-year-title">2026</span></h2>
+                <h2 style="font-size: 32px; margin: 0; background: linear-gradient(90deg, #a78bfa, #f472b6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Wrapped <span id="wrapped-year-title">2026</span></h2>
                 <button class="btn-close" onclick="window.closeOverlay('wrapped-modal')" style="font-size:28px;">&times;</button>
             </div>
             

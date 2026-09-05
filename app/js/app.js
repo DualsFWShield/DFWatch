@@ -3,8 +3,42 @@
 (function () {
     'use strict';
 
+    // ---- Utility: Debounce ----
+    function debounce(fn, delay = 300) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
+    window.appDebounce = debounce;
+
     // ---- i18n Init ----
     if (window.I18n) window.I18n.init();
+
+    // ---- Offline Status Management ----
+    function updateOnlineStatus() {
+        const indicator = document.getElementById('offline-indicator');
+        if (!navigator.onLine) {
+            document.body.classList.add('is-offline');
+            if (indicator) indicator.classList.remove('hidden');
+            if (window.showToast && window.I18n) {
+                window.showToast(window.I18n.get('toast.offline'), 4000);
+            }
+        } else {
+            const wasOffline = document.body.classList.contains('is-offline');
+            document.body.classList.remove('is-offline');
+            if (indicator) indicator.classList.add('hidden');
+            if (wasOffline && window.showToast && window.I18n) {
+                window.showToast(window.I18n.get('toast.online'), 3000);
+            }
+        }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    if (!navigator.onLine) {
+        setTimeout(updateOnlineStatus, 500);
+    }
 
     // ---- Navigation (syncs sidebar + bottom nav) ----
     const pages = document.querySelectorAll('.page');
@@ -80,6 +114,8 @@
             if (window.modalStack.length === 0) {
                 document.body.style.overflow = '';
             }
+            // Dispatch event so any waiting promise or handler knows the modal closed
+            document.dispatchEvent(new CustomEvent('modal_closed_' + id));
         }
     };
 
@@ -92,6 +128,14 @@
         } else {
             // Default to series if no state is found
             navigateTo('series', true);
+        }
+    });
+
+    // Global Escape key support to close top overlay
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && window.modalStack && window.modalStack.length > 0) {
+            const top = window.modalStack[window.modalStack.length - 1];
+            window.closeOverlay(top);
         }
     });
 
@@ -271,8 +315,7 @@
         });
     }
 
-    searchInput.addEventListener('input', () => {
-        clearTimeout(searchTimer);
+    const handleSearchInput = debounce(() => {
         const q = searchInput.value.trim();
         
         if (currentSearchType === 'foryou' && q.length > 0) {
@@ -287,7 +330,19 @@
             else loadTrending();
             return; 
         }
-        searchTimer = setTimeout(() => doSearch(q), 400);
+        doSearch(q);
+    }, 300);
+
+    searchInput.addEventListener('input', handleSearchInput);
+
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+            const firstCard = searchResults.querySelector('.poster-card');
+            if (firstCard) {
+                e.preventDefault();
+                firstCard.focus();
+            }
+        }
     });
 
     async function initSearch() {
@@ -683,6 +738,15 @@
 
         const div = document.createElement('div');
         div.className = 'poster-card';
+        div.tabIndex = 0;
+        div.setAttribute('role', 'button');
+        div.setAttribute('aria-label', `${title} (${year || ''})`);
+        div.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                div.click();
+            }
+        });
         div.innerHTML = posterUrl
             ? `<img src="${posterUrl}" alt="${title}" loading="lazy"><div class="poster-overlay"><div>${title}</div><div class="poster-year">${year}</div></div>`
             : `<div class="poster-placeholder">${title}</div>`;
@@ -832,10 +896,20 @@
     let tmdbFixResolve = null;
     let tmdbFixMediaType = 'tv';
 
+    document.addEventListener('modal_closed_tmdb-fix-modal', () => {
+        if (tmdbFixResolve) {
+            tmdbFixResolve(null);
+            tmdbFixResolve = null;
+        }
+    });
+
     if (btnTmdbFixCancel) {
         btnTmdbFixCancel.addEventListener('click', () => {
             window.closeOverlay('tmdb-fix-modal');
-            if (tmdbFixResolve) tmdbFixResolve(null);
+            if (tmdbFixResolve) {
+                tmdbFixResolve(null);
+                tmdbFixResolve = null;
+            }
         });
     }
 
@@ -860,6 +934,8 @@
                 
                 const div = document.createElement('div');
                 div.className = 'modal-result-item';
+                div.tabIndex = 0;
+                div.setAttribute('role', 'button');
                 div.innerHTML = `
                     ${posterUrl ? `<img src="${posterUrl}" class="modal-result-img">` : `<div class="modal-result-img" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;">?</div>`}
                     <div class="modal-result-info">
@@ -867,9 +943,19 @@
                         <div class="modal-result-meta">${year}</div>
                     </div>
                 `;
-                div.addEventListener('click', () => {
+                const selectItem = () => {
                     window.closeOverlay('tmdb-fix-modal');
-                    if (tmdbFixResolve) tmdbFixResolve(item);
+                    if (tmdbFixResolve) {
+                        tmdbFixResolve(item);
+                        tmdbFixResolve = null;
+                    }
+                };
+                div.addEventListener('click', selectItem);
+                div.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        selectItem();
+                    }
                 });
                 tmdbFixResults.appendChild(div);
             });
@@ -1131,10 +1217,15 @@
             if (n.rating > 0) hasPersonalNotes = true;
         });
 
-        for (const season of sortedSeasons) {
+        // Fetch all season details in parallel (optimized)
+        const seasonsDataArray = await Promise.all(
+            sortedSeasons.map(s => TMDB.getSeasonDetails(show.id, s.season_number))
+        );
+
+        sortedSeasons.forEach((season, sIdx) => {
             const isBonus = season.season_number === 0;
             const seasonTitle = isBonus ? (window.I18n ? window.I18n.get('detail.bonus_season') : 'Bonus (Specials)') : (window.I18n ? window.I18n.get('detail.season_title', {number: season.season_number}) : `Saison ${season.season_number}`);
-            const seasonData = await TMDB.getSeasonDetails(show.id, season.season_number);
+            const seasonData = seasonsDataArray[sIdx];
             const episodes = seasonData ? seasonData.episodes || [] : [];
             seasonDataMap[season.season_number] = episodes;
             const watchedInSeason = episodes.filter(ep => watchedEpisodes.has(`S${season.season_number}E${ep.episode_number}`)).length;
@@ -1175,7 +1266,7 @@
 
             seasonsHTML += `
                 <div class="season-block">
-                    <div class="season-header" data-season-id="s${season.season_number}">
+                    <div class="season-header" data-season-id="s${season.season_number}" aria-expanded="false" role="button" tabindex="0">
                         <h3>${seasonTitle}</h3>
                         <div style="display:flex; gap:1rem; align-items:center;">
                             <span class="season-progress">${watchedInSeason}/${episodes.length}</span>
@@ -1185,7 +1276,7 @@
                     </div>
                     <div class="season-episodes" id="season-eps-s${season.season_number}">${epsHTML}</div>
                 </div>`;
-        }
+        });
 
         // Build heatmaps
         function getHeatmapColorClass(val) {
@@ -1334,12 +1425,22 @@
             </div>
         `;
 
-        // Season accordion
+        // Season accordion (keyboard accessible + aria-expanded)
         detailBody.querySelectorAll('.season-header').forEach(header => {
-            header.addEventListener('click', () => {
+            const toggleAccordion = () => {
                 const id = header.dataset.seasonId;
                 const eps = document.getElementById(`season-eps-${id}`);
-                eps.classList.toggle('open');
+                if (eps) {
+                    const isOpen = eps.classList.toggle('open');
+                    header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                }
+            };
+            header.addEventListener('click', toggleAccordion);
+            header.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleAccordion();
+                }
             });
         });
 
@@ -1984,20 +2085,22 @@
                 const reBtn = document.getElementById('btn-re-watch-movie');
                 if (reBtn) reBtn.style.display = 'none';
             } else {
+                const rawRuntime = parseInt(this.dataset.runtime) || 0;
+                const runtimeSecs = rawRuntime > 500 ? rawRuntime : (rawRuntime * 60);
                 if (!existing) {
                     const newId = await db.movies.add({
                         uuid: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(), tmdb_id: tmdbId, name: this.dataset.title,
                         poster_path: movie.poster_path || '', backdrop_path: movie.backdrop_path || '',
                         status: 'watched', release_date: movie.release_date || null,
-                        is_favorited: 0, user_rating: 0, runtime: parseInt(this.dataset.runtime) || 0
+                        is_favorited: 0, user_rating: 0, runtime: runtimeSecs
                     });
                     existing = await db.movies.get(newId);
                 } else {
-                    await db.movies.update(existing.id, { status: 'watched' });
+                    await db.movies.update(existing.id, { status: 'watched', runtime: runtimeSecs });
                 }
                 await db.movie_watches.add({
                     movie_uuid: existing.uuid || '', movie_name: this.dataset.title,
-                    watched_at: new Date().toISOString(), rewatch_count: 0, runtime: parseInt(this.dataset.runtime) || 0
+                    watched_at: new Date().toISOString(), rewatch_count: 0, runtime: runtimeSecs
                 });
                 this.classList.add('active');
                 if (typeof feedBigBrother === 'function') feedBigBrother(tmdbId, 'movie', 1.0);
@@ -2074,6 +2177,7 @@
     }
 
     // ---- Series list ----
+    const debouncedRefreshSeriesList = debounce(() => refreshSeriesList(), 600);
     async function refreshSeriesList() {
         const watchingList = document.getElementById('series-list');
         const finishedList = document.getElementById('series-finished-list');
@@ -2183,7 +2287,7 @@
                                 if (isFirstSync) show.is_finished = shouldBeFinished ? 1 : 0;
                                 show.genres = genres;
                                 show.seasons_data = seasons_data;
-                                refreshSeriesList(); // Re-render to move to correct tab
+                                debouncedRefreshSeriesList(); // Debounced re-render to prevent recursive DOM destruction
                             }
                         } catch(e) {}
                     }, Math.random() * 5000 + 1000); // spread over 1-6 seconds
@@ -3353,15 +3457,17 @@
 
     document.querySelectorAll('input[name="export-format"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
+            const optionsContainer = document.getElementById('export-options-container');
+            const idWarning = document.getElementById('export-id-warning');
             if (e.target.value === 'id') {
-                document.getElementById('export-options-container').classList.add('hidden');
-                document.getElementById('export-id-warning').classList.remove('hidden');
-            } else if (e.target.value === 'algo_complete') {
-                document.getElementById('export-options-container').classList.add('hidden');
-                document.getElementById('export-id-warning').classList.add('hidden');
+                if (optionsContainer) optionsContainer.classList.add('hidden');
+                if (idWarning) idWarning.classList.remove('hidden');
+            } else if (e.target.value === 'algo_complete' || e.target.value === 'letterboxd' || e.target.value === 'trakt') {
+                if (optionsContainer) optionsContainer.classList.add('hidden');
+                if (idWarning) idWarning.classList.add('hidden');
             } else {
-                document.getElementById('export-options-container').classList.remove('hidden');
-                document.getElementById('export-id-warning').classList.add('hidden');
+                if (optionsContainer) optionsContainer.classList.remove('hidden');
+                if (idWarning) idWarning.classList.add('hidden');
             }
         });
     });
@@ -3373,11 +3479,16 @@
     document.getElementById('btn-export-confirm').addEventListener('click', async () => {
         window.closeOverlay('export-modal');
         
-        const format = document.querySelector('input[name="export-format"]:checked').value;
+        const format = document.querySelector('input[name="export-format"]:checked')?.value || 'app_complete';
         if (format === 'id') {
             await window.Exporter.exportID();
         } else if (format === 'algo_complete') {
             await window.Exporter.exportAlgoComplete();
+        } else if (format === 'letterboxd') {
+            await window.Exporter.exportLetterboxdCSV();
+        } else if (format === 'trakt') {
+            await window.Exporter.exportTraktMoviesCSV();
+            await window.Exporter.exportTraktShowsCSV();
         } else {
             const options = {
                 data: document.getElementById('export-chk-data').checked,
@@ -3479,19 +3590,39 @@
             btnOk.textContent = okText;
             btnCancel.textContent = cancelText;
 
-            window.openOverlay('custom-confirm-modal');
-
+            let settled = false;
             const cleanup = () => {
-                window.closeOverlay('custom-confirm-modal');
                 btnOk.removeEventListener('click', onOk);
                 btnCancel.removeEventListener('click', onCancel);
+                document.removeEventListener('modal_closed_custom-confirm-modal', onOverlayClosed);
             };
 
-            const onOk = () => { cleanup(); resolve(true); };
-            const onCancel = () => { cleanup(); resolve(false); };
+            const onOk = () => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                window.closeOverlay('custom-confirm-modal');
+                resolve(true);
+            };
+            const onCancel = () => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                window.closeOverlay('custom-confirm-modal');
+                resolve(false);
+            };
+            const onOverlayClosed = () => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                resolve(false);
+            };
 
             btnOk.addEventListener('click', onOk);
             btnCancel.addEventListener('click', onCancel);
+            document.addEventListener('modal_closed_custom-confirm-modal', onOverlayClosed);
+
+            window.openOverlay('custom-confirm-modal');
         });
     };
 
@@ -3509,21 +3640,49 @@
             const btnOk = document.getElementById('custom-prompt-ok');
             const btnCancel = document.getElementById('custom-prompt-cancel');
             
-            window.openOverlay('custom-prompt-modal');
-            input.focus();
-
+            let settled = false;
             const cleanup = () => {
-                window.closeOverlay('custom-prompt-modal');
                 btnOk.removeEventListener('click', onOk);
                 btnCancel.removeEventListener('click', onCancel);
+                input.removeEventListener('keydown', onKeyDown);
+                document.removeEventListener('modal_closed_custom-prompt-modal', onOverlayClosed);
             };
 
-            const onOk = () => { cleanup(); resolve(input.value); };
-            const onCancel = () => { cleanup(); resolve(null); };
+            const onOk = () => {
+                if (settled) return;
+                settled = true;
+                const val = input.value;
+                cleanup();
+                window.closeOverlay('custom-prompt-modal');
+                resolve(val);
+            };
+            const onCancel = () => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                window.closeOverlay('custom-prompt-modal');
+                resolve(null);
+            };
+            const onOverlayClosed = () => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                resolve(null);
+            };
+            const onKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onOk();
+                }
+            };
 
             btnOk.addEventListener('click', onOk);
             btnCancel.addEventListener('click', onCancel);
+            input.addEventListener('keydown', onKeyDown);
+            document.addEventListener('modal_closed_custom-prompt-modal', onOverlayClosed);
 
+            window.openOverlay('custom-prompt-modal');
+            input.focus();
         });
     };
 
@@ -4841,9 +5000,11 @@ window.renderAvatarParticles = function(colors) {
                 }
             } else if (views > 0) {
                 // If somehow they increment from 0 to 1 but no record existed
+                const mObj = currentRewatchCtx.showObj;
+                const fallbackRuntime = mObj && mObj.runtime ? (mObj.runtime > 500 ? mObj.runtime : mObj.runtime * 60) : 7200;
                 await db.movie_watches.add({
                     movie_uuid: ctx.movieUuid, movie_name: ctx.movieName,
-                    watched_at: new Date().toISOString(), rewatch_count: targetRewatchCount, runtime: 0
+                    watched_at: new Date().toISOString(), rewatch_count: targetRewatchCount, runtime: fallbackRuntime
                 });
             }
         }

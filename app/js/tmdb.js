@@ -273,26 +273,26 @@ const TMDB = {
 
     async getShowDetails(id) {
         if (!id || id === 'null') return null;
-        const tmdb = await _TMDB.getShowDetails(id);
-        if (tmdb) return tmdb;
-        console.log('TMDB show details failed, trying TheTVDB');
-        return _TVDB.getShowDetails(id);
+        if (typeof id === 'string' && id.startsWith('tvdb_')) {
+            return _TVDB.getShowDetails(id.replace('tvdb_', ''));
+        }
+        return _TMDB.getShowDetails(id);
     },
 
     async getMovieDetails(id) {
         if (!id || id === 'null') return null;
-        const tmdb = await _TMDB.getMovieDetails(id);
-        if (tmdb) return tmdb;
-        console.log('TMDB movie details failed, trying TheTVDB');
-        return _TVDB.getMovieDetails(id);
+        if (typeof id === 'string' && id.startsWith('tvdb_')) {
+            return _TVDB.getMovieDetails(id.replace('tvdb_', ''));
+        }
+        return _TMDB.getMovieDetails(id);
     },
 
     async getSeasonDetails(showId, seasonNumber) {
         if (!showId || showId === 'null') return null;
-        const tmdb = await _TMDB.getSeasonDetails(showId, seasonNumber);
-        if (tmdb) return tmdb;
-        console.log('TMDB season details failed, trying TheTVDB');
-        return _TVDB.getSeasonDetails(showId, seasonNumber);
+        if (typeof showId === 'string' && showId.startsWith('tvdb_')) {
+            return _TVDB.getSeasonDetails(showId.replace('tvdb_', ''), seasonNumber);
+        }
+        return _TMDB.getSeasonDetails(showId, seasonNumber);
     },
 
     async getRecommendations(id, type = 'movie') {

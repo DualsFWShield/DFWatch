@@ -80,17 +80,20 @@
         // Limit to top 60 for detail fetching to not overload TMDB
         filtered = filtered.slice(0, 60);
 
-        // Fetch details
-        let fullCandidates = [];
-        for (const item of filtered) {
-            if (!item || !item.id) continue;
+        // Fetch details in parallel with Promise.all (optimized)
+        const detailPromises = filtered.map(async (item) => {
+            if (!item || !item.id) return null;
             try {
-                const details = await this.options.tmdb.getMovieDetails(item.id, mType);
-                fullCandidates.push(details ? { ...item, ...details } : item);
+                const details = mType === 'tv'
+                    ? await this.options.tmdb.getShowDetails(item.id)
+                    : await this.options.tmdb.getMovieDetails(item.id);
+                return details ? { ...item, ...details } : item;
             } catch (e) {
-                fullCandidates.push(item);
+                return item;
             }
-        }
+        });
+        const resolvedCandidates = await Promise.all(detailPromises);
+        let fullCandidates = resolvedCandidates.filter(Boolean);
 
         // 4. Score them
         let genreAffinity = {};
@@ -180,8 +183,9 @@
                 }
             }
 
-            // Reject unreleased movies
-            if (c.release_date && new Date(c.release_date) > new Date()) {
+            // Reject unreleased titles (movies & tv)
+            const relDate = c.release_date || c.first_air_date;
+            if (relDate && new Date(relDate) > new Date()) {
                 c._panScore = -100;
             }
 

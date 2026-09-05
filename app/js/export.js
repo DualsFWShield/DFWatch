@@ -59,17 +59,10 @@ const Exporter = {
         const shows = await db.shows.toArray();
         const movies = await db.movies.toArray();
 
-        // Calculate total watch time
-        let totalMinutes = 0;
-        shows.forEach(s => {
-            const records = history.filter(h => h.show_name === s.name);
-            totalMinutes += records.length * (s.runtime || 0);
-        });
-        movies.forEach(m => {
-            const records = movieWatches.filter(w => w.movie_uuid === m.uuid);
-            let watches = records.reduce((sum, r) => sum + (r.rewatch_count || 0) + 1, 0);
-            totalMinutes += watches * (m.runtime || 0);
-        });
+        // Calculate total watch time from unified DB engine
+        const seriesStats = await DB.getSeriesStats();
+        const movieStats = await DB.getMovieStats();
+        const totalMinutes = seriesStats.totalMinutes + movieStats.totalMinutes;
 
         // Get highly rated or followed content as likes implicitly
         const likedShows = shows.filter(s => s.user_rating >= 4 || s.is_favorited).map(s => parseInt(s.tmdb_id)).filter(id => !isNaN(id));
@@ -140,6 +133,97 @@ const Exporter = {
         a.download = `dfwatch-algo-${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
+    },
+
+    // ---- Universal CSV Exports (Letterboxd & Trakt) ----
+    _escapeCSV(str) {
+        if (!str && str !== 0) return '""';
+        const s = String(str).replace(/"/g, '""');
+        return `"${s}"`;
+    },
+
+    _downloadFile(content, filename, type = 'text/csv;charset=utf-8;') {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    },
+
+    async exportLetterboxdCSV() {
+        const movies = await db.movies.toArray();
+        const watches = await db.movie_watches.toArray();
+        const watchMap = new Map();
+        watches.forEach(w => {
+            if (w.movie_uuid && !watchMap.has(w.movie_uuid)) {
+                watchMap.set(w.movie_uuid, w.watched_at ? w.watched_at.split('T')[0] : '');
+            }
+        });
+
+        const watchedMovies = movies.filter(m => m.status === 'watched');
+        const rows = [['Title', 'Year', 'Rating10', 'WatchedDate']];
+
+        watchedMovies.forEach(m => {
+            const year = (m.release_date || '').split('-')[0] || '';
+            const rating10 = m.user_rating ? (m.user_rating * 2) : '';
+            const watchedDate = watchMap.get(m.uuid) || (m.release_date ? m.release_date.split('T')[0] : new Date().toISOString().split('T')[0]);
+            rows.push([
+                this._escapeCSV(m.name),
+                this._escapeCSV(year),
+                rating10 ? String(rating10) : '',
+                this._escapeCSV(watchedDate)
+            ]);
+        });
+
+        const csvContent = "\uFEFF" + rows.map(r => r.join(',')).join('\n');
+        this._downloadFile(csvContent, `dfwatch-letterboxd-${new Date().toISOString().split('T')[0]}.csv`);
+    },
+
+    async exportTraktMoviesCSV() {
+        const movies = await db.movies.toArray();
+        const watches = await db.movie_watches.toArray();
+        const watchMap = new Map();
+        watches.forEach(w => {
+            if (w.movie_uuid && !watchMap.has(w.movie_uuid)) {
+                watchMap.set(w.movie_uuid, w.watched_at || '');
+            }
+        });
+
+        const watchedMovies = movies.filter(m => m.status === 'watched');
+        const rows = [['Title', 'Year', 'tmdb_id', 'watched_at']];
+
+        watchedMovies.forEach(m => {
+            const year = (m.release_date || '').split('-')[0] || '';
+            const watchedAt = watchMap.get(m.uuid) || new Date().toISOString();
+            rows.push([
+                this._escapeCSV(m.name),
+                this._escapeCSV(year),
+                m.tmdb_id || '',
+                this._escapeCSV(watchedAt)
+            ]);
+        });
+
+        const csvContent = "\uFEFF" + rows.map(r => r.join(',')).join('\n');
+        this._downloadFile(csvContent, `dfwatch-trakt-movies-${new Date().toISOString().split('T')[0]}.csv`);
+    },
+
+    async exportTraktShowsCSV() {
+        const history = await db.watch_history.toArray();
+        const rows = [['ShowTitle', 'Season', 'Episode', 'watched_at']];
+
+        history.forEach(h => {
+            rows.push([
+                this._escapeCSV(h.show_name),
+                h.season_number || 1,
+                h.episode_number || 1,
+                this._escapeCSV(h.watched_at || new Date().toISOString())
+            ]);
+        });
+
+        const csvContent = "\uFEFF" + rows.map(r => r.join(',')).join('\n');
+        this._downloadFile(csvContent, `dfwatch-trakt-shows-${new Date().toISOString().split('T')[0]}.csv`);
     }
 };
 

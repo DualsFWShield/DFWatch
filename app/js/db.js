@@ -97,7 +97,13 @@ const DB = {
         const records = await db.watch_history.toArray();
         let totalMinutes = 0;
         records.forEach(r => {
-            totalMinutes += r.runtime ? Math.round(r.runtime / 60) : 40;
+            if (!r.runtime) {
+                totalMinutes += 40;
+            } else if (r.runtime > 300) {
+                totalMinutes += Math.round(r.runtime / 60);
+            } else {
+                totalMinutes += r.runtime;
+            }
         });
         return { count: records.length, totalMinutes };
     },
@@ -106,7 +112,13 @@ const DB = {
         const records = await db.movie_watches.toArray();
         let totalMinutes = 0;
         records.forEach(r => {
-            totalMinutes += r.runtime ? Math.round(r.runtime / 60) : 120;
+            if (!r.runtime) {
+                totalMinutes += 120;
+            } else if (r.runtime > 500) {
+                totalMinutes += Math.round(r.runtime / 60);
+            } else {
+                totalMinutes += r.runtime;
+            }
         });
         return { count: records.length, totalMinutes };
     },
