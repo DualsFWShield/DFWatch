@@ -65,9 +65,21 @@
         const processItem = (item, weight, decay = 1.0) => {
             const finalWeight = weight * decay;
             if (item.genre_ids) item.genre_ids.forEach(id => { genreAffinity[id] = (genreAffinity[id] || 0) + finalWeight; });
-            if (item.keywords) item.keywords.forEach(id => { keywordAffinity[id] = (keywordAffinity[id] || 0) + finalWeight; });
-            if (item.directors) item.directors.forEach(id => { peopleAffinity[id] = (peopleAffinity[id] || 0) + finalWeight; });
-            if (item.actors) item.actors.forEach(id => { peopleAffinity[id] = (peopleAffinity[id] || 0) + finalWeight; });
+            if (item.keywords) item.keywords.forEach(k => { 
+                const id = k.id || k; 
+                if (!keywordAffinity[id]) keywordAffinity[id] = { id, name: k.name || '', score: 0 };
+                keywordAffinity[id].score += finalWeight; 
+            });
+            if (item.directors) item.directors.forEach(d => { 
+                const id = d.id || d;
+                if (!peopleAffinity[id]) peopleAffinity[id] = { id, name: d.name || '', score: 0 };
+                peopleAffinity[id].score += finalWeight; 
+            });
+            if (item.actors) item.actors.forEach(a => { 
+                const id = a.id || a;
+                if (!peopleAffinity[id]) peopleAffinity[id] = { id, name: a.name || '', score: 0 };
+                peopleAffinity[id].score += finalWeight; 
+            });
             
             const yearStr = item.release_date || item.first_air_date;
             if (yearStr) {
@@ -181,7 +193,7 @@
             if (item.keywords) {
                 const itemKws = item.keywords.results ? item.keywords.results : (item.keywords.keywords ? item.keywords.keywords : []);
                 itemKws.forEach(k => {
-                    if (keywordAffinity[k.id]) score *= (1.0 + (keywordAffinity[k.id] * 0.1));
+                    if (keywordAffinity[k.id]) score *= (1.0 + (keywordAffinity[k.id].score * 0.1));
                 });
             }
 

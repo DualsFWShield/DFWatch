@@ -473,47 +473,73 @@
 
             const results = [];
             for (const s of topShows) {
-                if (!s.genre_ids || s.genre_ids.length === 0 || s.genre_ids.some(id => typeof id !== 'number')) {
+                if (!s.genre_ids || s.genre_ids.length === 0 || s.genre_ids.some(id => typeof id !== 'number') || !s.directors || !s.keywords) {
                     try {
                         const details = await window.TMDB.getShowDetails(s.tmdb_id);
-                        if (details && details.genres) {
-                            s.genre_ids = details.genres.map(g => g.id || TMDB_GENRES[g.name] || g.name).filter(id => typeof id === 'number');
+                        if (details) {
+                            s.genre_ids = details.genres ? details.genres.map(g => g.id || TMDB_GENRES[g.name] || g.name).filter(id => typeof id === 'number') : [];
                             if (s.genre_ids.length === 0) s.genre_ids = [-1]; // mark as fetched but empty
                             s.first_air_date = details.first_air_date;
-                            await db.shows.update(s.id, { genre_ids: s.genre_ids, first_air_date: s.first_air_date });
+                            
+                            s.directors = details.created_by ? details.created_by.map(c => ({ id: c.id, name: c.name })) : [];
+                            s.keywords = [];
+                            if (details.keywords && details.keywords.results) s.keywords = details.keywords.results.map(k => ({ id: k.id, name: k.name }));
+                            else if (details.keywords && details.keywords.keywords) s.keywords = details.keywords.keywords.map(k => ({ id: k.id, name: k.name }));
+                            
+                            await db.shows.update(s.id, { 
+                                genre_ids: s.genre_ids, 
+                                first_air_date: s.first_air_date,
+                                directors: s.directors,
+                                keywords: s.keywords 
+                            });
                         } else {
-                            await db.shows.update(s.id, { genre_ids: [-1] });
-                            s.genre_ids = [-1];
+                            await db.shows.update(s.id, { genre_ids: [-1], directors: [], keywords: [] });
+                            s.genre_ids = [-1]; s.directors = []; s.keywords = [];
                         }
                     } catch(e) {
-                        await db.shows.update(s.id, { genre_ids: [-1] });
-                        s.genre_ids = [-1];
+                        await db.shows.update(s.id, { genre_ids: [-1], directors: [], keywords: [] });
+                        s.genre_ids = [-1]; s.directors = []; s.keywords = [];
                     }
                 }
                 const gIds = (s.genre_ids || []).filter(id => typeof id === 'number' && id !== -1);
-                results.push({ tmdb_id: s.tmdb_id, type: 'tv', genre_ids: gIds, release_date: s.first_air_date || s.release_date });
+                results.push({ tmdb_id: s.tmdb_id, type: 'tv', genre_ids: gIds, release_date: s.first_air_date || s.release_date, directors: s.directors || [], keywords: s.keywords || [] });
             }
             
             for (const m of topMovies) {
-                if (!m.genre_ids || m.genre_ids.length === 0 || m.genre_ids.some(id => typeof id !== 'number')) {
+                if (!m.genre_ids || m.genre_ids.length === 0 || m.genre_ids.some(id => typeof id !== 'number') || !m.directors || !m.keywords) {
                     try {
                         const details = await window.TMDB.getMovieDetails(m.tmdb_id);
-                        if (details && details.genres) {
-                            m.genre_ids = details.genres.map(g => g.id || TMDB_GENRES[g.name] || g.name).filter(id => typeof id === 'number');
+                        if (details) {
+                            m.genre_ids = details.genres ? details.genres.map(g => g.id || TMDB_GENRES[g.name] || g.name).filter(id => typeof id === 'number') : [];
                             if (m.genre_ids.length === 0) m.genre_ids = [-1];
                             m.release_date = details.release_date;
-                            await db.movies.update(m.id, { genre_ids: m.genre_ids, release_date: m.release_date });
+
+                            m.directors = [];
+                            if (details.credits && details.credits.crew) {
+                                m.directors = details.credits.crew.filter(c => c.job === 'Director').map(c => ({ id: c.id, name: c.name }));
+                            }
+                            m.keywords = [];
+                            if (details.keywords && details.keywords.keywords) {
+                                m.keywords = details.keywords.keywords.map(k => ({ id: k.id, name: k.name }));
+                            }
+
+                            await db.movies.update(m.id, { 
+                                genre_ids: m.genre_ids, 
+                                release_date: m.release_date,
+                                directors: m.directors,
+                                keywords: m.keywords
+                            });
                         } else {
-                            await db.movies.update(m.id, { genre_ids: [-1] });
-                            m.genre_ids = [-1];
+                            await db.movies.update(m.id, { genre_ids: [-1], directors: [], keywords: [] });
+                            m.genre_ids = [-1]; m.directors = []; m.keywords = [];
                         }
                     } catch(e){
-                        await db.movies.update(m.id, { genre_ids: [-1] });
-                        m.genre_ids = [-1];
+                        await db.movies.update(m.id, { genre_ids: [-1], directors: [], keywords: [] });
+                        m.genre_ids = [-1]; m.directors = []; m.keywords = [];
                     }
                 }
                 const gIds = (m.genre_ids || []).filter(id => typeof id === 'number' && id !== -1);
-                results.push({ tmdb_id: m.tmdb_id, type: 'movie', genre_ids: gIds, release_date: m.release_date });
+                results.push({ tmdb_id: m.tmdb_id, type: 'movie', genre_ids: gIds, release_date: m.release_date, directors: m.directors || [], keywords: m.keywords || [] });
             }
             return results;
         },
@@ -1174,13 +1200,15 @@
             }
         }
 
-        // --- Trailer ---
+        // --- Trailer (lite-embed: thumbnail + play btn, iframe on click) ---
         let trailerHTML = '';
         if (show.videos && show.videos.results && show.videos.results.length > 0) {
             const trailer = show.videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube')
                          || show.videos.results.find(v => v.site === 'YouTube');
             if (trailer) {
-                trailerHTML = `<div class="detail-section"><h3>Bande-annonce</h3><div class="trailer-container"><iframe src="https://www.youtube.com/embed/${trailer.key}?rel=0" frameborder="0" allowfullscreen loading="lazy" title="Bande-annonce"></iframe></div></div>`;
+                const trailerTitle = window.I18n ? window.I18n.get('detail.trailer') : 'Bande-annonce';
+                const playLabel = window.I18n ? window.I18n.get('detail.play_trailer') : 'Lire la bande-annonce';
+                trailerHTML = `<div class="detail-section"><h3>${trailerTitle}</h3><div class="trailer-container trailer-lite" data-yt-id="${trailer.key}"><img src="https://i.ytimg.com/vi/${trailer.key}/hqdefault.jpg" alt="${trailerTitle}" loading="lazy"><button class="trailer-play-btn" aria-label="${playLabel}"><svg viewBox="0 0 68 48" width="68" height="48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z" fill="#f00"></path><path d="M45 24L27 14v20" fill="#fff"></path></svg></button></div></div>`;
             }
         }
 
@@ -1410,6 +1438,13 @@
             ${castHTML}
             ${trailerHTML}
             
+            <div id="detail-nlp-analysis" style="background:var(--surface-3); padding:16px; border-radius:var(--r-8); margin:16px 0; display:none;">
+                <h4 style="margin:0 0 8px 0; font-size:15px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                    <span>🧠</span> Analyse BigBrother
+                </h4>
+                <p id="detail-nlp-text" style="margin:0; font-size:14px; color:var(--text-secondary); line-height:1.5;"></p>
+            </div>
+
             ${tmdbHeatmapHtml}
             ${personalHeatmapHtml}
 
@@ -1443,6 +1478,51 @@
                 }
             });
         });
+
+        // NLP Injection
+        if (window.BBNLP && typeof _bigBrotherEngine !== 'undefined') {
+            setTimeout(async () => {
+                try {
+                    const currentLang = (window.I18n && window.I18n.lang) || 'fr';
+                    const affinities = await _bigBrotherEngine.buildProfile(_bigBrotherAdapter);
+                    let matchPct = 50;
+                    let reasons = [];
+                    let evidence = { totalWatches: affinities.totalWatches || 0 };
+                    
+                    if (affinities.genre) {
+                        let bestGenre = null;
+                        let maxGenreScore = 0;
+                        (show.genres || []).forEach(g => {
+                            if (affinities.genre[g.id] > maxGenreScore) {
+                                maxGenreScore = affinities.genre[g.id];
+                                bestGenre = g.name;
+                            }
+                        });
+                        if (maxGenreScore > 2) {
+                            matchPct = 88;
+                            reasons.push({ code: 'genre_match', strength: 0.9, detail: { type: bestGenre, watchCount: maxGenreScore, avgRating: 4.5 } });
+                        } else if (maxGenreScore > 0) {
+                            matchPct = 70;
+                            reasons.push({ code: 'genre_match', strength: 0.6, detail: { type: bestGenre, watchCount: maxGenreScore, avgRating: 3.5 } });
+                        } else {
+                            matchPct = 35;
+                            reasons.push({ code: 'genre_mismatch', strength: 0.9, detail: { type: show.genres && show.genres[0] ? show.genres[0].name : 'ce genre' } });
+                        }
+                    }
+                    if (show.vote_average > 8) reasons.push({ code: 'community', strength: 0.9, detail: { rating: show.vote_average, count: show.vote_count } });
+
+                    show.creator = (show.created_by && show.created_by.length > 0) ? new Intl.ListFormat(currentLang, { style: 'long', type: 'conjunction' }).format(show.created_by.map(c => c.name)) : '';
+                    const isAlreadyWatched = typeof isFinished !== 'undefined' ? isFinished : false;
+                    const nlpText = await BBNLP.generateExplanation(show, { percentage: matchPct, total_watches: evidence.totalWatches, reasons: reasons, evidence: evidence }, 'bigbrother', currentLang, isAlreadyWatched);
+                    const nlpContainer = document.getElementById('detail-nlp-analysis');
+                    const nlpEl = document.getElementById('detail-nlp-text');
+                    if (nlpContainer && nlpEl && nlpText) {
+                        nlpEl.textContent = nlpText;
+                        nlpContainer.style.display = 'block';
+                    }
+                } catch (e) { console.error("NLP Error:", e); }
+            }, 200);
+        }
 
         // Run auto-finish check silently in the background just in case it was out of sync
         setTimeout(() => {
@@ -1900,8 +1980,11 @@
         
         let director = '';
         if (movie.credits && movie.credits.crew) {
-            const dir = movie.credits.crew.find(c => c.job === 'Director');
-            if (dir) director = dir.name;
+            const directors = movie.credits.crew.filter(c => c.job === 'Director').map(d => d.name);
+            if (directors.length > 0) {
+                const currentLang = (window.I18n && window.I18n.lang) || 'fr';
+                director = new Intl.ListFormat(currentLang, { style: 'long', type: 'conjunction' }).format(directors);
+            }
         }
         
         const ageRatingHTML = buildAgeRatingHTML(movie, 'movie');
@@ -1926,13 +2009,15 @@
             }
         }
 
-        // --- Trailer ---
+        // --- Trailer (lite-embed: thumbnail + play btn, iframe on click) ---
         let trailerHTML = '';
         if (movie.videos && movie.videos.results && movie.videos.results.length > 0) {
             const trailer = movie.videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube')
                          || movie.videos.results.find(v => v.site === 'YouTube');
             if (trailer) {
-                trailerHTML = `<div class="detail-section"><h3>Bande-annonce</h3><div class="trailer-container"><iframe src="https://www.youtube.com/embed/${trailer.key}?rel=0" frameborder="0" allowfullscreen loading="lazy" title="Bande-annonce"></iframe></div></div>`;
+                const trailerTitle = window.I18n ? window.I18n.get('detail.trailer') : 'Bande-annonce';
+                const playLabel = window.I18n ? window.I18n.get('detail.play_trailer') : 'Lire la bande-annonce';
+                trailerHTML = `<div class="detail-section"><h3>${trailerTitle}</h3><div class="trailer-container trailer-lite" data-yt-id="${trailer.key}"><img src="https://i.ytimg.com/vi/${trailer.key}/hqdefault.jpg" alt="${trailerTitle}" loading="lazy"><button class="trailer-play-btn" aria-label="${playLabel}"><svg viewBox="0 0 68 48" width="68" height="48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z" fill="#f00"></path><path d="M45 24L27 14v20" fill="#fff"></path></svg></button></div></div>`;
             }
         }
 
@@ -1984,6 +2069,51 @@
                 <button class="action-btn secondary" id="btn-fix-tmdb-movie" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">${window.I18n ? window.I18n.get('action.tmdb_fix') : 'Mauvaise identification TMDB ?'}</button>
             </div>
         `;
+
+        // NLP Injection
+        if (window.BBNLP && typeof _bigBrotherEngine !== 'undefined') {
+            setTimeout(async () => {
+                try {
+                    const currentLang = (window.I18n && window.I18n.lang) || 'fr';
+                    const affinities = await _bigBrotherEngine.buildProfile(_bigBrotherAdapter);
+                    let matchPct = 50;
+                    let reasons = [];
+                    let evidence = { totalWatches: affinities.totalWatches || 0 };
+                    
+                    if (affinities.genre) {
+                        let bestGenre = null;
+                        let maxGenreScore = 0;
+                        (movie.genres || []).forEach(g => {
+                            if (affinities.genre[g.id] > maxGenreScore) {
+                                maxGenreScore = affinities.genre[g.id];
+                                bestGenre = g.name;
+                            }
+                        });
+                        if (maxGenreScore > 2) {
+                            matchPct = 88;
+                            reasons.push({ code: 'genre_match', strength: 0.9, detail: { type: bestGenre, watchCount: maxGenreScore, avgRating: 4.5 } });
+                        } else if (maxGenreScore > 0) {
+                            matchPct = 70;
+                            reasons.push({ code: 'genre_match', strength: 0.6, detail: { type: bestGenre, watchCount: maxGenreScore, avgRating: 3.5 } });
+                        } else {
+                            matchPct = 35;
+                            reasons.push({ code: 'genre_mismatch', strength: 0.9, detail: { type: movie.genres && movie.genres[0] ? movie.genres[0].name : 'ce genre' } });
+                        }
+                    }
+                    if (movie.vote_average > 8) reasons.push({ code: 'community', strength: 0.9, detail: { rating: movie.vote_average, count: movie.vote_count } });
+
+                    movie.creator = typeof director !== 'undefined' ? director : '';
+                    const isAlreadyWatched = typeof isWatched !== 'undefined' ? isWatched : false;
+                    const nlpText = await BBNLP.generateExplanation(movie, { percentage: matchPct, total_watches: evidence.totalWatches, reasons: reasons, evidence: evidence }, 'bigbrother', currentLang, isAlreadyWatched);
+                    const nlpContainer = document.getElementById('detail-nlp-analysis');
+                    const nlpEl = document.getElementById('detail-nlp-text');
+                    if (nlpContainer && nlpEl && nlpText) {
+                        nlpEl.textContent = nlpText;
+                        nlpContainer.style.display = 'block';
+                    }
+                } catch (e) { console.error("NLP Error:", e); }
+            }, 200);
+        }
 
         document.getElementById('btn-fix-tmdb-movie').addEventListener('click', async function() {
             const result = await openTmdbFixModal(movie.title || movie.name, 'movie');
@@ -2185,6 +2315,12 @@
         
         const sortVal = document.getElementById('series-sort').value;
         const searchQuery = (document.getElementById('series-local-search').value || '').trim().toLowerCase();
+        
+        // Add skeleton loaders before fetching data
+        watchingList.innerHTML = Array(3).fill('<div class="skeleton-card skeleton"><div class="skeleton-poster skeleton"></div><div class="skeleton-lines"><div class="skeleton-line skeleton"></div><div class="skeleton-line skeleton"></div></div></div>').join('');
+        finishedList.innerHTML = Array(3).fill('<div class="skeleton-grid-item skeleton"></div>').join('');
+        upcomingList.innerHTML = Array(3).fill('<div class="skeleton-grid-item skeleton"></div>').join('');
+
         let shows = await db.shows.where('is_followed').equals(1).toArray();
         if (searchQuery) {
             shows = shows.filter(s => s.name.toLowerCase().includes(searchQuery));
@@ -2193,12 +2329,24 @@
         // Attach last_watched timestamp for default sort
         const historyData = await db.watch_history.toArray();
         const historyMap = {};
+        // Pre-index history by show_tvtime_id and show_name for O(1) lookups
+        const historyByTvtimeId = new Map();
+        const historyByName = new Map();
         for (const h of historyData) {
             const key1 = h.show_tvtime_id ? String(h.show_tvtime_id) : null;
             const key2 = h.show_name;
             const time = h.watched_at ? new Date(h.watched_at).getTime() : 0;
             if (key1 && (!historyMap[key1] || time > historyMap[key1])) historyMap[key1] = time;
             if (key2 && (!historyMap[key2] || time > historyMap[key2])) historyMap[key2] = time;
+            // Build per-show arrays
+            if (key1) {
+                if (!historyByTvtimeId.has(key1)) historyByTvtimeId.set(key1, []);
+                historyByTvtimeId.get(key1).push(h);
+            }
+            if (key2) {
+                if (!historyByName.has(key2)) historyByName.set(key2, []);
+                historyByName.get(key2).push(h);
+            }
         }
 
         // Basic sort
@@ -2223,12 +2371,12 @@
         let watchingCount = 0, finishedCount = 0, upcomingCount = 0;
 
         for (const show of shows) {
-            let history = [];
-            if (show.tvtime_id) {
-                history = await db.watch_history.where('show_tvtime_id').equals(String(show.tvtime_id)).toArray();
-            }
+            // O(1) history lookup instead of per-show IndexedDB query
+            let history = show.tvtime_id
+                ? (historyByTvtimeId.get(String(show.tvtime_id)) || [])
+                : [];
             if (history.length === 0) {
-                history = await db.watch_history.where('show_name').equals(show.name).toArray();
+                history = historyByName.get(show.name) || [];
             }
             const episodesWatched = history.length;
             const posterUrl = show.poster_path ? TMDB.imgUrl(show.poster_path, 'w185') : null;
@@ -2508,6 +2656,12 @@
         
         const sortVal = document.getElementById('films-sort').value;
         const searchQuery = (document.getElementById('films-local-search').value || '').trim().toLowerCase();
+        
+        // Add skeleton loaders before fetching data
+        watchlistList.innerHTML = Array(3).fill('<div class="skeleton-grid-item skeleton"></div>').join('');
+        watchedList.innerHTML = Array(3).fill('<div class="skeleton-grid-item skeleton"></div>').join('');
+        upcomingList.innerHTML = Array(3).fill('<div class="skeleton-grid-item skeleton"></div>').join('');
+        
         let movies = await db.movies.toArray();
         if (searchQuery) {
             movies = movies.filter(m => m.name.toLowerCase().includes(searchQuery));
@@ -3210,31 +3364,77 @@
                     10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics'
                 };
 
-                // Top 3 genres
-                let topGenres = Object.entries(affinities.genre)
+                // Top Genres computation
+                let topGenresData = Object.entries(affinities.genre || {})
                     .sort((a,b) => b[1] - a[1])
                     .slice(0, 3)
                     .map(([id, score]) => {
-                        const name = GENRES_MAP[id] || `Genre ${id}`;
-                        return `<li>${name} <span style="color:var(--text-muted);">(${(score).toFixed(1)})</span></li>`;
-                    }).join('');
+                        return { id, name: GENRES_MAP[id] || `Genre ${id}`, score };
+                    });
+
+                let topGenresHtml = topGenresData.map(g => `<li>${g.name} <span style="color:var(--text-muted);">(${g.score.toFixed(1)})</span></li>`).join('');
                 
-                // Top Decades
-                let topDecades = Object.entries(affinities.decade || {})
+                // Top Decades computation
+                let topDecadesData = Object.entries(affinities.decade || {})
                     .sort((a,b) => b[1] - a[1])
                     .slice(0, 3)
-                    .map(([decade, score]) => `<li>Années ${decade} <span style="color:var(--text-muted);">(${(score).toFixed(1)})</span></li>`)
-                    .join('');
+                    .map(([decade, score]) => {
+                        return { decade, name: `Années ${decade}`, score };
+                    });
+                let topDecadesHtml = topDecadesData.map(d => `<li>${d.name} <span style="color:var(--text-muted);">(${d.score.toFixed(1)})</span></li>`).join('');
+
+                // Top Directors
+                let topDirectorsData = Object.values(affinities.people || {})
+                    .sort((a,b) => b.score - a.score)
+                    .slice(0, 3);
+                let topDirectorsHtml = topDirectorsData.length > 0 
+                    ? topDirectorsData.map(d => `<li>${d.name || ('Talent #' + d.id)} <span style="color:var(--text-muted);">(${d.score.toFixed(1)})</span></li>`).join('') 
+                    : '<li>Pas assez de données</li>';
+
+                // Top Keywords
+                let topKeywordsData = Object.values(affinities.keyword || {})
+                    .sort((a,b) => b.score - a.score)
+                    .slice(0, 3);
+                let topKeywordsHtml = topKeywordsData.length > 0 
+                    ? topKeywordsData.map(k => `<li>${k.name || ('Mot-clé #' + k.id)} <span style="color:var(--text-muted);">(${k.score.toFixed(1)})</span></li>`).join('') 
+                    : '<li>Pas assez de données</li>';
+
+                // BBNLP Integration
+                let profileInsight = "";
+                if (window.BBNLP) {
+                    const currentLang = (window.I18n && window.I18n.lang) || 'fr';
+                    await BBNLP.init(currentLang);
+                    const totalWatches = (seriesStats.count || 0) + (movieStats.count || 0);
+                    profileInsight = BBNLP.generateProfileDescription(affinities, totalWatches, topGenresData, topDecadesData);
+                }
 
                 bbContainer.innerHTML = `
-                    <div style="display:flex; gap:16px; flex-wrap:wrap;">
-                        <div style="flex:1; min-width:140px; background:var(--surface-3); padding:12px; border-radius:var(--r-8);">
+                    <!-- NLP Profile Insight -->
+                    <div style="background:var(--surface-3); padding:16px; border-radius:var(--r-8); margin-bottom:16px;">
+                        <h4 style="margin:0 0 12px 0; font-size:15px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                            <span>🧠</span> Analyse Psychologique
+                        </h4>
+                        <p style="margin:0; font-size:14px; color:var(--text-secondary); line-height:1.5;">
+                            ${profileInsight}
+                        </p>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:16px;">
+                        <div style="background:var(--surface-3); padding:12px; border-radius:var(--r-8);">
                             <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--text-muted); display:flex; align-items:center; gap:8px;"><span>🎭</span> Top Genres</h4>
-                            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--text-primary);">${topGenres || '<li>Pas assez de données</li>'}</ul>
+                            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--text-primary);">${topGenresHtml || '<li>Pas assez de données</li>'}</ul>
                         </div>
-                        <div style="flex:1; min-width:140px; background:var(--surface-3); padding:12px; border-radius:var(--r-8);">
+                        <div style="background:var(--surface-3); padding:12px; border-radius:var(--r-8);">
                             <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--text-muted); display:flex; align-items:center; gap:8px;"><span>⏳</span> Décennies Favorites</h4>
-                            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--text-primary);">${topDecades || '<li>Pas assez de données</li>'}</ul>
+                            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--text-primary);">${topDecadesHtml || '<li>Pas assez de données</li>'}</ul>
+                        </div>
+                        <div style="background:var(--surface-3); padding:12px; border-radius:var(--r-8);">
+                            <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--text-muted); display:flex; align-items:center; gap:8px;"><span>🎬</span> Top Cinéastes</h4>
+                            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--text-primary);">${topDirectorsHtml}</ul>
+                        </div>
+                        <div style="background:var(--surface-3); padding:12px; border-radius:var(--r-8);">
+                            <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--text-muted); display:flex; align-items:center; gap:8px;"><span>🔑</span> Mots-clés</h4>
+                            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--text-primary);">${topKeywordsHtml}</ul>
                         </div>
                     </div>
                 `;
@@ -5282,6 +5482,16 @@ window.renderAvatarParticles = function(colors) {
         link.click();
         showToast('Image téléchargée !');
     }
+
+    // ── Trailer Lite-Embed: load iframe on click ──
+    document.addEventListener('click', (e) => {
+        const lite = e.target.closest('.trailer-lite');
+        if (!lite) return;
+        const ytId = lite.dataset.ytId;
+        if (!ytId) return;
+        lite.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?rel=0&autoplay=1&modestbranding=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen title="Trailer"></iframe>`;
+        lite.classList.remove('trailer-lite');
+    });
 
     // Expose for external modules (like panoptic-ui.js)
     window.openDetail = openDetail;

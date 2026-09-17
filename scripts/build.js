@@ -6,7 +6,7 @@ const DIST_DIR = path.join(ROOT_DIR, 'dist');
 
 // Define what to copy
 const DIRS_TO_COPY = ['app', 'assets', 'PEGI', 'logo'];
-const FILES_TO_COPY = ['index.html', 'manifest.json', 'sw.js', 'favicon.ico'];
+const FILES_TO_COPY = ['index.html', 'manifest.json', 'sw.js', 'favicon.ico', 'nlp_fr.json', 'nlp_en.json'];
 
 // Utility to copy a folder recursively
 function copyDir(src, dest) {

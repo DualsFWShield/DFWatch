@@ -1,0 +1,423 @@
+{
+  "meta": {
+    "locale": "fr-FR"
+  },
+  "profile_insights": {
+    "openers": {
+      "beginner": [
+        "Indexation initiale en cours : vos {total_watches} premiers visionnages esquissent les contours d'un profil émergent.",
+        "La base de données s'éveille. Avec un échantillon de {total_watches} œuvres, votre signature cinématographique commence à se cristalliser.",
+        "Détection de patterns précoces : {total_watches} titres catalogués. BigBrother observe attentivement vos premiers choix.",
+        "Votre journal de bord affiche {total_watches} entrées. Les modèles prédictifs commencent à cerner votre spectre de spectateur.",
+        "Empreinte culturelle naissante enregistrée. Sur la base de {total_watches} expériences, nous établissons un premier diagnostic."
+      ],
+      "established": [
+        "L'analyse croisée de vos {total_watches} visionnages est formelle : votre ADN cinématographique est désormais structuré et cohérent.",
+        "Diagnostic comportemental certifié : avec {total_watches} séances disséquées, BigBrother a parfaitement cerné votre psychologie visuelle.",
+        "Vos habitudes cinéphiles ne relèvent plus du hasard. Fort de {total_watches} œuvres, votre historique dresse le portrait d'un spectateur avisé.",
+        "Les modèles prédictifs convergent : à travers {total_watches} visionnages, vous affichez un profil intermédiaire hautement sélectif.",
+        "Surveillance constante : l'observation de vos {total_watches} séances prouve une trajectoire cinéphile bien trempée."
+      ],
+      "hardcore": [
+        "Base de données colossale détectée. Avec {total_watches} œuvres indexées, votre statut de vétéran cinéphile est incontestable.",
+        "Une telle volumétrie ({total_watches} titres) supplante 98 % de nos sujets d'étude. BigBrother s'incline devant cette dévotion.",
+        "Cartographie totale : avec {total_watches} fiches disséquées, vous avez atteint un stade d'immersion absolu dans notre système.",
+        "Profil d'expert ultime certifié. Votre odyssée cinématographique de {total_watches} chapitres force le respect algorithmique.",
+        "Archétype du spectateur obsessionnel identifié : votre base de {total_watches} visionnages relève du sacerdoce esthétique."
+      ]
+    },
+    "genre_analysis": {
+      "dominant": [
+        "Le genre {top_genre} s'impose comme la pierre angulaire de votre imaginaire, soutenu par un indice d'affinité incontestable de {top_genre_score}.",
+        "Votre boussole interne est verrouillée sur le style {top_genre} (score : {top_genre_score}).",
+        "L'esthétique {top_genre} règne en maître sur vos statistiques, formant le centre de gravité de votre profil ({top_genre_score} pts).",
+        "L'algorithme relève une immersion sans équivoque dans l'univers de {top_genre}, un tropisme chiffré à {top_genre_score}.",
+        "Vous plébiscitez massivement le registre {top_genre}, érigé en véritable dogme esthétique au fil du temps."
+      ]
+    },
+    "director_focus": {
+      "specific": [
+        "Cette appétence se conjugue à une fidélité indéboulonnable envers les visions de {top_director}.",
+        "L'influence de {top_director} marque profondément votre parcours et scelle votre exigence.",
+        "On note par ailleurs une admiration récurrente pour la patte singulière de {top_director}.",
+        "L'œuvre de {top_director} revient comme un motif entêtant dans vos recommandations idéales.",
+        "La signature visuelle de {top_director} constitue clairement l'un des piliers de votre panthéon."
+      ],
+      "generic": [
+        "Votre parcours est parsemé d'attachements pour des cinéastes à la patte forte.",
+        "Les visions de vos réalisateurs de prédilection façonnent indéniablement vos attentes.",
+        "L'algorithme détecte une attention particulière portée à la réalisation formelle."
+      ]
+    },
+    "decade_focus": {
+      "strong": [
+        "Ce magnétisme trouve un écho particulièrement fort dans les productions des {top_decade}.",
+        "C'est dans le creuset des {top_decade} que votre goût semble s'être définitivement forgé.",
+        "L'âge d'or des {top_decade} représente votre territoire d'exploration favori.",
+        "Votre cinéphilie s'est solidement ancrée dans les codes narratifs des {top_decade}.",
+        "Le patrimoine audiovisuel des {top_decade} agit comme un sanctuaire personnel dans vos choix."
+      ]
+    },
+    "keyword_focus": {
+      "specific": [
+        "La thématique \"{top_keyword}\" agit comme un fil rouge obsédant dans vos choix récents.",
+        "BigBrother détecte une réceptivité maximale aux œuvres explorant le motif de {top_keyword}.",
+        "Les atmosphères liées à la notion de {top_keyword} parachèvent votre signature narrative.",
+        "Vos choix révèlent une fascination constante pour les récits touchant à {top_keyword}.",
+        "La présence du sous-thème {top_keyword} augmente drastiquement vos chances d'apprécier une œuvre."
+      ],
+      "generic": [
+        "Vos sélections thématiques soulignent une quête narrative d'une grande précision.",
+        "L'algorithme repère une exigence claire dans l'agencement de vos motifs scénaristiques préférés.",
+        "La récurrence de certaines thématiques précises témoigne d'un regard scrutateur."
+      ]
+    },
+    "outros": {
+      "beginner": [
+        "Continuez à nourrir le système pour que nous puissions affiner cette cartographie.",
+        "Le modèle prédictif attend vos prochaines découvertes pour calibrer ses certitudes.",
+        "Poursuivez vos explorations. BigBrother garde un œil ouvert sur votre évolution.",
+        "L'algorithme se nourrit de vos évaluations. Continuez d'enrichir votre journal.",
+        "Chaque nouveau titre visionné nous permettra d'ajuster cette première focale."
+      ],
+      "established": [
+        "BigBrother maintiendra une surveillance active sur vos inflexions artistiques.",
+        "Une psyché cinéphile solide, que nos algorithmes se réjouissent de continuer à étudier.",
+        "Vos goûts sont désormais indexés. Nous saurons anticiper vos prochains désirs.",
+        "Le système prédictif est aligné. Vos recommandations s'annoncent d'une redoutable précision.",
+        "La surveillance de votre profil se poursuit, mais votre noyau dur est définitivement identifié."
+      ],
+      "hardcore": [
+        "Vous êtes un véritable gardien du temple de ce style. Surveillance perpétuelle maintenue.",
+        "Peu de sujets atteignent une telle constance. BigBrother vous observe avec un profond respect algorithmique.",
+        "Votre matrice est complète. Il ne nous reste plus qu'à trouver les rares joyaux que vous auriez manqués.",
+        "Un profil d'une telle densité facilite le travail de nos algorithmes. Poursuivez votre sacerdoce.",
+        "L'ultime étape de votre évolution cinéphile. Le système entier est à votre écoute."
+      ]
+    },
+    "scenarios": [
+      "{opener} {genre_analysis} {director_focus} {decade_focus} {keyword_focus} {outro}",
+      "{opener} {genre_analysis} {decade_focus} {director_focus} {outro}",
+      "{opener} L'omniprésence du genre {top_genre} est frappante. {decade_focus} {keyword_focus} {outro}",
+      "{opener} {director_focus} C'est l'essence même de votre profil, appuyée par la toute-puissance du style {top_genre}. {decade_focus} {outro}",
+      "{opener} {keyword_focus} {genre_analysis} {decade_focus} {outro}"
+    ]
+  },
+  "bigbrother": {
+    "openers": {
+      "excellent": {
+        "withStats": [
+          "Après avoir passé au crible vos {total_drinks} visionnages, {title} {by_creator} s'impose comme un match exceptionnel.",
+          "Votre profil est sans appel : avec vos références en {genre}, {title} ({score}) colle parfaitement à votre profil."
+        ],
+        "standard": [
+          "{title} ({score}) {by_creator} est tout simplement l'une des correspondances les plus fortes que j'aie trouvées pour votre regard.",
+          "Recommandation assumée : {title} coche chacune des cases dessinées par votre historique de visionnage."
+        ]
+      },
+      "positive": {
+        "withStats": [
+          "Au vu de vos {total_drinks} visionnages consignées, {title} {by_creator} s'impose comme une candidate très sérieuse.",
+          "Votre profil désigne directement {title} ({score})."
+        ],
+        "standard": [
+          "Si vous cherchez {un_genre} de grande qualité, {title} {by_creator} s'impose d'elle-même.",
+          "D'après l'analyse de votre profil, {title} ({score}) est un choix remarquable pour votre regard."
+        ]
+      },
+      "mixed": {
+        "withStats": [
+          "Avec {total_drinks} visionnages au compteur, je peux être précis : {title} ({score}) se situe aux marges de votre zone de confort habituelle."
+        ],
+        "standard": [
+          "{title} ({creator}) est {un_genre} à {score} qui s'écarte quelque peu de vos favoris habituels.",
+          "Voici un pari calculé : {title} se tient à l'extérieur de vos préférences centrales, sans être pour autant dénuée d'intérêt."
+        ]
+      },
+      "negative": {
+        "withStats": [
+          "J'ai confronté {title} à vos {total_drinks} visionnages consignées, et le verdict est net : cette œuvre n'est pas taillée pour vous."
+        ],
+        "standard": [
+          "Au vu de votre profil, je vous déconseille {title} {by_creator}.",
+          "Je préfère être transparent : {title} ({score}) risque fort de décevoir vos attentes."
+        ]
+      }
+    },
+    "excellent": {
+      "scenarios": [
+        "Autant le dire d'emblée : {title} est l'une des correspondances les plus nettes de votre profil. {reason_clause} Avec ses {score}, {creator} semble avoir conçu sur mesure pour votre regard. {outro}",
+        "Si votre historique devait se résumer à une œuvre, ce serait celle-ci : {title} {by_creator}. {reason_clause} {outro}"
+      ],
+      "prestige_desc": {
+        "industrial": {
+          "positive": [
+            "un rapport qualité-prix qui surclasse sa catégorie"
+          ]
+        },
+        "standard": {
+          "positive": [
+            "une recette d'une régularité remarquable"
+          ]
+        },
+        "craft": {
+          "positive": [
+            "une vraie signature artisanale indépendante"
+          ]
+        },
+        "prestige": {
+          "positive": [
+            "un pedigree que bien des caves envieraient"
+          ]
+        }
+      },
+      "reason_clauses": {
+        "similar": [
+          "Quiconque a vidé {loved_ref} {loved_ref_drinks} reconnaîtra l'air de famille dès la première scène."
+        ],
+        "genre": [
+          "Vous totalisez {genre_drinks} visionnages {de_genre} dans votre profil, et votre score moyen sur le style parle de lui-même."
+        ],
+        "repeat": [
+          "Ce style est devenu un pilier de votre historique : {genre_drinks} visionnages et toujours aucune lassitude."
+        ],
+        "creator": [
+          "Les {creator_drinks} œuvres de {creator} déjà passées par votre regard y ont toutes laissé une empreinte positive."
+        ],
+        "score": [
+          "Ses {score} se logent pile dans la tranche d'intensité où se concentrent vos meilleures notes, autour de {score_pref}."
+        ],
+        "keyword": [
+          "Son profil aux notes {keywords} coche exactement les cases aromatiques que vous récompensez le plus."
+        ],
+        "community": [
+          "La communauté des spectateurs confirme le diagnostic avec des évaluations constamment élevées."
+        ]
+      },
+      "outros": [
+        "Dégagez une soirée pour celle-ci : elle mérite votre attention entière.",
+        "Réfléchissez déjà à la suite, celle-ci passera plus vite que vous ne le pensez.",
+        "Ma recommandation la plus ferme de la session."
+      ]
+    },
+    "positive": {
+      "scenarios": [
+        "Une recommandation assurée : {title} {by_creator}. {reason_clause}, vous saurez sans doute l'apprécier. {outro}",
+        "Votre profil penche nettement vers {le_genre}, et {title} en est une belle incarnation. L'alchimie est là, elle a tout pour vous plaire. {outro}",
+        "Le recoupement entre vos habitudes et {title} est tangible. {reason_clause} ne gâche rien. {outro}"
+      ],
+      "prestige_desc": {
+        "industrial": {
+          "positive": [
+            "une recette directe et maîtrisée"
+          ]
+        },
+        "standard": {
+          "positive": [
+            "un profil honnête et bien équilibré"
+          ]
+        },
+        "craft": {
+          "positive": [
+            "une belle signature artisanale indépendante"
+          ]
+        },
+        "prestige": {
+          "positive": [
+            "une réputation amplement méritée auprès des connaisseurs"
+          ]
+        }
+      },
+      "reason_clauses": {
+        "similar": [
+          "Elle s'inscrit dans la même famille que {loved_ref}, que vous avez débouchée {loved_ref_drinks}."
+        ],
+        "genre": [
+          "Avec {genre_drinks} visionnages {de_genre} au compteur, le style figure clairement parmi vos terres connues."
+        ],
+        "creator": [
+          "Vos {creator_drinks} visionnages précédentes chez {creator} ont toutes laissé une impression positive."
+        ],
+        "score": [
+          "Son score à {score} se situe pile dans la tranche d'intensité que vos meilleures notes affectionnent, autour de {score_pref}."
+        ],
+        "keyword": [
+          "Son profil aux notes {keywords} correspond aux signatures aromatiques que vous notez le plus haut."
+        ],
+        "community": [
+          "Les évaluations de la communauté confirment votre affinité personnelle sur ce coup."
+        ]
+      },
+      "outros": [
+        "Je vous la recommande sans hésitation pour votre prochaine visionnage.",
+        "Une référence à ajouter à votre profil sans plus attendre.",
+        "Visionnez-la confortablement, sans précipitation : elle le mérite."
+      ]
+    },
+    "mixed": {
+      "scenarios": [
+        "{title} se tient à distance respectueuse de votre zone de confort. {reason_clause} Pour étirer votre regard sans trop vous éloigner, cette proposition de {creator} constitue un détour raisonnable. {outro}",
+        "Un détour calculé plutôt qu'un coup de cœur garanti : {title}.. {reason_clause} La variété a toutefois ses dividendes. {outro}"
+      ],
+      "prestige_desc": {
+        "industrial": {
+          "positive": [
+            "C'est une œuvre commerciale très accessible"
+          ]
+        },
+        "standard": {
+          "positive": [
+            "Son profil reste classique et régulier"
+          ]
+        },
+        "craft": {
+          "positive": [
+            "Elle est portée par une approche artisanale originale"
+          ]
+        },
+        "prestige": {
+          "positive": [
+            "Son étiquette est prestigieuse"
+          ]
+        }
+      },
+      "reason_clauses": {
+        "similar": [
+          "Elle partage une partie de son ADN avec {loved_ref}, que vous avez diffusée {loved_ref_drinks}, mais la recette s'aventure sur des terrains que vous contournez d'habitude."
+        ],
+        "genre": [
+          "Avec {genre_drinks} visionnages {de_genre} au compteur, vous savez exactement ce que vous attendez du style — et celle-ci en infléchit les codes."
+        ],
+        "creator": [
+          "Vos {creator_drinks} rencontres précédentes avec {creator} furent solides, sans être transcendantes."
+        ],
+        "score": [
+          "Ses {score} se tiennent juste à côté de votre zone habituelle autour de {score_pref}."
+        ],
+        "keyword": [
+          "Les notes {keywords} naviguent à mi-chemin entre vos favoris et des territoires que vous notez plus froidement."
+        ],
+        "community": [
+          "Les évaluations de la communauté évoquent une belle facture, même si l'affinité personnelle n'est que partielle."
+        ]
+      },
+      "outros": [
+        "Une expérience intéressante si vous souhaitez élargir votre carnet de visionnage.",
+        "Pourquoi ne pas lui laisser sa chance lors d'une séance découverte sans enjeu ?",
+        "Gardez-la en tête pour une soirée où l'envie de changer vous prendra."
+      ]
+    },
+    "negative": {
+      "scenarios": [
+        "Je vais être franc : {title} est un mauvais match pour vous. {reason_clause} — elle restera en net décalage avec vos standards. {outro}",
+        "Votre profil et cette œuvre sont en désaccord de principe. {le_genre} de {creator} relève d'une école de réalisation que vous avez sanctionnée à maintes reprises. {outro}",
+        "Statistiquement, {title} fait partie des œuvres à écarter dans votre cas.. L'alchimie n'est simplement pas au rendez-vous. {outro}"
+      ],
+      "prestige_desc": {
+        "industrial": {
+          "negative": [
+            "son profil grand public très standardisé manquera cruellement de relief"
+          ]
+        },
+        "standard": {
+          "negative": [
+            "sa recette conventionnelle n'offre pas la profondeur de vos favorites"
+          ]
+        },
+        "craft": {
+          "negative": [
+            "sa direction aromatique va à contrecourant de vos notes passées"
+          ]
+        },
+        "prestige": {
+          "negative": [
+            "son style ne convient tout simplement pas à votre regard, renommée mise à part"
+          ]
+        }
+      },
+      "reason_clauses": {
+        "genre": [
+          "Sur {genre_drinks} visionnages {de_genre}, vos verdicts pour cette direction sont restés régulièrement tièdes."
+        ],
+        "creator": [
+          "Vos {creator_drinks} visionnages précédentes chez {creator} vous avaient laissé nettement froid."
+        ],
+        "score": [
+          "Son score à {score} s'éloigne nettement de la zone autour de {score_pref} où se sont forgés vos meilleurs souvenirs."
+        ],
+        "keyword": [
+          "Le profil aux notes {keywords} ressemble aux caractéristiques que vous avez régulièrement sanctionnées."
+        ],
+        "community": [
+          "Même des évaluations communautaires flatteuses ne compensent pas un tel décalage personnel."
+        ]
+      },
+      "outros": [
+        "Je vous orienterai volontiers vers une autre œuvre, sans hésiter.",
+        "Passez votre chemin : votre profil recèle bien plus adapté.",
+        "La vie est trop courte pour visionner à contresens de son regard."
+      ]
+    },
+    "reasons": {
+      "genre": {
+        "strong_count": [],
+        "strong": [],
+        "standard_count": [],
+        "standard": []
+      },
+      "creator": {
+        "strong_count": [],
+        "strong": [],
+        "standard_count": [],
+        "standard": []
+      },
+      "keyword": {
+        "strong_count": [],
+        "strong": [],
+        "standard_count": [],
+        "standard": []
+      },
+      "score": {
+        "strong": [],
+        "standard": []
+      },
+      "repeat": {
+        "strong": [],
+        "standard": []
+      },
+      "community": {
+        "strong_count": [],
+        "strong": [],
+        "standard": []
+      },
+      "genre_mismatch": {
+        "strong_count": [],
+        "strong": [],
+        "standard_count": [],
+        "standard": []
+      },
+      "creator_mismatch": {
+        "strong": [],
+        "standard": []
+      },
+      "keyword_mismatch": {
+        "strong": [],
+        "standard": []
+      },
+      "score_mismatch": {
+        "strong": [],
+        "standard": []
+      }
+    },
+    "alreadyWatched": {
+      "once": [
+        "Cela étant, vous l'avez déjà vue : votre propre regard demeure le juge final.",
+        "Notez qu'elle figure déjà dans votre profil, vous savez donc exactement à quoi vous en tenir."
+      ],
+      "multiple": [
+        "Cela étant, vous l'avez déjà vue {count} fois — à ce stade, vous la connaissez mieux que moi !",
+        "Elle figure déjà dans votre profil avec {count} visionnages au compteur : votre verdict est déjà bien établi."
+      ]
+    }
+  }
+}

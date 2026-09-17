@@ -126,6 +126,8 @@ const TRANSLATIONS = {
         "calendar.empty_desc": "Suivez des séries ou ajoutez des films pour voir vos dates importantes ici.",
         
         "detail.no_overview": "Pas de description disponible.",
+        "detail.trailer": "Bande-annonce",
+        "detail.play_trailer": "Lire la bande-annonce",
         "detail.available_on": "En Streaming",
         "detail.rent_on": "En Location",
         "detail.buy_on": "À l'Achat",
@@ -510,6 +512,8 @@ const TRANSLATIONS = {
         "calendar.empty_desc": "Follow shows or add movies to see your important dates here.",
         
         "detail.no_overview": "No description available.",
+        "detail.trailer": "Trailer",
+        "detail.play_trailer": "Play trailer",
         "detail.available_on": "Streaming",
         "detail.rent_on": "Rent",
         "detail.buy_on": "Buy",

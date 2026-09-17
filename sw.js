@@ -67,6 +67,43 @@ self.addEventListener('fetch', event => {
     // API calls bypass cache
     return;
   }
+
+  // Cache-First for TMDB images (posters, backdrops)
+  if (event.request.url.includes('image.tmdb.org')) {
+    event.respondWith(
+      caches.open('dfwatch-images-v1').then(async cache => {
+        const cached = await cache.match(event.request);
+        if (cached) return cached;
+        try {
+          const response = await fetch(event.request);
+          if (response.ok) cache.put(event.request, response.clone());
+          return response;
+        } catch {
+          return new Response('', { status: 408 });
+        }
+      })
+    );
+    return;
+  }
+
+  // Cache-First for YouTube thumbnails
+  if (event.request.url.includes('i.ytimg.com')) {
+    event.respondWith(
+      caches.open('dfwatch-images-v1').then(async cache => {
+        const cached = await cache.match(event.request);
+        if (cached) return cached;
+        try {
+          const response = await fetch(event.request);
+          if (response.ok) cache.put(event.request, response.clone());
+          return response;
+        } catch {
+          return new Response('', { status: 408 });
+        }
+      })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request);

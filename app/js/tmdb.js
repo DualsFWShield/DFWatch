@@ -1,5 +1,11 @@
 // tmdb.js — Dual API Service: TMDB (primary) + TheTVDB (fallback)
 
+// ── In-memory LRU cache for detail endpoints ──
+const _tmdbCache = new Map();
+const _TMDB_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+const _TMDB_CACHE_MAX = 100;
+const _TMDB_DETAIL_RE = /^\/(tv|movie)\/\d+/;
+
 // ========== TMDB API v3 ==========
 const _TMDB = {
     get API_KEY() { return localStorage.getItem('custom_tmdb_api_key') || '0c634de3bcc68012ef07b6be118b1d8a'; },
@@ -20,11 +26,31 @@ const _TMDB = {
     async _fetch(endpoint) {
         const sep = endpoint.includes('?') ? '&' : '?';
         const currentLang = (window.I18n && window.I18n.lang === 'en') ? 'en-US' : 'fr-FR';
+        const cacheKey = `${endpoint}__${currentLang}`;
+        const isDetail = _TMDB_DETAIL_RE.test(endpoint);
+
+        // Return cached detail if still fresh
+        if (isDetail && _tmdbCache.has(cacheKey)) {
+            const cached = _tmdbCache.get(cacheKey);
+            if (Date.now() - cached.ts < _TMDB_CACHE_TTL) return cached.data;
+            _tmdbCache.delete(cacheKey);
+        }
+
         const url = `${this.BASE}${endpoint}${sep}api_key=${this.API_KEY}&language=${currentLang}`;
         try {
             const res = await fetch(url);
             if (!res.ok) return null;
-            return res.json();
+            const data = await res.json();
+
+            // Cache detail responses
+            if (isDetail && data) {
+                if (_tmdbCache.size >= _TMDB_CACHE_MAX) {
+                    _tmdbCache.delete(_tmdbCache.keys().next().value);
+                }
+                _tmdbCache.set(cacheKey, { data, ts: Date.now() });
+            }
+
+            return data;
         } catch (e) { return null; }
     },
 
@@ -276,7 +302,12 @@ const TMDB = {
         if (typeof id === 'string' && id.startsWith('tvdb_')) {
             return _TVDB.getShowDetails(id.replace('tvdb_', ''));
         }
-        return _TMDB.getShowDetails(id);
+        let data = await _TMDB.getShowDetails(id);
+        if (!data) {
+            console.log(`TMDB getShowDetails failed for ${id}, falling back to TheTVDB`);
+            data = await _TVDB.getShowDetails(id);
+        }
+        return data;
     },
 
     async getMovieDetails(id) {
@@ -284,7 +315,12 @@ const TMDB = {
         if (typeof id === 'string' && id.startsWith('tvdb_')) {
             return _TVDB.getMovieDetails(id.replace('tvdb_', ''));
         }
-        return _TMDB.getMovieDetails(id);
+        let data = await _TMDB.getMovieDetails(id);
+        if (!data) {
+            console.log(`TMDB getMovieDetails failed for ${id}, falling back to TheTVDB`);
+            data = await _TVDB.getMovieDetails(id);
+        }
+        return data;
     },
 
     async getSeasonDetails(showId, seasonNumber) {
@@ -292,7 +328,12 @@ const TMDB = {
         if (typeof showId === 'string' && showId.startsWith('tvdb_')) {
             return _TVDB.getSeasonDetails(showId.replace('tvdb_', ''), seasonNumber);
         }
-        return _TMDB.getSeasonDetails(showId, seasonNumber);
+        let data = await _TMDB.getSeasonDetails(showId, seasonNumber);
+        if (!data) {
+            console.log(`TMDB getSeasonDetails failed for ${showId}, falling back to TheTVDB`);
+            data = await _TVDB.getSeasonDetails(showId, seasonNumber);
+        }
+        return data;
     },
 
     async getRecommendations(id, type = 'movie') {
