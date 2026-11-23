@@ -236,6 +236,7 @@ const TRANSLATIONS = {
         "profile.clear_data_prompt": "⚠️ Effacer TOUTES vos données ? Cette action est irréversible.",
         "profile.force_update_prompt": "Cela va vider le cache de l'application et forcer le téléchargement de la dernière version. Continuer ?",
         
+        "sort.last_watched": "Dernier épisode vu",
         "sort.added_desc": "Date d'ajout (Récent)",
         "sort.added_asc": "Date d'ajout (Ancien)",
         "sort.name_asc": "A-Z",
@@ -425,7 +426,6 @@ const TRANSLATIONS = {
         "achievements.filter_near": "Presque",
         "detail.movie_note": "Ma note & critique personnelle",
         "detail.movie_note_placeholder": "Écrivez votre avis ou mémo sur ce film...",
-        "detail.notscare_title": "Alertes Jumpscares & Contenus",
         "detail.filmography": "Filmographie",
         "bb.manage_feedback": "Gérer mes préférences",
         "bb.no_feedback": "Aucun like ou dislike enregistré pour le moment.",
@@ -665,6 +665,7 @@ const TRANSLATIONS = {
         "profile.clear_data_prompt": "⚠️ Clear ALL your data? This action is irreversible.",
         "profile.force_update_prompt": "This will clear the app cache and force downloading the latest version. Continue?",
         
+        "sort.last_watched": "Last Watched Episode",
         "sort.added_desc": "Added Date (Newest)",
         "sort.added_asc": "Added Date (Oldest)",
         "sort.name_asc": "A-Z",
@@ -854,7 +855,6 @@ const TRANSLATIONS = {
         "achievements.filter_near": "Almost there",
         "detail.movie_note": "My Personal Review & Notes",
         "detail.movie_note_placeholder": "Write your review or notes about this movie...",
-        "detail.notscare_title": "Jump Scares & Content Warnings",
         "detail.filmography": "Filmography",
         "bb.manage_feedback": "Manage preferences",
         "bb.no_feedback": "No likes or dislikes recorded yet.",

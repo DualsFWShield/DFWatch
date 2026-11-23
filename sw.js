@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dfwatch-v9';
+const CACHE_NAME = 'dfwatch-v10';
 const IMAGE_CACHE_NAME = 'dfwatch-images-v1';
 const IMAGE_CORS_CACHE_NAME = 'dfwatch-images-cors-v1';
 const CORE_ASSETS = [
@@ -19,7 +19,6 @@ const CORE_ASSETS = [
   './app/js/profile-card.js',
   './app/js/vendor/bigbrother.js',
   './app/js/vendor/bigbrother_nlp.js',
-  './app/js/vendor/notscare.js',
   './app/js/tutorial.js',
   './app/js/vendor/panoptic.js',
   './app/js/panoptic-ui.js',
@@ -73,7 +72,7 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   const url = event.request.url;
-  if (url.includes('api.themoviedb.org') || url.includes('api4.thetvdb.com') || url.includes('notscare')) {
+  if (url.includes('api.themoviedb.org') || url.includes('api4.thetvdb.com')) {
     // API calls bypass cache
     return;
   }

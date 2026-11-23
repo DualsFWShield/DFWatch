@@ -1250,7 +1250,7 @@
         return html;
     }
 
-    // ---- Shared Detail Helpers (Cast, Trailer, NotScare, NLP, Person Filmography) ----
+    // ---- Shared Detail Helpers (Cast, Trailer, NLP, Person Filmography) ----
     function buildCastHTML(credits) {
         if (!credits || !Array.isArray(credits.cast) || credits.cast.length === 0) return '';
         const cast = credits.cast.slice(0, 12);
@@ -1375,39 +1375,6 @@
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(e); }
             });
         });
-    }
-
-    function injectNotScareBox(containerId, tmdbId, mediaType) {
-        if (!window.NotScare || !tmdbId) return;
-        (async () => {
-            try {
-                const [jumpscares, triggers] = await Promise.all([
-                    NotScare.getJumpscares(tmdbId, mediaType),
-                    NotScare.getTriggers(tmdbId, mediaType)
-                ]);
-                const box = document.getElementById(containerId);
-                if (!box) return;
-                const jsCount = Array.isArray(jumpscares) ? jumpscares.length : 0;
-                const trigList = Array.isArray(triggers) ? triggers : [];
-                if (jsCount === 0 && trigList.length === 0) return;
-
-                const heading = (window.I18n && window.I18n.get('detail.notscare_title')) || 'Alertes Jumpscares & Contenus';
-                const jsLabel = (window.I18n && window.I18n.lang === 'en')
-                    ? `${jsCount} jump scare${jsCount > 1 ? 's' : ''} reported`
-                    : `${jsCount} jump scare${jsCount > 1 ? 's' : ''} signalé${jsCount > 1 ? 's' : ''}`;
-                const trigHtml = trigList.slice(0, 8).map(t => {
-                    const name = escapeHtml(typeof t === 'string' ? t : (t.name || t.label || t.category || ''));
-                    return name ? `<span class="notscare-tag">${name}</span>` : '';
-                }).join('');
-
-                box.innerHTML = `
-                    <div class="notscare-header"><span>⚠️</span> <strong>${escapeHtml(heading)}</strong></div>
-                    ${jsCount > 0 ? `<div class="notscare-jumpscares">${escapeHtml(jsLabel)}</div>` : ''}
-                    ${trigHtml ? `<div class="notscare-tags">${trigHtml}</div>` : ''}
-                `;
-                box.style.display = 'block';
-            } catch (e) { /* silent network fallback */ }
-        })();
     }
 
     function runDetailNlpAnalysis(item, mediaType, isAlreadyWatched, creatorStr) {
@@ -1725,8 +1692,6 @@
                 <p id="detail-nlp-text" style="margin:0; font-size:14px; color:var(--text-secondary); line-height:1.5;"></p>
             </div>
 
-            <div id="detail-notscare-box" class="notscare-box" style="display:none;"></div>
-
             ${tmdbHeatmapHtml}
             ${personalHeatmapHtml}
 
@@ -1744,7 +1709,6 @@
 
         bindCastPersonHandlers(detailBody);
         runDetailNlpAnalysis(show, 'tv', isFinished, creator);
-        injectNotScareBox('detail-notscare-box', show.id, 'tv');
 
         // Season accordion (keyboard accessible + aria-expanded)
         detailBody.querySelectorAll('.season-header').forEach(header => {
@@ -2310,8 +2274,6 @@
                 <p id="detail-nlp-text" style="margin:0; font-size:14px; color:var(--text-secondary); line-height:1.5;"></p>
             </div>
 
-            <div id="detail-notscare-box" class="notscare-box" style="display:none;"></div>
-
             <div class="detail-section" id="detail-similar-movies"></div>
             <div class="detail-section detail-footer-actions" style="margin-top: 2rem; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 <button type="button" class="action-btn secondary" id="btn-share-movie" style="font-size:12px; padding:6px 12px; width:auto; border:1px solid var(--border-subtle);">📤 Partager</button>
@@ -2321,7 +2283,6 @@
 
         bindCastPersonHandlers(detailBody);
         runDetailNlpAnalysis(movie, 'movie', isWatched, director);
-        injectNotScareBox('detail-notscare-box', movie.id, 'movie');
 
         // Personal movie review/note save
         const noteTextarea = document.getElementById('movie-personal-note');
@@ -2618,7 +2579,7 @@
         const upcomingList = document.getElementById('series-upcoming-list');
         if (!watchingList || !finishedList || !upcomingList) return;
 
-        const sortVal = document.getElementById('series-sort')?.value || 'added_desc';
+        const sortVal = document.getElementById('series-sort')?.value || 'last_watched';
         const searchQuery = (document.getElementById('series-local-search')?.value || '').trim().toLowerCase();
 
         watchingList.innerHTML = Array(3).fill('<div class="skeleton-card skeleton"><div class="skeleton-poster skeleton"></div><div class="skeleton-lines"><div class="skeleton-line skeleton"></div><div class="skeleton-line skeleton"></div></div></div>').join('');
@@ -2669,8 +2630,8 @@
             if (sortVal === 'added_desc') return b.id - a.id;
             if (sortVal === 'rating_desc') return (b.user_rating || 0) - (a.user_rating || 0);
 
-            const tA = Math.max(historyMap[String(a.tvtime_id)] || 0, historyMap[a.name] || 0);
-            const tB = Math.max(historyMap[String(b.tvtime_id)] || 0, historyMap[b.name] || 0);
+            const tA = Math.max(a.tvtime_id ? (historyMap[String(a.tvtime_id)] || 0) : 0, a.name ? (historyMap[a.name] || 0) : 0);
+            const tB = Math.max(b.tvtime_id ? (historyMap[String(b.tvtime_id)] || 0) : 0, b.name ? (historyMap[b.name] || 0) : 0);
             if (tA !== tB) return tB - tA;
             return b.id - a.id;
         });

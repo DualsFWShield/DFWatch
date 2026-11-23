@@ -3678,7 +3678,7 @@ button.theme-option {
     transition: width 0.3s var(--ease-out);
 }
 
-/* ── DETAIL ENHANCEMENTS (Cast, Person Modal, NotScare, Note) ─ */
+/* ── DETAIL ENHANCEMENTS (Cast, Person Modal, Note) ───────── */
 .cast-card[data-person-id] {
     cursor: pointer;
     transition: transform var(--dur-fast);
@@ -3753,40 +3753,6 @@ button.theme-option {
     padding: 16px;
     border-radius: var(--r-8);
     margin: 16px 0;
-    border: 1px solid var(--border-subtle);
-}
-.notscare-box {
-    background: rgba(251, 191, 36, 0.08);
-    border: 1px solid rgba(251, 191, 36, 0.28);
-    border-radius: var(--r-12);
-    padding: 14px 16px;
-    margin: 14px 0;
-}
-.notscare-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--amber);
-    margin-bottom: 6px;
-}
-.notscare-jumpscares {
-    font-size: 13px;
-    color: var(--text-primary);
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-.notscare-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-.notscare-tag {
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: var(--r-pill);
-    background: var(--surface-2);
-    color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
 }
 .movie-personal-note-box {
