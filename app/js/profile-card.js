@@ -375,24 +375,34 @@ const ProfileCard = (() => {
             'Drama': 'drama', 'Drame': 'drama',
             'Comedy': 'comedy', 'Comédie': 'comedy',
             'Science Fiction': 'scifi', 'Science-Fiction': 'scifi', 'Science-Fiction & Fantastique': 'scifi', 'Sci-Fi & Fantasy': 'scifi',
-            'Action': 'action', 'Action & Adventure': 'action', 'Aventure': 'action', 'Adventure': 'action',
-            'Thriller': 'thriller', 'Mystery': 'thriller', 'Mystère': 'thriller',
-            'Crime': 'crime', 'Crime & Investigation': 'crime',
+            'Action': 'action', 'Action & Adventure': 'action_adventure', 'Action & Aventure': 'action_adventure', 'Aventure': 'adventure', 'Adventure': 'adventure',
+            'Thriller': 'thriller', 'Mystery': 'mystery', 'Mystère': 'mystery',
+            'Crime': 'crime', 'Crime & Investigation': 'crime', 'Crime / Policier': 'crime',
             'Romance': 'romance',
             'Animation': 'animation',
             'Horror': 'horror', 'Horreur': 'horror',
-            'Fantasy': 'fantasy', 'Fantastique': 'fantasy', 'Sci-Fi & Fantasy': 'fantasy',
-            'Documentary': 'documentary', 'Documentaire': 'documentary', 'Reality': 'documentary',
+            'Fantasy': 'fantasy', 'Fantastique': 'fantasy',
+            'Documentary': 'documentary', 'Documentaire': 'documentary', 'Reality': 'reality', 'Télé-Réalité': 'reality',
             'Kids': 'kids', 'Enfants': 'kids',
-            'Family': 'family', 'Familial': 'family'
+            'Family': 'family', 'Familial': 'family', 'Famille': 'family',
+            'War': 'war', 'Guerre': 'war', 'War & Politics': 'war_politics', 'Guerre & Politique': 'war_politics',
+            'History': 'history', 'Histoire': 'history',
+            'Music': 'music', 'Musique': 'music',
+            'Western': 'western',
+            'TV Movie': 'tv_movie', 'Téléfilm': 'tv_movie',
+            'News': 'news', 'Actualités': 'news',
+            'Talk': 'talk', 'Talk-Show': 'talk',
+            'Soap': 'soap'
         };
-        return map[genreName] || genreName;
+        return map[genreName] || String(genreName || '').toLowerCase();
     }
 
     function translateGenre(genreName) {
         const baseKey = getGenreCategory(genreName);
-        if (baseKey && window.I18n && window.I18n.get(`genres.${baseKey}`)) {
-            return window.I18n.get(`genres.${baseKey}`);
+        const i18nKey = `genres.${baseKey}`;
+        if (baseKey && window.I18n) {
+            const translated = window.I18n.get(i18nKey);
+            if (translated && translated !== i18nKey) return translated;
         }
         return genreName;
     }
@@ -400,6 +410,9 @@ const ProfileCard = (() => {
     function generatePersonalityDescription(t, lang) {
         if (t.genre) {
             return lang === 'en' ? `Fan of ${t.genre}` : `Amateur de ${translateGenre(t.genre).toLowerCase()}`;
+        }
+        if (t.desc_en || t.desc_fr) {
+            return lang === 'en' ? (t.desc_en || t.desc_fr) : (t.desc_fr || t.desc_en);
         }
         if (t.check) {
             const str = t.check.toString();
@@ -412,7 +425,8 @@ const ProfileCard = (() => {
             match = str.match(/movies\s*>=\s*(\d+)/);
             if (match) return lang === 'en' ? `Watched over ${match[1]} movies` : `A regardé plus de ${match[1]} films`;
             match = str.match(/shows\s*>=\s*(\d+)/);
-            if (match) return lang === 'en' ? `Watched over ${match[1]} series` : `A suivi plus de ${match[1]} séries`;
+            if (match) return lang === 'en' ? `Followed over ${match[1]} series` : `A suivi plus de ${match[1]} séries`;
+            if (str.includes('<')) return lang === 'en' ? 'Just getting started' : 'Début d\'aventure';
         }
         return lang === 'en' ? 'Passionate viewer' : 'Spectateur passionné';
     }
@@ -486,10 +500,15 @@ const ProfileCard = (() => {
             }
         }
 
-        // Fallback to best general
+        // Fallback to best general (extract highest numeric threshold from check)
         const matching = PERSONALITY_TITLES.general.filter(t => t.check && t.check(stats));
         if (matching.length > 0) {
-            const best = matching[matching.length - 1]; // last match = highest threshold
+            const getTier = (t) => {
+                const m = t.check.toString().match(/>=\s*(\d+)/);
+                return m ? parseInt(m[1], 10) : 0;
+            };
+            matching.sort((a, b) => getTier(b) - getTier(a));
+            const best = matching[0];
             return `${best.icon} ${best[key]}`;
         }
 
@@ -547,6 +566,8 @@ const ProfileCard = (() => {
     // ═══════════════════════════════════════════════════════════════
     const CARD_FORMATS = {
         '1:1':  { width: 1080, height: 1080, label: '1:1 Post' },
+        '9:16': { width: 1080, height: 1920, label: '9:16 Story' },
+        '16:9': { width: 1920, height: 1080, label: '16:9 Banner' }
     };
 
     // ═══════════════════════════════════════════════════════════════
@@ -554,26 +575,66 @@ const ProfileCard = (() => {
     // ═══════════════════════════════════════════════════════════════
 
     function loadImage(src) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error(`Failed to load: ${src}`));
-            img.src = src;
-        });
+        if (!src) return Promise.reject(new Error('Empty src'));
+        if (src.startsWith('data:') || src.startsWith('blob:')) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('Failed to load data image'));
+                img.src = src;
+            });
+        }
+        return fetch(src, { mode: 'cors', cache: 'no-cache' })
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.blob();
+            })
+            .then(blob => new Promise((resolve, reject) => {
+                const objUrl = URL.createObjectURL(blob);
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(objUrl);
+                    resolve(img);
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(objUrl);
+                    reject(new Error(`Failed to decode: ${src}`));
+                };
+                img.src = objUrl;
+            }));
+    }
+
+    function truncateText(ctx, text, maxWidth) {
+        const str = String(text || '');
+        if (!maxWidth || ctx.measureText(str).width <= maxWidth) return str;
+        let trimmed = str;
+        while (trimmed.length > 1 && ctx.measureText(trimmed + '…').width > maxWidth) {
+            trimmed = trimmed.slice(0, -1);
+        }
+        return trimmed + '…';
+    }
+
+    function drawAvatarCover(ctx, img, cx, cy, size) {
+        const iw = img.naturalWidth || img.width || size;
+        const ih = img.naturalHeight || img.height || size;
+        const side = Math.min(iw, ih);
+        const sx = (iw - side) / 2;
+        const sy = (ih - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, cx - size / 2, cy - size / 2, size, size);
     }
 
     function drawRoundedRect(ctx, x, y, w, h, r) {
+        const rad = Math.min(r, w / 2, h / 2);
         ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.moveTo(x + rad, y);
+        ctx.lineTo(x + w - rad, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+        ctx.lineTo(x + w, y + h - rad);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+        ctx.lineTo(x + rad, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+        ctx.lineTo(x, y + rad);
+        ctx.quadraticCurveTo(x, y, x + rad, y);
         ctx.closePath();
     }
 
@@ -586,7 +647,14 @@ const ProfileCard = (() => {
     }
 
     async function renderCard(data) {
-        const format = CARD_FORMATS[data.format] || CARD_FORMATS['1:1'];
+        try {
+            if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+                await document.fonts.ready;
+            }
+        } catch (e) {}
+
+        const fmtKey = CARD_FORMATS[data.format] ? data.format : '1:1';
+        const format = CARD_FORMATS[fmtKey];
         const theme = CARD_THEMES[data.theme] || CARD_THEMES.void_neon;
         const { width, height } = format;
         const canvas = document.createElement('canvas');
@@ -594,17 +662,15 @@ const ProfileCard = (() => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
 
-        const isPortrait = data.format === '9:16';
-        const isSquare = data.format === '1:1';
-        const isLandscape = data.format === '16:9';
-
-        const scale = width / 1080; 
+        const isPortrait = fmtKey === '9:16';
+        const isLandscape = fmtKey === '16:9';
+        const scale = isLandscape ? (height / 1080) : (width / 1080);
 
         ctx.fillStyle = theme.bg;
         ctx.fillRect(0, 0, width, height);
 
-        drawGlowCircle(ctx, width * 0.2, height * 0.15, width * 0.4, theme.glowColor);
-        drawGlowCircle(ctx, width * 0.8, height * 0.6, width * 0.35, theme.glowColor.replace('0.15', '0.08').replace('0.12', '0.06'));
+        drawGlowCircle(ctx, width * 0.2, height * 0.15, Math.min(width, height) * 0.4, theme.glowColor);
+        drawGlowCircle(ctx, width * 0.8, height * 0.65, Math.min(width, height) * 0.35, theme.glowColor.replace('0.15', '0.08').replace('0.12', '0.06'));
 
         ctx.strokeStyle = theme.border.replace('0.3', '0.05').replace('0.25', '0.04');
         ctx.lineWidth = 1;
@@ -616,424 +682,28 @@ const ProfileCard = (() => {
         }
 
         const pad = 60 * scale;
-        let curY = pad;
+        const statsData = [
+            { icon: '⏱️', value: data.totalTime || '0h', label: data.lang === 'en' ? 'Watch Time' : 'Heures de visionnage' },
+            { icon: '📺', value: String(data.episodes || 0), label: data.lang === 'en' ? 'Episodes Watched' : 'Épisodes vus' },
+            { icon: '🎬', value: String(data.moviesCount || 0), label: data.lang === 'en' ? 'Movies Watched' : 'Films vus' },
+            { icon: '🏆', value: String(data.seriesFinished || 0), label: data.lang === 'en' ? 'Series Completed' : 'Séries terminées' },
+        ];
 
-        /* if (isPortrait) {
-            const avatarSize = 240 * scale;
-            const avatarX = width / 2;
-            curY += 80 * scale;
-            const avatarY = curY + avatarSize / 2;
-
-            const ringRadius = avatarSize / 2 + 12 * scale;
-            const xpProgress = data.xpProgress || 0;
-            ctx.strokeStyle = theme.border;
-            ctx.lineWidth = 6 * scale;
-            ctx.beginPath();
-            ctx.arc(avatarX, avatarY, ringRadius, 0, Math.PI * 2);
-            ctx.stroke();
-
-            const ringColors = getRingColors(data.ringClass);
-            const color1 = ringColors ? ringColors[0] : theme.gradient1;
-            const color2 = ringColors ? ringColors[1] : theme.gradient2;
-            const grd = ctx.createLinearGradient(avatarX - ringRadius, avatarY, avatarX + ringRadius, avatarY);
-            grd.addColorStop(0, color1);
-            grd.addColorStop(1, color2);
-            ctx.strokeStyle = grd;
-            ctx.lineWidth = 8 * scale;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.arc(avatarX, avatarY, ringRadius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * xpProgress);
-            ctx.stroke();
-            ctx.lineCap = 'butt';
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
-            ctx.clip();
-
-            if (data.avatarImg) {
-                ctx.drawImage(data.avatarImg, avatarX - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
-            } else {
-                const bgGrd = ctx.createLinearGradient(avatarX - avatarSize / 2, avatarY - avatarSize / 2, avatarX + avatarSize / 2, avatarY + avatarSize / 2);
-                bgGrd.addColorStop(0, theme.gradient1);
-                bgGrd.addColorStop(1, theme.gradient2);
-                ctx.fillStyle = bgGrd;
-                ctx.fill();
-                ctx.fillStyle = '#fff';
-                ctx.font = `bold ${avatarSize * 0.4}px 'Inter', sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(data.initials || '?', avatarX, avatarY);
-            }
-            ctx.restore();
-
-            curY += avatarSize + 40 * scale;
-
-            ctx.font = `bold ${24 * scale}px 'Inter', sans-serif`;
-            ctx.textAlign = 'center';
-            const lvlText = `LVL ${data.level || 1}`;
-            const lvlW = ctx.measureText(lvlText).width + 32 * scale;
-            drawRoundedRect(ctx, avatarX - lvlW / 2, curY, lvlW, 40 * scale, 20 * scale);
-            const lvlGrd = ctx.createLinearGradient(avatarX - lvlW / 2, curY, avatarX + lvlW / 2, curY);
-            lvlGrd.addColorStop(0, theme.gradient1);
-            lvlGrd.addColorStop(1, theme.gradient2);
-            ctx.fillStyle = lvlGrd;
-            ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.fillText(lvlText, avatarX, curY + 20 * scale);
-            curY += 70 * scale;
-
-            ctx.textAlign = 'center';
-            ctx.fillStyle = theme.text;
-            ctx.font = `800 ${64 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
-            ctx.fillText(data.name || 'User', width / 2, curY);
-            curY += 20 * scale;
-
-            if (data.rankName) {
-                const badgeText = `${data.rankIcon || ''} ${data.rankName}`.trim();
-                ctx.font = `800 ${20 * scale}px 'Inter', sans-serif`;
-                const badgeTextWidth = ctx.measureText(badgeText).width;
-                
-                const badgeW = badgeTextWidth + 40 * scale;
-                const badgeH = 44 * scale;
-                const badgeX = (width - badgeW) / 2;
-                const badgeY = curY + 10 * scale;
-                
-                let badgeColors = getRingColors(data.ringClass);
-                if (data.customBadge && data.customBadge.colors && data.customBadge.colors[0]) {
-                    badgeColors = data.customBadge.colors.filter(c => c);
-                }
-                const bColor1 = badgeColors && badgeColors.length > 0 ? badgeColors[0] : theme.gradient1;
-                const bColor2 = badgeColors && badgeColors.length > 1 ? badgeColors[1] : (badgeColors && badgeColors.length > 0 ? badgeColors[0] : theme.gradient2);
-                
-                const bGrd = ctx.createLinearGradient(badgeX, badgeY, badgeX + badgeW, badgeY);
-                bGrd.addColorStop(0, bColor1);
-                bGrd.addColorStop(1, bColor2);
-                
-                // Outer rect (Gradient border)
-                drawRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, 22 * scale);
-                ctx.fillStyle = bGrd;
-                ctx.fill();
-                
-                // Inner rect (Dark background)
-                drawRoundedRect(ctx, badgeX + 2 * scale, badgeY + 2 * scale, badgeW - 4 * scale, badgeH - 4 * scale, 20 * scale);
-                ctx.fillStyle = '#0f172a';
-                ctx.fill();
-                
-                // Text
-                ctx.fillStyle = '#fff';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(badgeText, width / 2, badgeY + badgeH / 2 + 2 * scale);
-                ctx.textBaseline = 'alphabetic';
-                
-                curY += badgeH + 40 * scale;
-            } else {
-                curY += 20 * scale;
-            }
-
-            if (data.showPersonality !== false) {
-                ctx.fillStyle = theme.accent;
-                ctx.font = `700 ${38 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
-                ctx.fillText(data.personalityTitle || '', width / 2, curY);
-                if (data.personalityDesc) {
-                    ctx.fillStyle = theme.textMuted;
-                    ctx.font = `500 ${24 * scale}px 'Inter', sans-serif`;
-                    ctx.fillText(data.personalityDesc, width / 2, curY + 40 * scale);
-                    curY += 86 * scale;
-                } else {
-                    curY += 70 * scale;
-                }
-            } else {
-                curY += 30 * scale;
-            }
-
-            const statsData = [
-                { icon: '⏱️', value: data.totalTime || '0h', label: data.lang === 'en' ? 'Screen Time' : 'Temps d\'écran' },
-                { icon: '📺', value: String(data.episodes || 0), label: data.lang === 'en' ? 'Episodes' : 'Épisodes' },
-                { icon: '🎬', value: String(data.moviesCount || 0), label: data.lang === 'en' ? 'Movies' : 'Films' },
-                { icon: '🏆', value: String(data.seriesFinished || 0), label: data.lang === 'en' ? 'Finished' : 'Terminées' },
-            ];
-
-            const cardW = (width - pad * 2 - 20 * scale) / 2;
-            const cardH = 140 * scale;
-            for (let i = 0; i < 4; i++) {
-                const col = i % 2;
-                const row = Math.floor(i / 2);
-                const cx = pad + col * (cardW + 20 * scale);
-                const cy = curY + row * (cardH + 20 * scale);
-
-                drawRoundedRect(ctx, cx, cy, cardW, cardH, 20 * scale);
-                ctx.fillStyle = theme.surface;
-                ctx.fill();
-                ctx.strokeStyle = theme.border;
-                ctx.lineWidth = 2 * scale;
-                ctx.stroke();
-
-                ctx.font = `${36 * scale}px sans-serif`;
-                ctx.textAlign = 'left';
-                ctx.fillText(statsData[i].icon, cx + 24 * scale, cy + 50 * scale);
-
-                ctx.fillStyle = theme.text;
-                ctx.font = `800 ${44 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
-                ctx.fillText(statsData[i].value, cx + 76 * scale, cy + 54 * scale);
-
-                ctx.fillStyle = theme.textMuted;
-                ctx.font = `600 ${22 * scale}px 'Inter', sans-serif`;
-                ctx.fillText(statsData[i].label, cx + 24 * scale, cy + 100 * scale);
-            }
-
-            curY += 2 * (cardH + 20 * scale) + 40 * scale;
-
-            if (data.topGenres && data.topGenres.length > 0) {
-                const genresStr = data.topGenres.slice(0, 4).map(translateGenre).join('  •  ');
-                ctx.textAlign = 'center';
-                ctx.fillStyle = theme.textSub;
-                ctx.font = `700 ${22 * scale}px 'Inter', sans-serif`;
-                ctx.fillText(genresStr, width / 2, curY);
-                curY += 50 * scale;
-            }
-
-            if (data.posterImages && data.posterImages.length > 0) {
-                const maxPosters = Math.min(data.posterImages.length, 10);
-                const isTwoRows = maxPosters > 5;
-                const postersPerRow = isTwoRows ? Math.ceil(maxPosters / 2) : maxPosters;
-                
-                const posterH = isTwoRows ? 210 * scale : 260 * scale;
-                const posterW = posterH * 0.667;
-                const posterGap = 16 * scale;
-                
-                for (let r = 0; r < (isTwoRows ? 2 : 1); r++) {
-                    const rowPosters = r === 0 ? postersPerRow : maxPosters - postersPerRow;
-                    if (rowPosters <= 0) continue;
-                    
-                    const totalW = rowPosters * posterW + (rowPosters - 1) * posterGap;
-                    const startX = (width - totalW) / 2;
-                    
-                    for (let c = 0; c < rowPosters; c++) {
-                        const i = r * postersPerRow + c;
-                        const img = data.posterImages[i];
-                        if (img) {
-                            const px = startX + c * (posterW + posterGap);
-                            const py = curY + r * (posterH + posterGap);
-
-                            ctx.save();
-                            drawRoundedRect(ctx, px, py, posterW, posterH, 16 * scale);
-                            ctx.clip();
-                            ctx.drawImage(img, px, py, posterW, posterH);
-                            ctx.restore();
-
-                            drawRoundedRect(ctx, px, py, posterW, posterH, 16 * scale);
-                            ctx.strokeStyle = theme.border;
-                            ctx.lineWidth = 3 * scale;
-                            ctx.stroke();
-                        }
-                    }
-                }
-                curY += (isTwoRows ? posterH * 2 + posterGap : posterH) + 40 * scale;
-            }
-
-            ctx.textAlign = 'center';
-            ctx.fillStyle = theme.textMuted;
-            ctx.font = `500 ${14 * scale}px 'Inter', sans-serif`;
-            ctx.fillText('dfwatch.dualsfwshield.be', width / 2, height - 30 * scale);
-
-        } else if (isLandscape) {
-            const leftCenterX = width * 0.28;
-            const rightCenterX = width * 0.68;
-            
-            let leftY = 160 * scale;
-            const avatarSize = 280 * scale;
-            const avatarY = leftY + avatarSize / 2;
-
-            const ringRadius = avatarSize / 2 + 16 * scale;
-            const xpProgress = data.xpProgress || 0;
-            ctx.strokeStyle = theme.border;
-            ctx.lineWidth = 6 * scale;
-            ctx.beginPath();
-            ctx.arc(leftCenterX, avatarY, ringRadius, 0, Math.PI * 2);
-            ctx.stroke();
-
-            const ringColors = getRingColors(data.ringClass);
-            const color1 = ringColors ? ringColors[0] : theme.gradient1;
-            const color2 = ringColors ? ringColors[1] : theme.gradient2;
-            const grd = ctx.createLinearGradient(leftCenterX - ringRadius, avatarY, leftCenterX + ringRadius, avatarY);
-            grd.addColorStop(0, color1);
-            grd.addColorStop(1, color2);
-            ctx.strokeStyle = grd;
-            ctx.lineWidth = 10 * scale;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.arc(leftCenterX, avatarY, ringRadius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * xpProgress);
-            ctx.stroke();
-            ctx.lineCap = 'butt';
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(leftCenterX, avatarY, avatarSize / 2, 0, Math.PI * 2);
-            ctx.clip();
-            if (data.avatarImg) {
-                ctx.drawImage(data.avatarImg, leftCenterX - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
-            } else {
-                const bgGrd = ctx.createLinearGradient(leftCenterX - avatarSize / 2, avatarY - avatarSize / 2, leftCenterX + avatarSize / 2, avatarY + avatarSize / 2);
-                bgGrd.addColorStop(0, theme.gradient1);
-                bgGrd.addColorStop(1, theme.gradient2);
-                ctx.fillStyle = bgGrd;
-                ctx.fill();
-                ctx.fillStyle = '#fff';
-                ctx.font = `bold ${avatarSize * 0.4}px 'Inter', sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(data.initials || '?', leftCenterX, avatarY);
-            }
-            ctx.restore();
-
-            leftY += avatarSize + 60 * scale;
-
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.fillStyle = theme.text;
-            ctx.font = `800 ${72 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
-            ctx.fillText(data.name || 'User', leftCenterX, leftY);
-            leftY += 90 * scale;
-
-            ctx.fillStyle = theme.textSub;
-            ctx.font = `600 ${32 * scale}px 'Inter', sans-serif`;
-            ctx.fillText(data.rankName || '', leftCenterX, leftY);
-            leftY += 80 * scale;
-
-            if (data.showPersonality !== false) {
-                ctx.fillStyle = theme.accent;
-                ctx.font = `700 ${42 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
-                ctx.fillText(data.personalityTitle || '', leftCenterX, leftY);
-                leftY += 90 * scale;
-            }
-
-            if (data.topGenres && data.topGenres.length > 0) {
-                const genresStr = data.topGenres.slice(0, 3).map(translateGenre).join(' • ');
-                ctx.fillStyle = theme.textMuted;
-                ctx.font = `700 ${24 * scale}px 'Inter', sans-serif`;
-                ctx.fillText(genresStr, leftCenterX, leftY);
-            }
-
-            const hasPosters = data.posterImages && data.posterImages.length > 0;
-            const statsData = [
-                { icon: '⏱️', value: data.totalTime || '0h', label: data.lang === 'en' ? 'Screen Time' : 'Temps d\'écran' },
-                { icon: '📺', value: String(data.episodes || 0), label: data.lang === 'en' ? 'Episodes' : 'Épisodes' },
-                { icon: '🎬', value: String(data.moviesCount || 0), label: data.lang === 'en' ? 'Movies' : 'Films' },
-                { icon: '🏆', value: String(data.seriesFinished || 0), label: data.lang === 'en' ? 'Finished' : 'Terminées' },
-            ];
-
-            const cardW = hasPosters ? 380 * scale : 450 * scale;
-            const cardH = hasPosters ? 150 * scale : 200 * scale;
-            const gap = hasPosters ? 24 * scale : 40 * scale;
-            const rightStartX = rightCenterX - cardW - gap / 2;
-            let rightY = hasPosters ? 160 * scale : (height - (cardH * 2 + gap)) / 2;
-
-            for (let i = 0; i < 4; i++) {
-                const col = i % 2;
-                const row = Math.floor(i / 2);
-                const cx = rightStartX + col * (cardW + gap);
-                const cy = rightY + row * (cardH + gap);
-
-                drawRoundedRect(ctx, cx, cy, cardW, cardH, 24 * scale);
-                ctx.fillStyle = theme.surface;
-                ctx.fill();
-                ctx.strokeStyle = theme.border;
-                ctx.lineWidth = 2 * scale;
-                ctx.stroke();
-
-                ctx.font = `${hasPosters ? 42 : 56}px sans-serif`;
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillText(statsData[i].icon, cx + 32 * scale, cy + (hasPosters ? 24 : 40) * scale);
-
-                ctx.fillStyle = theme.text;
-                ctx.font = `800 ${hasPosters ? 48 : 64}px 'Space Grotesk', 'Inter', sans-serif`;
-                ctx.fillText(statsData[i].value, cx + (hasPosters ? 90 : 120) * scale, cy + (hasPosters ? 24 : 36) * scale);
-
-                ctx.fillStyle = theme.textMuted;
-                ctx.font = `600 ${hasPosters ? 22 : 28}px 'Inter', sans-serif`;
-                ctx.textBaseline = 'alphabetic';
-                ctx.fillText(statsData[i].label, cx + 32 * scale, cy + cardH - (hasPosters ? 22 : 36) * scale);
-            }
-
-            // Posters (up to 10)
-            if (hasPosters) {
-                rightY += 2 * (cardH + gap) + 60 * scale;
-                const maxPosters = Math.min(data.posterImages.length, 10);
-                const isTwoRows = maxPosters > 5;
-                const postersPerRow = isTwoRows ? Math.ceil(maxPosters / 2) : maxPosters; // For up to 5 per row
-                
-                const posterH = isTwoRows ? 250 * scale : 320 * scale;
-                const posterW = posterH * 0.667;
-                const posterGap = 20 * scale;
-                
-                // To properly center each row:
-                for (let r = 0; r < (isTwoRows ? 2 : 1); r++) {
-                    const rowPosters = r === 0 ? postersPerRow : maxPosters - postersPerRow;
-                    if (rowPosters <= 0) continue;
-                    
-                    const totalW = rowPosters * posterW + (rowPosters - 1) * posterGap;
-                    const startX = rightCenterX - totalW / 2;
-                    
-                    for (let c = 0; c < rowPosters; c++) {
-                        const i = r * postersPerRow + c;
-                        const img = data.posterImages[i];
-                        if (img) {
-                            const px = startX + c * (posterW + posterGap);
-                            const py = rightY + r * (posterH + posterGap);
-
-                            ctx.save();
-                            drawRoundedRect(ctx, px, py, posterW, posterH, 16 * scale);
-                            ctx.clip();
-                            ctx.drawImage(img, px, py, posterW, posterH);
-                            ctx.restore();
-
-                            // Border
-                            drawRoundedRect(ctx, px, py, posterW, posterH, 16 * scale);
-                            ctx.strokeStyle = theme.border;
-                            ctx.lineWidth = 3 * scale;
-                            ctx.stroke();
-                        }
-                    }
-                }
-            }
-
-            // ── WATERMARK ──
-            ctx.textAlign = 'right';
-            ctx.fillStyle = theme.textMuted;
-            ctx.font = `500 ${18 * scale}px 'Inter', sans-serif`;
-            ctx.textBaseline = 'alphabetic'; // Reset textBaseline from earlier
-            ctx.fillText('dfwatch.dualsfwshield.be', width - 40 * scale, height - 30 * scale);
-
-        */
-        if (true) {
-            // ═══ SQUARE 1:1 LAYOUT ═══
-
-            // Left part: Avatar + Name
-            const avatarSize = 160 * scale;
-            curY = pad + 40 * scale;
-
-            // Avatar
-            const avatarX = pad + avatarSize / 2 + 20 * scale;
-            const avatarY = curY + avatarSize / 2;
-
-            // XP ring
+        const drawAvatarWithRing = (avatarX, avatarY, avatarSize) => {
             const ringRadius = avatarSize / 2 + 8 * scale;
             ctx.strokeStyle = theme.border;
             ctx.lineWidth = 4 * scale;
             ctx.beginPath();
             ctx.arc(avatarX, avatarY, ringRadius, 0, Math.PI * 2);
             ctx.stroke();
-            
+
             let ringColors = getRingColors(data.ringClass);
             if (data.customRing && data.customRing.colors && data.customRing.colors[0]) {
                 ringColors = data.customRing.colors.filter(c => c);
             }
             const color1 = ringColors && ringColors.length > 0 ? ringColors[0] : theme.gradient1;
             const color2 = ringColors && ringColors.length > 1 ? ringColors[1] : (ringColors && ringColors.length > 0 ? ringColors[0] : theme.gradient2);
-            
+
             const grd = ctx.createLinearGradient(avatarX - ringRadius, avatarY, avatarX + ringRadius, avatarY);
             grd.addColorStop(0, color1);
             grd.addColorStop(1, color2);
@@ -1045,13 +715,12 @@ const ProfileCard = (() => {
             ctx.stroke();
             ctx.lineCap = 'butt';
 
-            // Avatar
             ctx.save();
             ctx.beginPath();
             ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
             ctx.clip();
             if (data.avatarImg) {
-                ctx.drawImage(data.avatarImg, avatarX - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
+                drawAvatarCover(ctx, data.avatarImg, avatarX, avatarY, avatarSize);
             } else {
                 const bgGrd = ctx.createLinearGradient(avatarX - avatarSize / 2, avatarY - avatarSize / 2, avatarX + avatarSize / 2, avatarY + avatarSize / 2);
                 bgGrd.addColorStop(0, theme.gradient1);
@@ -1063,99 +732,282 @@ const ProfileCard = (() => {
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(data.initials || '?', avatarX, avatarY);
+                ctx.textBaseline = 'alphabetic';
             }
             ctx.restore();
+        };
 
-            // Name + title next to avatar
-            const textX = avatarX + avatarSize / 2 + 40 * scale;
-            ctx.textAlign = 'left';
-            ctx.fillStyle = theme.text;
-            ctx.font = `800 ${52 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
-            ctx.fillText(data.name || 'User', textX, avatarY - 20 * scale);
-
-            let lvlY = avatarY + 30 * scale;
-            if (data.showPersonality !== false) {
-                ctx.fillStyle = theme.accent;
-                ctx.font = `700 ${28 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
-                ctx.fillText(data.personalityTitle || '', textX, avatarY + 24 * scale);
-                lvlY = avatarY + 64 * scale;
-
-                if (data.personalityDesc) {
-                    ctx.fillStyle = theme.textMuted;
-                    ctx.font = `500 ${18 * scale}px 'Inter', sans-serif`;
-                    ctx.fillText(data.personalityDesc, textX, avatarY + 54 * scale);
-                    lvlY = avatarY + 94 * scale;
-                }
-            }
-
-            // Level badge
+        const drawBadgesRow = (startX, badgeY, centered = false) => {
             const formattedXp = (data.xp || 0).toLocaleString(data.lang === 'en' ? 'en-US' : 'fr-FR');
-            const badgeH = 28 * scale;
-            const badgeY = lvlY - 20 * scale;
-            
-            // Draw XP Badge
+            const badgeH = 30 * scale;
             const xpText = `${formattedXp} XP`;
             ctx.font = `800 ${14 * scale}px 'Inter', sans-serif`;
-            const xpTextWidth = ctx.measureText(xpText).width;
-            const xpBadgeW = xpTextWidth + 24 * scale;
-            
-            const xpGrd = ctx.createLinearGradient(textX, badgeY, textX + xpBadgeW, badgeY);
+            const xpBadgeW = ctx.measureText(xpText).width + 24 * scale;
+
+            let badgeW = 0;
+            let badgeText = '';
+            if (data.rankName) {
+                badgeText = `${data.rankIcon || ''} ${data.rankName}`.trim();
+                badgeW = ctx.measureText(badgeText).width + 24 * scale;
+            }
+            const totalW = xpBadgeW + (badgeW ? 12 * scale + badgeW : 0);
+            const xpX = centered ? startX - totalW / 2 : startX;
+
+            const xpGrd = ctx.createLinearGradient(xpX, badgeY, xpX + xpBadgeW, badgeY);
             xpGrd.addColorStop(0, '#8b5cf6');
             xpGrd.addColorStop(1, '#7c3aed');
-            
             ctx.fillStyle = xpGrd;
-            ctx.beginPath();
-            ctx.roundRect(textX, badgeY, xpBadgeW, badgeH, 14 * scale);
+            drawRoundedRect(ctx, xpX, badgeY, xpBadgeW, badgeH, 15 * scale);
             ctx.fill();
-            
+            ctx.textAlign = 'left';
             ctx.fillStyle = '#fff';
-            ctx.fillText(xpText, textX + 12 * scale, badgeY + 19 * scale);
-            
-            // Draw Rank Badge
+            ctx.fillText(xpText, xpX + 12 * scale, badgeY + 20 * scale);
+
             if (data.rankName) {
-                const badgeText = `${data.rankIcon || ''} ${data.rankName}`.trim();
-                const badgeTextWidth = ctx.measureText(badgeText).width;
-                
-                const badgeX = textX + xpBadgeW + 12 * scale;
-                const badgeW = badgeTextWidth + 24 * scale;
-                
+                const badgeX = xpX + xpBadgeW + 12 * scale;
                 let badgeColors = getRingColors(data.ringClass);
                 if (data.customBadge && data.customBadge.colors && data.customBadge.colors[0]) {
                     badgeColors = data.customBadge.colors.filter(c => c);
                 }
                 const bColor1 = badgeColors && badgeColors.length > 0 ? badgeColors[0] : theme.gradient1;
                 const bColor2 = badgeColors && badgeColors.length > 1 ? badgeColors[1] : (badgeColors && badgeColors.length > 0 ? badgeColors[0] : theme.gradient2);
-                
                 const bGrd = ctx.createLinearGradient(badgeX, badgeY, badgeX + badgeW, badgeY);
                 bGrd.addColorStop(0, bColor1);
                 bGrd.addColorStop(1, bColor2);
-                
-                // Outer rect (Gradient border)
+
                 ctx.fillStyle = bGrd;
-                ctx.beginPath();
-                ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 14 * scale);
+                drawRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, 15 * scale);
                 ctx.fill();
-                
-                // Inner rect (Dark background)
+
                 ctx.fillStyle = '#0f172a';
-                ctx.beginPath();
-                ctx.roundRect(badgeX + 2 * scale, badgeY + 2 * scale, badgeW - 4 * scale, badgeH - 4 * scale, 12 * scale);
+                drawRoundedRect(ctx, badgeX + 2 * scale, badgeY + 2 * scale, badgeW - 4 * scale, badgeH - 4 * scale, 13 * scale);
                 ctx.fill();
-                
-                // Text
+
                 ctx.fillStyle = '#fff';
-                ctx.fillText(badgeText, badgeX + 12 * scale, badgeY + 19 * scale);
+                ctx.fillText(badgeText, badgeX + 12 * scale, badgeY + 20 * scale);
+            }
+        };
+
+        const drawPosterGrid = (topY, bottomLimit, leftX, gridW) => {
+            if (!data.posterImages || data.posterImages.length === 0) return;
+            const maxPosters = Math.min(data.posterImages.length, 10);
+            const isTwoRows = maxPosters > 5;
+            const postersPerRow = isTwoRows ? Math.ceil(maxPosters / 2) : maxPosters;
+            const posterGap = 16 * scale;
+            let posterW = (gridW - (postersPerRow - 1) * posterGap) / postersPerRow;
+            let posterH = posterW / 0.667;
+            const maxAvailableH = Math.max(80 * scale, bottomLimit - topY);
+            const totalH = isTwoRows ? posterH * 2 + posterGap : posterH;
+            if (totalH > maxAvailableH) {
+                posterH = isTwoRows ? (maxAvailableH - posterGap) / 2 : maxAvailableH;
+                posterW = posterH * 0.667;
+            }
+            for (let r = 0; r < (isTwoRows ? 2 : 1); r++) {
+                const rowPosters = r === 0 ? postersPerRow : maxPosters - postersPerRow;
+                if (rowPosters <= 0) continue;
+                const totalW = rowPosters * posterW + (rowPosters - 1) * posterGap;
+                const startX = leftX + (gridW - totalW) / 2;
+                for (let c = 0; c < rowPosters; c++) {
+                    const idx = r * postersPerRow + c;
+                    const img = data.posterImages[idx];
+                    if (img) {
+                        const px = startX + c * (posterW + posterGap);
+                        const py = topY + r * (posterH + posterGap);
+                        ctx.save();
+                        drawRoundedRect(ctx, px, py, posterW, posterH, 10 * scale);
+                        ctx.clip();
+                        ctx.drawImage(img, px, py, posterW, posterH);
+                        ctx.restore();
+                        drawRoundedRect(ctx, px, py, posterW, posterH, 10 * scale);
+                        ctx.strokeStyle = theme.border;
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+        };
+
+        if (isLandscape) {
+            const leftW = width * 0.44;
+            const rightX = leftW + pad * 0.5;
+            const rightW = width - rightX - pad;
+
+            const avatarSize = 180 * scale;
+            const avatarX = pad + avatarSize / 2;
+            const avatarY = pad + 40 * scale + avatarSize / 2;
+            drawAvatarWithRing(avatarX, avatarY, avatarSize);
+
+            const textX = avatarX + avatarSize / 2 + 36 * scale;
+            const maxTextW = leftW - textX;
+            ctx.textAlign = 'left';
+            ctx.fillStyle = theme.text;
+            ctx.font = `800 ${46 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
+            ctx.fillText(truncateText(ctx, data.name || 'User', maxTextW), textX, avatarY - 18 * scale);
+
+            let badgeY = avatarY + 22 * scale;
+            if (data.showPersonality !== false) {
+                ctx.fillStyle = theme.accent;
+                ctx.font = `700 ${24 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
+                ctx.fillText(truncateText(ctx, data.personalityTitle || '', maxTextW), textX, avatarY + 20 * scale);
+                badgeY = avatarY + 46 * scale;
+                if (data.personalityDesc) {
+                    ctx.fillStyle = theme.textMuted;
+                    ctx.font = `500 ${16 * scale}px 'Inter', sans-serif`;
+                    ctx.fillText(truncateText(ctx, data.personalityDesc, maxTextW), textX, avatarY + 46 * scale);
+                    badgeY = avatarY + 68 * scale;
+                }
+            }
+            drawBadgesRow(textX, badgeY, false);
+
+            let curY = pad + avatarSize + 95 * scale;
+            const statW = (leftW - pad - 20 * scale) / 2;
+            const statH = 115 * scale;
+            for (let i = 0; i < 4; i++) {
+                const col = i % 2;
+                const row = Math.floor(i / 2);
+                const sx = pad + col * (statW + 20 * scale);
+                const sy = curY + row * (statH + 20 * scale);
+                drawRoundedRect(ctx, sx, sy, statW, statH, 16 * scale);
+                ctx.fillStyle = theme.surface;
+                ctx.fill();
+                ctx.strokeStyle = theme.border;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.font = `800 ${34 * scale}px 'Space Grotesk', sans-serif`;
+                const valW = ctx.measureText(statsData[i].value).width;
+                const startX = sx + statW / 2 - (44 * scale + valW) / 2;
+                ctx.textAlign = 'left';
+                ctx.font = `${28 * scale}px sans-serif`;
+                ctx.fillText(statsData[i].icon, startX, sy + 52 * scale);
+                ctx.fillStyle = theme.text;
+                ctx.font = `800 ${34 * scale}px 'Space Grotesk', sans-serif`;
+                ctx.fillText(statsData[i].value, startX + 44 * scale, sy + 54 * scale);
+
+                ctx.textAlign = 'center';
+                ctx.fillStyle = theme.textMuted;
+                ctx.font = `600 ${17 * scale}px 'Inter', sans-serif`;
+                ctx.fillText(truncateText(ctx, statsData[i].label, statW - 20 * scale), sx + statW / 2, sy + 92 * scale);
             }
 
-            curY += avatarSize + 80 * scale;
+            if (data.topGenres && data.topGenres.length > 0) {
+                ctx.textAlign = 'left';
+                ctx.fillStyle = theme.textSub;
+                ctx.font = `600 ${20 * scale}px 'Inter', sans-serif`;
+                const genreStr = data.topGenres.slice(0, 4).map(translateGenre).join('  •  ');
+                ctx.fillText(truncateText(ctx, genreStr, leftW - pad), pad, curY + 2 * (statH + 20 * scale) + 45 * scale);
+            }
 
-            // Stats row
-            const statsData = [
-                { icon: '⏱️', value: data.totalTime || '0h', label: data.lang === 'en' ? 'Watch Time' : 'Heures de visionnage' },
-                { icon: '📺', value: String(data.episodes || 0), label: data.lang === 'en' ? 'Episodes Watched' : 'Épisodes vus' },
-                { icon: '🎬', value: String(data.moviesCount || 0), label: data.lang === 'en' ? 'Movies Watched' : 'Films vus' },
-                { icon: '🏆', value: String(data.seriesFinished || 0), label: data.lang === 'en' ? 'Series Completed' : 'Séries terminées' },
-            ];
+            drawPosterGrid(pad + 40 * scale, height - 80 * scale, rightX, rightW);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = theme.textMuted;
+            ctx.font = `500 ${16 * scale}px 'Inter', sans-serif`;
+            ctx.fillText('dfwatch.dualsfwshield.be', width - pad, height - 28 * scale);
+        } else if (isPortrait) {
+            const avatarSize = 220 * scale;
+            let curY = pad + 70 * scale;
+            const avatarX = width / 2;
+            const avatarY = curY + avatarSize / 2;
+            drawAvatarWithRing(avatarX, avatarY, avatarSize);
+            curY += avatarSize + 64 * scale;
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = theme.text;
+            ctx.font = `800 ${56 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
+            ctx.fillText(truncateText(ctx, data.name || 'User', width - pad * 2), width / 2, curY);
+            curY += 48 * scale;
+
+            if (data.showPersonality !== false) {
+                ctx.fillStyle = theme.accent;
+                ctx.font = `700 ${32 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
+                ctx.fillText(truncateText(ctx, data.personalityTitle || '', width - pad * 2), width / 2, curY);
+                curY += 34 * scale;
+                if (data.personalityDesc) {
+                    ctx.fillStyle = theme.textMuted;
+                    ctx.font = `500 ${20 * scale}px 'Inter', sans-serif`;
+                    ctx.fillText(truncateText(ctx, data.personalityDesc, width - pad * 2), width / 2, curY);
+                    curY += 34 * scale;
+                }
+            }
+
+            drawBadgesRow(width / 2, curY, true);
+            curY += 70 * scale;
+
+            const statW = (width - pad * 2 - 24 * scale) / 2;
+            const statH = 140 * scale;
+            for (let i = 0; i < 4; i++) {
+                const col = i % 2;
+                const row = Math.floor(i / 2);
+                const sx = pad + col * (statW + 24 * scale);
+                const sy = curY + row * (statH + 24 * scale);
+                drawRoundedRect(ctx, sx, sy, statW, statH, 18 * scale);
+                ctx.fillStyle = theme.surface;
+                ctx.fill();
+                ctx.strokeStyle = theme.border;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.font = `800 ${44 * scale}px 'Space Grotesk', sans-serif`;
+                const valW = ctx.measureText(statsData[i].value).width;
+                const startX = sx + statW / 2 - (56 * scale + valW) / 2;
+                ctx.textAlign = 'left';
+                ctx.font = `${34 * scale}px sans-serif`;
+                ctx.fillText(statsData[i].icon, startX, sy + 64 * scale);
+                ctx.fillStyle = theme.text;
+                ctx.font = `800 ${44 * scale}px 'Space Grotesk', sans-serif`;
+                ctx.fillText(statsData[i].value, startX + 56 * scale, sy + 66 * scale);
+
+                ctx.textAlign = 'center';
+                ctx.fillStyle = theme.textMuted;
+                ctx.font = `600 ${20 * scale}px 'Inter', sans-serif`;
+                ctx.fillText(truncateText(ctx, statsData[i].label, statW - 24 * scale), sx + statW / 2, sy + 112 * scale);
+            }
+            curY += 2 * (statH + 24 * scale) + 40 * scale;
+
+            if (data.topGenres && data.topGenres.length > 0) {
+                ctx.textAlign = 'center';
+                ctx.fillStyle = theme.textSub;
+                ctx.font = `600 ${22 * scale}px 'Inter', sans-serif`;
+                ctx.fillText(truncateText(ctx, data.topGenres.slice(0, 5).map(translateGenre).join('  •  '), width - pad * 2), width / 2, curY);
+                curY += 48 * scale;
+            }
+
+            drawPosterGrid(curY, height - 70 * scale, pad, width - pad * 2);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = theme.textMuted;
+            ctx.font = `500 ${16 * scale}px 'Inter', sans-serif`;
+            ctx.fillText('dfwatch.dualsfwshield.be', width / 2, height - 30 * scale);
+        } else {
+            const avatarSize = 160 * scale;
+            let curY = pad + 40 * scale;
+            const avatarX = pad + avatarSize / 2 + 20 * scale;
+            const avatarY = curY + avatarSize / 2;
+            drawAvatarWithRing(avatarX, avatarY, avatarSize);
+
+            const textX = avatarX + avatarSize / 2 + 40 * scale;
+            const maxTextW = width - pad - textX;
+            ctx.textAlign = 'left';
+            ctx.fillStyle = theme.text;
+            ctx.font = `800 ${52 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
+            ctx.fillText(truncateText(ctx, data.name || 'User', maxTextW), textX, avatarY - 20 * scale);
+
+            let lvlY = avatarY + 30 * scale;
+            if (data.showPersonality !== false) {
+                ctx.fillStyle = theme.accent;
+                ctx.font = `700 ${28 * scale}px 'Space Grotesk', 'Inter', sans-serif`;
+                ctx.fillText(truncateText(ctx, data.personalityTitle || '', maxTextW), textX, avatarY + 24 * scale);
+                lvlY = avatarY + 64 * scale;
+
+                if (data.personalityDesc) {
+                    ctx.fillStyle = theme.textMuted;
+                    ctx.font = `500 ${18 * scale}px 'Inter', sans-serif`;
+                    ctx.fillText(truncateText(ctx, data.personalityDesc, maxTextW), textX, avatarY + 54 * scale);
+                    lvlY = avatarY + 94 * scale;
+                }
+            }
+
+            drawBadgesRow(textX, lvlY - 20 * scale, false);
+            curY += avatarSize + 80 * scale;
 
             const statW = (width - pad * 2 - 20 * scale) / 2;
             const statH = 120 * scale;
@@ -1172,18 +1024,14 @@ const ProfileCard = (() => {
                 ctx.lineWidth = 1;
                 ctx.stroke();
 
-                // Calculate center positions
                 ctx.font = `800 ${40 * scale}px 'Space Grotesk', sans-serif`;
                 const valWidth = ctx.measureText(statsData[i].value).width;
-                const iconWidth = 52 * scale; // Increased to give a nice space after emoji
-                const totalW = iconWidth + valWidth;
-                
-                const startX = sx + statW / 2 - totalW / 2;
+                const iconWidth = 52 * scale;
+                const startX = sx + statW / 2 - (iconWidth + valWidth) / 2;
                 const centerY = sy + 56 * scale;
 
                 ctx.textAlign = 'left';
                 ctx.font = `${32 * scale}px sans-serif`;
-                // Adjust emoji baseline slightly
                 ctx.fillText(statsData[i].icon, startX, centerY - 2 * scale);
                 
                 ctx.fillStyle = theme.text;
@@ -1193,72 +1041,24 @@ const ProfileCard = (() => {
                 ctx.textAlign = 'center';
                 ctx.fillStyle = theme.textMuted;
                 ctx.font = `600 ${20 * scale}px 'Inter', sans-serif`;
-                ctx.fillText(statsData[i].label, sx + statW / 2, sy + 96 * scale);
+                ctx.fillText(truncateText(ctx, statsData[i].label, statW - 24 * scale), sx + statW / 2, sy + 96 * scale);
             }
             curY += 2 * (statH + 20 * scale) + 20 * scale;
 
-            // Genres
             if (data.topGenres && data.topGenres.length > 0) {
                 ctx.textAlign = 'center';
                 ctx.fillStyle = theme.textSub;
                 ctx.font = `600 ${20 * scale}px 'Inter', sans-serif`;
-                ctx.fillText(data.topGenres.slice(0, 5).map(translateGenre).join('  •  '), width / 2, curY);
+                ctx.fillText(truncateText(ctx, data.topGenres.slice(0, 5).map(translateGenre).join('  •  '), width - pad * 2), width / 2, curY);
                 curY += 40 * scale;
             }
 
-            // Posters
-            if (data.posterImages && data.posterImages.length > 0) {
-                const maxPosters = Math.min(data.posterImages.length, 10);
-                const isTwoRows = maxPosters > 5;
-                const postersPerRow = isTwoRows ? Math.ceil(maxPosters / 2) : maxPosters;
-                
-                const availableW = width - pad * 2;
-                const posterGap = 16 * scale;
-                let posterW = (availableW - (postersPerRow - 1) * posterGap) / postersPerRow;
-                let posterH = posterW / 0.667;
-                
-                const maxAvailableH = height - curY - 60 * scale; // room for watermark
-                const totalH = isTwoRows ? posterH * 2 + posterGap : posterH;
-                if (totalH > maxAvailableH) {
-                    posterH = isTwoRows ? (maxAvailableH - posterGap) / 2 : maxAvailableH;
-                    posterW = posterH * 0.667;
-                }
-                
-                for (let r = 0; r < (isTwoRows ? 2 : 1); r++) {
-                    const rowPosters = r === 0 ? postersPerRow : maxPosters - postersPerRow;
-                    if (rowPosters <= 0) continue;
-                    
-                    const totalW = rowPosters * posterW + (rowPosters - 1) * posterGap;
-                    const startX = (width - totalW) / 2;
-                    
-                    for (let c = 0; c < rowPosters; c++) {
-                        const i = r * postersPerRow + c;
-                        const img = data.posterImages[i];
-                        if (img) {
-                            const px = startX + c * (posterW + posterGap);
-                            const py = curY + r * (posterH + posterGap);
+            drawPosterGrid(curY, height - 60 * scale, pad, width - pad * 2);
 
-                            ctx.save();
-                            drawRoundedRect(ctx, px, py, posterW, posterH, 10 * scale);
-                            ctx.clip();
-                            ctx.drawImage(img, px, py, posterW, posterH);
-                            ctx.restore();
-                            
-                            drawRoundedRect(ctx, px, py, posterW, posterH, 10 * scale);
-                            ctx.strokeStyle = theme.border;
-                            ctx.lineWidth = 1.5;
-                            ctx.stroke();
-                        }
-                    }
-                }
-            }
-
-            // Watermark
             ctx.textAlign = 'center';
             ctx.fillStyle = theme.textMuted;
             ctx.font = `500 ${13 * scale}px 'Inter', sans-serif`;
             ctx.fillText('dfwatch.dualsfwshield.be', width / 2, height - 24 * scale);
-
         }
 
         return canvas;
@@ -1268,7 +1068,8 @@ const ProfileCard = (() => {
     // PUBLIC API
     // ═══════════════════════════════════════════════════════════════
 
-    async function collectProfileData() {
+    async function collectProfileData(skipTop10Fetch = false) {
+        const safeJson = (raw, fb) => { try { return raw ? JSON.parse(raw) : fb; } catch (e) { return fb; } };
         const firstName = localStorage.getItem('dfwatch_firstname') || '';
         const lastName = localStorage.getItem('dfwatch_lastname') || '';
         const name = (firstName + ' ' + lastName).trim() || 'User';
@@ -1279,14 +1080,12 @@ const ProfileCard = (() => {
         const totalMinutes = seriesStats.totalMinutes + movieStats.totalMinutes;
         const hours = Math.floor(totalMinutes / 60);
 
-        const shows = await db.shows.where('is_followed').equals(1).toArray();
-        const completedSeries = shows.filter(s => s.is_finished === 1).length;
-        const movies = await db.movies.toArray();
-        const watchedMovies = movies.filter(m => m.status === 'watched').length;
-
-        // Flatten genres and consolidate using getGenreCategory
         const allShows = await db.shows.toArray();
+        const shows = allShows.filter(s => s.is_followed === 1);
+        const completedSeries = shows.filter(s => s.is_finished === 1).length;
         const allMovies = await db.movies.toArray();
+        const watchedMovies = allMovies.filter(m => m.status === 'watched').length;
+
         const allGenres = [...allShows, ...allMovies].flatMap(item => (item.genres || []).map(g => typeof g === 'string' ? g : (g ? g.name : null))).filter(Boolean);
         const genreTally = {};
         allGenres.forEach(g => {
@@ -1300,7 +1099,6 @@ const ProfileCard = (() => {
             .sort((a, b) => b[1] - a[1])
             .map(entry => entry[0]);
 
-        // Achievements
         let achievementCount = 0;
         try {
             const achievements = await db.achievements.toArray();
@@ -1326,32 +1124,27 @@ const ProfileCard = (() => {
         const lang = (window.I18n && window.I18n.lang) || 'fr';
         const rankName = getRankName(level, lang, xp);
         const rank = getRank(level);
-        let ringClass = localStorage.getItem('dfwatch_avatar_ring');
-        if (!ringClass) {
-            ringClass = rank.cssClass;
-        }
+        let ringClass = localStorage.getItem('dfwatch_avatar_ring') || rank.cssClass;
 
-        // Avatar
         let avatarImg = null;
         const customAvatar = localStorage.getItem('dfwatch_avatar_custom');
         if (customAvatar) {
-            try {
-                avatarImg = await loadImage(customAvatar);
-            } catch(e) {}
+            try { avatarImg = await loadImage(customAvatar); } catch(e) {}
         }
 
-        // Top 10 posters
-        const savedTop10 = JSON.parse(localStorage.getItem('dfwatch_top10') || '[]');
         const posterImages = [];
-        for (const item of savedTop10.slice(0, 10)) {
-            const isMovie = item.type === 'movie';
-            const dbTable = isMovie ? db.movies : db.shows;
-            const dbItem = await dbTable.where('tmdb_id').equals(item.tmdb_id).first();
-            if (dbItem && dbItem.poster_path) {
-                try {
-                    const img = await loadImage(TMDB.imgUrl(dbItem.poster_path, 'w342'));
-                    posterImages.push(img);
-                } catch(e) {}
+        if (!skipTop10Fetch) {
+            const savedTop10 = safeJson(localStorage.getItem('dfwatch_top10'), []);
+            for (const item of savedTop10.slice(0, 10)) {
+                const isMovie = item.type === 'movie';
+                const dbTable = isMovie ? db.movies : db.shows;
+                const dbItem = await dbTable.where('tmdb_id').equals(item.tmdb_id).first();
+                if (dbItem && dbItem.poster_path) {
+                    try {
+                        const img = await loadImage(TMDB.imgUrl(dbItem.poster_path, 'w342'));
+                        posterImages.push(img);
+                    } catch(e) {}
+                }
             }
         }
 
@@ -1363,14 +1156,14 @@ const ProfileCard = (() => {
             seriesFinished: completedSeries,
             level, xp, xpProgress,
             rankName,
-            rankIcon: getRank(level).icon,
+            rankIcon: rank.icon,
             topGenres: topGenres.slice(0, 5),
             posterImages,
             personalityTitle: getBestPersonality(stats, lang),
             lang,
             ringClass,
-            customRing: JSON.parse(localStorage.getItem('dfwatch_custom_ring') || 'null'),
-            customBadge: JSON.parse(localStorage.getItem('dfwatch_custom_badge') || 'null'),
+            customRing: safeJson(localStorage.getItem('dfwatch_custom_ring'), null),
+            customBadge: safeJson(localStorage.getItem('dfwatch_custom_badge'), null),
             stats,
             avatarImg
         };
@@ -1392,37 +1185,44 @@ const ProfileCard = (() => {
     }
 
     async function generate(options = {}) {
-        const data = await collectProfileData(options.personalityTitle, options.selectedPosters);
+        const data = options.preloadedData
+            ? { ...options.preloadedData }
+            : await collectProfileData(Boolean(options.selectedPosters));
         if (options.showPersonality !== undefined) {
             data.showPersonality = options.showPersonality;
         }
-        
-        // Format and theme setup
-        data.format = options.format || '9:16';
+        data.format = options.format || '1:1';
         data.theme = options.theme || 'void_neon';
-        if (options.personalityTitle) data.personalityTitle = options.personalityTitle;
+        if (options.personalityTitle !== undefined) data.personalityTitle = options.personalityTitle;
         if (options.personalityDesc !== undefined) data.personalityDesc = options.personalityDesc;
         if (options.selectedPosters) data.posterImages = options.selectedPosters;
         return renderCard(data);
     }
 
-    function download(canvas, format) {
-        const date = new Date().toISOString().slice(0, 10);
-        const link = document.createElement('a');
-        link.download = `dfwatch-profile-${format.replace(':', 'x')}-${date}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+    function download(canvas, format = '1:1') {
+        try {
+            const safeFormat = String(format || '1:1').replace(':', 'x');
+            const date = new Date().toISOString().slice(0, 10);
+            const link = document.createElement('a');
+            link.download = `dfwatch-profile-${safeFormat}-${date}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (e) {
+            console.warn('Download failed:', e);
+        }
     }
 
     async function share(canvas) {
         try {
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) return false;
             const file = new File([blob], 'dfwatch-profile.png', { type: 'image/png' });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                const isEn = window.I18n && window.I18n.lang === 'en';
                 await navigator.share({
                     files: [file],
-                    title: 'Mon profil DFWatch',
-                    text: 'Découvrez mon profil de visionnage sur DFWatch !',
+                    title: isEn ? 'My DFWatch Profile' : 'Mon profil DFWatch',
+                    text: isEn ? 'Check out my watching profile on DFWatch!' : 'Découvrez mon profil de visionnage sur DFWatch !',
                 });
                 return true;
             }

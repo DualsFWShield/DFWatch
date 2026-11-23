@@ -92,18 +92,34 @@ const DB = {
         ]);
     },
 
+    // ---- Helpers ----
+    normalizeRuntimeMinutes(runtime, defaultMin = 40, secondsThreshold = 300) {
+        const val = parseInt(runtime, 10);
+        if (!val || isNaN(val) || val <= 0) return defaultMin;
+        if (val > secondsThreshold) return Math.round(val / 60);
+        return val;
+    },
+
+    getLocalDateKey(dateInput) {
+        if (!dateInput) return '';
+        let d;
+        if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+            return dateInput;
+        }
+        d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+        if (isNaN(d.getTime())) return '';
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    },
+
     // ---- Stats ----
     async getSeriesStats() {
         const records = await db.watch_history.toArray();
         let totalMinutes = 0;
         records.forEach(r => {
-            if (!r.runtime) {
-                totalMinutes += 40;
-            } else if (r.runtime > 300) {
-                totalMinutes += Math.round(r.runtime / 60);
-            } else {
-                totalMinutes += r.runtime;
-            }
+            totalMinutes += this.normalizeRuntimeMinutes(r.runtime, 40, 300);
         });
         return { count: records.length, totalMinutes };
     },
@@ -112,13 +128,7 @@ const DB = {
         const records = await db.movie_watches.toArray();
         let totalMinutes = 0;
         records.forEach(r => {
-            if (!r.runtime) {
-                totalMinutes += 120;
-            } else if (r.runtime > 500) {
-                totalMinutes += Math.round(r.runtime / 60);
-            } else {
-                totalMinutes += r.runtime;
-            }
+            totalMinutes += this.normalizeRuntimeMinutes(r.runtime, 120, 500);
         });
         return { count: records.length, totalMinutes };
     },

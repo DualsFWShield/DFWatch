@@ -13,6 +13,7 @@ const Exporter = {
                 history: await db.watch_history.toArray(),
                 movies: await db.movies.toArray(),
                 movieWatches: await db.movie_watches.toArray(),
+                achievements: await db.achievements.toArray(),
                 recommendation_feedback: await db.recommendation_feedback.toArray(),
                 customLists: await db.custom_lists.toArray(),
                 listItems: await db.list_items.toArray(),
@@ -29,8 +30,13 @@ const Exporter = {
                 dfwatch_lastname: localStorage.getItem('dfwatch_lastname'),
                 dfwatch_dob: localStorage.getItem('dfwatch_dob'),
                 dfwatch_age_format: localStorage.getItem('dfwatch_age_format'),
+                dfwatch_country: localStorage.getItem('dfwatch_country'),
+                dfwatch_no_spoil: localStorage.getItem('dfwatch_no_spoil'),
+                dfwatch_auto_mood: localStorage.getItem('dfwatch_auto_mood'),
                 dfwatch_genres: localStorage.getItem('dfwatch_genres'),
-                dfwatch_top10: localStorage.getItem('dfwatch_top10')
+                dfwatch_top10: localStorage.getItem('dfwatch_top10'),
+                dfwatch_custom_ring: localStorage.getItem('dfwatch_custom_ring'),
+                dfwatch_custom_badge: localStorage.getItem('dfwatch_custom_badge')
             };
         }
 
@@ -96,8 +102,8 @@ const Exporter = {
             },
             stats: {
                 total_watch_time_minutes: totalMinutes,
-                shows_followed: shows.length,
-                movies_watched: movies.length
+                shows_followed: shows.filter(s => s.is_followed).length,
+                movies_watched: movies.filter(m => m.status === 'watched').length
             }
         };
 
@@ -168,7 +174,7 @@ const Exporter = {
         watchedMovies.forEach(m => {
             const year = (m.release_date || '').split('-')[0] || '';
             const rating10 = m.user_rating ? (m.user_rating * 2) : '';
-            const watchedDate = watchMap.get(m.uuid) || (m.release_date ? m.release_date.split('T')[0] : new Date().toISOString().split('T')[0]);
+            const watchedDate = watchMap.get(m.uuid) || '';
             rows.push([
                 this._escapeCSV(m.name),
                 this._escapeCSV(year),
@@ -224,6 +230,45 @@ const Exporter = {
 
         const csvContent = "\uFEFF" + rows.map(r => r.join(',')).join('\n');
         this._downloadFile(csvContent, `dfwatch-trakt-shows-${new Date().toISOString().split('T')[0]}.csv`);
+    },
+
+    exportCalendarICS(events = []) {
+        const escapeICS = (str) => String(str || '')
+            .replace(/\\/g, '\\\\')
+            .replace(/;/g, '\\;')
+            .replace(/,/g, '\\,')
+            .replace(/\r?\n/g, '\\n');
+
+        const lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//DFWatch//Release Calendar//FR',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH'
+        ];
+
+        const stamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        events.forEach((ev, idx) => {
+            const dateCompact = String(ev.date || '').replace(/-/g, '');
+            if (!/^\d{8}$/.test(dateCompact)) return;
+            const y = parseInt(dateCompact.slice(0, 4), 10);
+            const m = parseInt(dateCompact.slice(4, 6), 10) - 1;
+            const d = parseInt(dateCompact.slice(6, 8), 10);
+            const nextDay = new Date(Date.UTC(y, m, d + 1));
+            const dtEnd = nextDay.toISOString().split('T')[0].replace(/-/g, '');
+
+            lines.push('BEGIN:VEVENT');
+            lines.push(`UID:dfwatch-${dateCompact}-${ev.id || idx}@dfwatch.app`);
+            lines.push(`DTSTAMP:${stamp}`);
+            lines.push(`DTSTART;VALUE=DATE:${dateCompact}`);
+            lines.push(`DTEND;VALUE=DATE:${dtEnd}`);
+            lines.push(`SUMMARY:${escapeICS(ev.title)}`);
+            if (ev.subtitle) lines.push(`DESCRIPTION:${escapeICS(ev.subtitle)}`);
+            lines.push('END:VEVENT');
+        });
+
+        lines.push('END:VCALENDAR');
+        this._downloadFile(lines.join('\r\n'), `dfwatch-calendar-${new Date().toISOString().split('T')[0]}.ics`, 'text/calendar;charset=utf-8;');
     }
 };
 

@@ -3,8 +3,8 @@
 // ── In-memory LRU cache for detail endpoints ──
 const _tmdbCache = new Map();
 const _TMDB_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
-const _TMDB_CACHE_MAX = 100;
-const _TMDB_DETAIL_RE = /^\/(tv|movie)\/\d+/;
+const _TMDB_CACHE_MAX = 250;
+const _TMDB_DETAIL_RE = /^\/(tv|movie|person)\/\d+/;
 
 // ========== TMDB API v3 ==========
 const _TMDB = {
@@ -70,13 +70,15 @@ const _TMDB = {
         let qs = '';
         if (filters.genre) qs += `&with_genres=${filters.genre}`;
         if (filters.year) {
-            if (filters.year.includes('s')) {
-                // e.g. "2010s"
-                const y = parseInt(filters.year);
-                qs += `&primary_release_date.gte=${y}-01-01&primary_release_date.lte=${y+9}-12-31`;
+            const datePrefix = type === 'tv' ? 'first_air_date' : 'primary_release_date';
+            if (String(filters.year).includes('s')) {
+                const y = parseInt(filters.year, 10);
+                if (!isNaN(y)) {
+                    qs += `&${datePrefix}.gte=${y}-01-01&${datePrefix}.lte=${y + 9}-12-31`;
+                }
             } else {
-                qs += `&primary_release_year=${filters.year}`;
-                qs += `&first_air_date_year=${filters.year}`; // for tv
+                const yearParam = type === 'tv' ? 'first_air_date_year' : 'primary_release_year';
+                qs += `&${yearParam}=${encodeURIComponent(filters.year)}`;
             }
         }
         if (filters.sort) qs += `&sort_by=${filters.sort}`;
@@ -113,6 +115,7 @@ const _TMDB = {
     async getShowDetails(id) { return this._fetch(`/tv/${id}?append_to_response=credits,videos,watch/providers,content_ratings,keywords`); },
     async getMovieDetails(id) { return this._fetch(`/movie/${id}?append_to_response=credits,videos,watch/providers,release_dates,keywords`); },
     async getSeasonDetails(id, season) { return this._fetch(`/tv/${id}/season/${season}`); },
+    async getPersonDetails(id) { return this._fetch(`/person/${id}?append_to_response=combined_credits`); },
 
     async getWatchProviders(region = 'FR', type = 'movie') {
         const data = await this._fetch(`/watch/providers/${type}?watch_region=${region}`);
@@ -283,8 +286,8 @@ const TMDB = {
         return _TMDB.backdropUrl(path);
     },
 
-    async getTrending(type = 'all') {
-        return _TMDB.getTrending(type);
+    async getTrending(type = 'all', window = 'week') {
+        return _TMDB.getTrending(type, window);
     },
 
     async search(query, type = 'multi') {
@@ -302,12 +305,7 @@ const TMDB = {
         if (typeof id === 'string' && id.startsWith('tvdb_')) {
             return _TVDB.getShowDetails(id.replace('tvdb_', ''));
         }
-        let data = await _TMDB.getShowDetails(id);
-        if (!data) {
-            console.log(`TMDB getShowDetails failed for ${id}, falling back to TheTVDB`);
-            data = await _TVDB.getShowDetails(id);
-        }
-        return data;
+        return _TMDB.getShowDetails(id);
     },
 
     async getMovieDetails(id) {
@@ -315,12 +313,7 @@ const TMDB = {
         if (typeof id === 'string' && id.startsWith('tvdb_')) {
             return _TVDB.getMovieDetails(id.replace('tvdb_', ''));
         }
-        let data = await _TMDB.getMovieDetails(id);
-        if (!data) {
-            console.log(`TMDB getMovieDetails failed for ${id}, falling back to TheTVDB`);
-            data = await _TVDB.getMovieDetails(id);
-        }
-        return data;
+        return _TMDB.getMovieDetails(id);
     },
 
     async getSeasonDetails(showId, seasonNumber) {
@@ -328,12 +321,22 @@ const TMDB = {
         if (typeof showId === 'string' && showId.startsWith('tvdb_')) {
             return _TVDB.getSeasonDetails(showId.replace('tvdb_', ''), seasonNumber);
         }
-        let data = await _TMDB.getSeasonDetails(showId, seasonNumber);
-        if (!data) {
-            console.log(`TMDB getSeasonDetails failed for ${showId}, falling back to TheTVDB`);
-            data = await _TVDB.getSeasonDetails(showId, seasonNumber);
-        }
-        return data;
+        return _TMDB.getSeasonDetails(showId, seasonNumber);
+    },
+
+    async getPersonDetails(id) {
+        if (!id || id === 'null') return null;
+        return _TMDB.getPersonDetails(id);
+    },
+
+    resetTokens() {
+        _TVDB._token = null;
+        _TVDB._tokenExpiry = 0;
+        _tmdbCache.clear();
+        try {
+            localStorage.removeItem('tvdb_token');
+            localStorage.removeItem('tvdb_token_exp');
+        } catch (e) {}
     },
 
     async getRecommendations(id, type = 'movie') {
@@ -360,4 +363,5 @@ const TMDB = {
     }
 };
 
+window._TVDB = _TVDB;
 window.TMDB = TMDB;

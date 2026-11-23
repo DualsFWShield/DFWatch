@@ -91,11 +91,12 @@
             }
         };
 
-        const allFeedback = await adapter.getAllFeedback();
+        const allFeedback = (await adapter.getAllFeedback?.()) || [];
         const now = Date.now();
         const ONE_YEAR = 365 * 24 * 60 * 60 * 1000;
 
         allFeedback.forEach(f => {
+            if (!f) return;
             const weight = f.feedback_value === 1 ? cfg.genre.likeWeight : (f.feedback_value === -1 ? cfg.genre.dislikeWeight : 0);
             if (weight === 0) return;
             
@@ -109,13 +110,18 @@
             processItem(f, weight, decay);
         });
 
-        const ratedItems = await adapter.getHighlyRatedItems();
-        ratedItems.forEach(item => processItem(item, cfg.genre.ratedWeight));
+        const ratedItems = (await adapter.getHighlyRatedItems?.()) || [];
+        ratedItems.forEach(item => { if (item) processItem(item, cfg.genre.ratedWeight); });
 
-        const topPicks = await adapter.getTopPicks();
-        topPicks.forEach(item => processItem(item, cfg.genre.topPickWeight));
+        const topPicks = (await adapter.getTopPicks?.()) || [];
+        topPicks.forEach(item => { if (item) processItem(item, cfg.genre.topPickWeight); });
 
-        this.lastAffinities = { genre: genreAffinity, keyword: keywordAffinity, people: peopleAffinity, decade: decadeAffinity };
+        let totalWatches = allFeedback.length + ratedItems.length + topPicks.length;
+        if (typeof adapter.getTotalWatches === 'function') {
+            try { totalWatches = await adapter.getTotalWatches(); } catch (e) {}
+        }
+
+        this.lastAffinities = { genre: genreAffinity, keyword: keywordAffinity, people: peopleAffinity, decade: decadeAffinity, totalWatches };
         return this.lastAffinities;
     };
 
@@ -129,27 +135,40 @@
         debug.affinities = affinities;
 
         // ── Phase 2: Fetch Local Candidates ────────────────────
-        let candidates = await adapter.getCandidates();
+        let candidates = (await adapter.getCandidates?.()) || [];
         
         // Add Rewatch candidates if available
         if (typeof adapter.getRewatchCandidates === 'function') {
-            const rewatch = await adapter.getRewatchCandidates();
+            const rewatch = (await adapter.getRewatchCandidates()) || [];
             candidates = candidates.concat(rewatch);
         }
 
-        const ownedItems = await adapter.getOwnedItems();
-        const ownedIds = ownedItems.ids;
-        const ownedNames = ownedItems.names;
-        const dislikedIds = await adapter.getDislikedIds();
+        const ownedItems = (await adapter.getOwnedItems?.()) || { ids: new Set(), names: new Set() };
+        const ownedIds = ownedItems.ids || new Set();
+        const ownedNames = ownedItems.names || new Set();
+        const dislikedIds = (await adapter.getDislikedIds?.()) || new Set();
 
-        let currentYear = new Date().getFullYear();
-        let dobStr = localStorage.getItem('dfwatch_dob');
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        let dobStr = null;
+        if (typeof adapter.getUserDob === 'function') {
+            dobStr = adapter.getUserDob();
+        } else if (typeof localStorage !== 'undefined') {
+            try { dobStr = localStorage.getItem('dfwatch_dob'); } catch (e) {}
+        }
         let birthYear = currentYear - 30;
         let userAge = 30;
         
         if (dobStr) {
             const dob = new Date(dobStr);
-            if (!isNaN(dob.getTime())) { birthYear = dob.getFullYear(); userAge = currentYear - birthYear; }
+            if (!isNaN(dob.getTime())) {
+                birthYear = dob.getFullYear();
+                userAge = currentYear - birthYear;
+                const mDiff = today.getMonth() - dob.getMonth();
+                if (mDiff < 0 || (mDiff === 0 && today.getDate() < dob.getDate())) {
+                    userAge--;
+                }
+            }
         }
 
         const filteredCandidates = candidates.filter(c => {
@@ -183,31 +202,44 @@
             if (item.vote_count && item.vote_count > cfg.quality.popularityThreshold) score *= cfg.quality.popularityMultiplier;
 
             // 3b. Genre / Keyword / People Affinity
-            if (item.genre_ids && Object.keys(genreAffinity).length > 0) {
+            if (Array.isArray(item.genre_ids) && item.genre_ids.length > 0 && Object.keys(genreAffinity).length > 0) {
                 let affinitySum = 0;
                 item.genre_ids.forEach(gid => { affinitySum += (genreAffinity[gid] || 0); });
                 score *= clamp(1.0 + (affinitySum / item.genre_ids.length) * cfg.genre.influence, cfg.genre.minMultiplier, cfg.genre.maxMultiplier);
             }
             
-            // Keyword Affinity
+            // Keyword Affinity (clamped additive sum to prevent exponential blowup & sign inversion)
             if (item.keywords) {
-                const itemKws = item.keywords.results ? item.keywords.results : (item.keywords.keywords ? item.keywords.keywords : []);
-                itemKws.forEach(k => {
-                    if (keywordAffinity[k.id]) score *= (1.0 + (keywordAffinity[k.id].score * 0.1));
-                });
+                const itemKws = Array.isArray(item.keywords)
+                    ? item.keywords
+                    : (item.keywords.results || item.keywords.keywords || []);
+                if (itemKws.length > 0) {
+                    let kwSum = 0;
+                    itemKws.forEach(k => {
+                        const kid = k && (k.id || k);
+                        if (kid && keywordAffinity[kid]) kwSum += keywordAffinity[kid].score;
+                    });
+                    if (kwSum !== 0) {
+                        score *= clamp(1.0 + kwSum * 0.08, 0.5, 1.8);
+                    }
+                }
             }
 
-            // People Affinity (Directors / Actors)
+            // People Affinity (Directors / Creators / Actors)
+            let peopleScore = 0;
+            if (Array.isArray(item.created_by)) {
+                item.created_by.forEach(p => { if (p && peopleAffinity[p.id]) peopleScore += peopleAffinity[p.id].score; });
+            }
             if (item.credits) {
-                let hasPeopleBonus = false;
                 if (item.credits.crew) {
-                    item.credits.crew.forEach(p => { if (p.job === 'Director' && peopleAffinity[p.id]) hasPeopleBonus = true; });
+                    item.credits.crew.forEach(p => { if (p && p.job === 'Director' && peopleAffinity[p.id]) peopleScore += peopleAffinity[p.id].score; });
                 }
                 if (item.credits.cast) {
-                    item.credits.cast.slice(0, 5).forEach(p => { if (peopleAffinity[p.id]) hasPeopleBonus = true; });
+                    item.credits.cast.slice(0, 5).forEach(p => { if (p && peopleAffinity[p.id]) peopleScore += peopleAffinity[p.id].score; });
                 }
-                if (hasPeopleBonus) score *= 1.20; // +20% bonus
             }
+            if (peopleScore > 0) score *= 1.20;
+            else if (peopleScore < -1) score *= 0.85;
 
             // 3c. Passe-droit Chef-d'œuvre & Old content penalty & Decade Affinity
             let itemYearStr = item.release_date || item.first_air_date || '';
@@ -243,21 +275,21 @@
                     if (isMasterpiece) score *= 1.5;
                     break;
                 case 'feelgood':
-                    if (item.genre_ids?.includes(35) || item.genre_ids?.includes(10751)) score *= 1.5;
-                    if (item.genre_ids?.includes(27) || item.genre_ids?.includes(53)) score *= 0.2;
+                    if (item.genre_ids?.includes(35) || item.genre_ids?.includes(10751) || item.genre_ids?.includes(10762)) score *= 1.5;
+                    if (item.genre_ids?.includes(27) || item.genre_ids?.includes(53) || item.genre_ids?.includes(80)) score *= 0.2;
                     break;
                 case 'dark':
-                    if (item.genre_ids?.includes(53) || item.genre_ids?.includes(80) || item.genre_ids?.includes(27)) score *= 1.5;
-                    if (item.genre_ids?.includes(35)) score *= 0.2;
+                    if (item.genre_ids?.includes(53) || item.genre_ids?.includes(80) || item.genre_ids?.includes(27) || item.genre_ids?.includes(9648)) score *= 1.5;
+                    if (item.genre_ids?.includes(35) || item.genre_ids?.includes(10751)) score *= 0.2;
                     break;
                 case 'action':
-                    if (item.genre_ids?.includes(28) || item.genre_ids?.includes(12)) score *= 1.5;
+                    if (item.genre_ids?.includes(28) || item.genre_ids?.includes(12) || item.genre_ids?.includes(10759)) score *= 1.5;
                     break;
                 case 'family':
-                    if (item.genre_ids?.includes(10751) || item.genre_ids?.includes(16)) score *= 1.5;
+                    if (item.genre_ids?.includes(10751) || item.genre_ids?.includes(16) || item.genre_ids?.includes(10762)) score *= 1.5;
                     break;
                 case 'scifi':
-                    if (item.genre_ids?.includes(878)) score *= 1.8;
+                    if (item.genre_ids?.includes(878) || item.genre_ids?.includes(10765)) score *= 1.8;
                     break;
                 case 'romance':
                     if (item.genre_ids?.includes(10749)) score *= 1.8;
@@ -272,7 +304,7 @@
                     if (item.genre_ids?.includes(27)) score *= 1.8;
                     break;
                 case 'classic':
-                    if (itemYearStr && parseInt(itemYearStr.split('-')[0]) < 2000 && isMasterpiece) score *= 2.0;
+                    if (itemYearStr && parseInt(itemYearStr.split('-')[0], 10) < 2000 && isMasterpiece) score *= 2.0;
                     break;
                 case 'documentary':
                     if (item.genre_ids?.includes(99)) score *= 1.8;
@@ -281,17 +313,17 @@
                     if (item.genre_ids?.includes(16)) score *= 1.8;
                     break;
                 case 'epic':
-                    if (item.genre_ids?.includes(14) || item.genre_ids?.includes(12)) score *= 1.5;
+                    if (item.genre_ids?.includes(14) || item.genre_ids?.includes(12) || item.genre_ids?.includes(10759) || item.genre_ids?.includes(10765) || item.genre_ids?.includes(10768)) score *= 1.5;
                     if (runtime >= 120) score *= 1.2;
                     break;
                 case 'indie':
                     if (item.vote_count > 0 && item.vote_count < 500 && item.vote_average >= 6.5) score *= 1.8;
                     break;
                 case 'nostalgia':
-                    if (itemYearStr && parseInt(itemYearStr.split('-')[0]) < 2005) score *= 1.8;
+                    if (itemYearStr && parseInt(itemYearStr.split('-')[0], 10) < 2005) score *= 1.8;
                     break;
                 case 'mindfuck':
-                    if (item.genre_ids?.includes(878) || item.genre_ids?.includes(9648)) score *= 1.3;
+                    if (item.genre_ids?.includes(878) || item.genre_ids?.includes(9648) || item.genre_ids?.includes(10765)) score *= 1.3;
                     break;
                 case 'tearjerker':
                     if (item.genre_ids?.includes(18)) score *= 1.5;
@@ -299,14 +331,13 @@
             }
 
             score *= (0.85 + Math.random() * 0.30);
-            c.finalScore = score;
-            return c;
+            return { candidate: c, item: item, is_rewatch: c.is_rewatch, finalScore: isNaN(score) ? 0 : score };
         });
 
         scoredCandidates.sort((a, b) => b.finalScore - a.finalScore);
-        const results = scoredCandidates.slice(0, cfg.output.maxResults).map(c => {
-            const data = c.item_data;
-            if (c.is_rewatch) data._badge = 'Rewatch';
+        const results = scoredCandidates.slice(0, cfg.output.maxResults).map(entry => {
+            const data = { ...entry.item };
+            if (entry.is_rewatch) data._badge = 'Rewatch';
             return data;
         });
 

@@ -7,6 +7,7 @@ const TRANSLATIONS = {
         "nav.stats": "Stats",
         "nav.profile": "Profil",
         "nav.lists": "Listes",
+        "nav.collections": "Vos Listes",
         "nav.explore": "Explorer",
         "nav.calendar": "Calendrier",
         "nav.panoptic": "Panoptic",
@@ -16,6 +17,7 @@ const TRANSLATIONS = {
         "lists.items_count": "{count} élément(s)",
         "lists.create": "Créer une liste",
         "lists.empty": "Aucune liste existante",
+        "lists.empty_state": "Cette liste est vide pour le moment.",
         "lists.empty_desc": "Créez une liste pour organiser vos séries et films.",
         "lists.empty_fav_series_title": "Aucune série en favoris",
         "lists.empty_fav_series_desc": "Cliquez sur le coeur dans la fiche d'une série pour l'ajouter.",
@@ -170,6 +172,11 @@ const TRANSLATIONS = {
         "genres.reality": "Télé-Réalité",
         "genres.talk": "Talk-Show",
         "genres.news": "Actualités",
+        "genres.war": "Guerre",
+        "genres.tv_movie": "Téléfilm",
+        "genres.action_adventure": "Action & Aventure",
+        "genres.sci_fi_fantasy": "Science-Fiction & Fantastique",
+        "genres.war_politics": "Guerre & Politique",
         
         "stats.title": "Stats & Succès",
         "stats.achievements": "Succès",
@@ -386,6 +393,42 @@ const TRANSLATIONS = {
         "panoptic.final_results": "Voici vos résultats finaux.",
         "panoptic.chosen": "✅ Choisi",
         "panoptic.liked": "👍🏻 Aimé",
+        "panoptic.next_episode": "📺 Que regarder (Prochain Épisode)",
+        "panoptic.no_active_shows": "Vous n'avez aucune série en cours de visionnage.",
+        "panoptic.search_encore": "🔄 Chercher Encore",
+        "panoptic.undo_title": "Annuler le dernier swipe",
+        "panoptic.no_more_cards": "Plus de suggestions pour ces critères.",
+
+        "profile.user": "Utilisateur",
+        "profile.meta": "Complétez votre profil",
+        "profile.no_spoil": "Mode \"Anti-Spoil\"",
+        "profile.auto_mood": "Humeur Automatique (BB)",
+        "profile.replay_tutorial": "Revoir le tutoriel",
+        "profile.cancel": "Annuler",
+        "modal.rank_badge": "Badge de Rang",
+        "modal.rank_badge_desc": "Personnalisez l'apparence de votre badge de rang.",
+
+        "common.today": "Aujourd'hui",
+        "common.random_pick": "Au hasard",
+        "common.all": "Tous",
+        "common.close": "Fermer",
+        "common.save": "Enregistrer",
+        "common.delete": "Supprimer",
+        "calendar.export_ics": "Exporter .ics",
+        "stats.activity_title": "Activité récente (16 semaines)",
+        "stats.current_streak": "Série actuelle",
+        "stats.best_streak": "Meilleure série",
+        "stats.days": "jours",
+        "achievements.filter_all": "Tous",
+        "achievements.filter_unlocked": "Débloqués",
+        "achievements.filter_locked": "Verrouillés",
+        "achievements.filter_near": "Presque",
+        "detail.movie_note": "Ma note & critique personnelle",
+        "detail.movie_note_placeholder": "Écrivez votre avis ou mémo sur ce film...",
+        "detail.notscare_title": "Alertes Jumpscares & Contenus",
+        "detail.filmography": "Filmographie",
+        "bb.manage_feedback": "Gérer mes préférences",
+        "bb.no_feedback": "Aucun like ou dislike enregistré pour le moment.",
     },
     en: {
         "nav.series": "Shows",
@@ -393,6 +436,7 @@ const TRANSLATIONS = {
         "nav.stats": "Stats",
         "nav.profile": "Profile",
         "nav.lists": "Lists",
+        "nav.collections": "Your Lists",
         "nav.explore": "Explore",
         "nav.calendar": "Calendar",
         "nav.panoptic": "Panoptic",
@@ -402,6 +446,7 @@ const TRANSLATIONS = {
         "lists.items_count": "{count} item(s)",
         "lists.create": "Create a list",
         "lists.empty": "No list exists",
+        "lists.empty_state": "This list is currently empty.",
         "lists.empty_desc": "Create a list to organize your shows and movies.",
         "lists.empty_fav_series_title": "No favorited shows",
         "lists.empty_fav_series_desc": "Click on the heart in a show's details to add it.",
@@ -556,6 +601,11 @@ const TRANSLATIONS = {
         "genres.reality": "Reality",
         "genres.talk": "Talk",
         "genres.news": "News",
+        "genres.war": "War",
+        "genres.tv_movie": "TV Movie",
+        "genres.action_adventure": "Action & Adventure",
+        "genres.sci_fi_fantasy": "Sci-Fi & Fantasy",
+        "genres.war_politics": "War & Politics",
         
         "stats.title": "Stats & Achievements",
         "stats.achievements": "Achievements",
@@ -772,6 +822,42 @@ const TRANSLATIONS = {
         "panoptic.final_results": "Here are your final results.",
         "panoptic.chosen": "✅ Chosen",
         "panoptic.liked": "👍🏻 Liked",
+        "panoptic.next_episode": "📺 What to watch (Next Episode)",
+        "panoptic.no_active_shows": "You have no active shows in progress.",
+        "panoptic.search_encore": "🔄 Search Again",
+        "panoptic.undo_title": "Undo last swipe",
+        "panoptic.no_more_cards": "No more suggestions matching these criteria.",
+
+        "profile.user": "User",
+        "profile.meta": "Complete your profile",
+        "profile.no_spoil": "\"Anti-Spoiler\" Mode",
+        "profile.auto_mood": "Auto Mood (BB)",
+        "profile.replay_tutorial": "Replay Tutorial",
+        "profile.cancel": "Cancel",
+        "modal.rank_badge": "Rank Badge",
+        "modal.rank_badge_desc": "Customize the appearance of your rank badge.",
+
+        "common.today": "Today",
+        "common.random_pick": "Surprise me",
+        "common.all": "All",
+        "common.close": "Close",
+        "common.save": "Save",
+        "common.delete": "Delete",
+        "calendar.export_ics": "Export .ics",
+        "stats.activity_title": "Recent Activity (16 weeks)",
+        "stats.current_streak": "Current streak",
+        "stats.best_streak": "Best streak",
+        "stats.days": "days",
+        "achievements.filter_all": "All",
+        "achievements.filter_unlocked": "Unlocked",
+        "achievements.filter_locked": "Locked",
+        "achievements.filter_near": "Almost there",
+        "detail.movie_note": "My Personal Review & Notes",
+        "detail.movie_note_placeholder": "Write your review or notes about this movie...",
+        "detail.notscare_title": "Jump Scares & Content Warnings",
+        "detail.filmography": "Filmography",
+        "bb.manage_feedback": "Manage preferences",
+        "bb.no_feedback": "No likes or dislikes recorded yet.",
     }
 };
 
@@ -779,52 +865,76 @@ const I18n = {
     lang: 'fr',
     
     init() {
-        this.lang = localStorage.getItem('dfwatch_lang') || 'fr';
+        let saved = null;
+        try { saved = localStorage.getItem('dfwatch_lang'); } catch (e) {}
+        if (saved && TRANSLATIONS[saved]) {
+            this.lang = saved;
+        } else {
+            const navLang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language.slice(0, 2).toLowerCase() : 'fr';
+            this.lang = TRANSLATIONS[navLang] ? navLang : 'fr';
+        }
+        if (typeof document !== 'undefined' && document.documentElement) {
+            document.documentElement.lang = this.lang;
+        }
         this.apply();
     },
     
     setLang(l) {
         if (TRANSLATIONS[l]) {
             this.lang = l;
-            localStorage.setItem('dfwatch_lang', l);
+            try { localStorage.setItem('dfwatch_lang', l); } catch (e) {}
+            if (typeof document !== 'undefined' && document.documentElement) {
+                document.documentElement.lang = l;
+            }
             this.apply();
         }
+    },
+
+    has(key) {
+        return Boolean((TRANSLATIONS[this.lang] && TRANSLATIONS[this.lang][key]) || (TRANSLATIONS.fr && TRANSLATIONS.fr[key]));
     },
     
     get(key, params = {}) {
         let text = (TRANSLATIONS[this.lang] && TRANSLATIONS[this.lang][key])
-                || (TRANSLATIONS['fr'] && TRANSLATIONS['fr'][key])
+                || (TRANSLATIONS.fr && TRANSLATIONS.fr[key])
                 || key;
         for (const [k, v] of Object.entries(params)) {
-            text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+            text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), () => String(v ?? ''));
         }
         return text;
     },
     
     apply() {
+        const HTML_KEYS = new Set(['profile.drop', 'profile.taste_desc']);
+        const resolve = (key) => (TRANSLATIONS[this.lang] && TRANSLATIONS[this.lang][key]) || (TRANSLATIONS.fr && TRANSLATIONS.fr[key]) || null;
+
         document.querySelectorAll('[data-i18n]').forEach(el => {
+            if (el.hasAttribute('data-i18n-dynamic')) return;
             const key = el.getAttribute('data-i18n');
-            if (TRANSLATIONS[this.lang][key]) {
-                if (el.tagName === 'INPUT' && el.type === 'text') {
-                    el.placeholder = TRANSLATIONS[this.lang][key];
-                } else {
-                    el.innerHTML = TRANSLATIONS[this.lang][key];
-                }
+            const val = resolve(key);
+            if (!val) return;
+            if ((el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search' || el.type === 'url')) || el.tagName === 'TEXTAREA') {
+                el.placeholder = val;
+            } else if (el.hasAttribute('data-i18n-html') || HTML_KEYS.has(key)) {
+                el.innerHTML = val;
+            } else {
+                el.textContent = val;
             }
         });
         
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
-            if (TRANSLATIONS[this.lang][key]) {
-                el.placeholder = TRANSLATIONS[this.lang][key];
-            }
+            const val = resolve(el.getAttribute('data-i18n-placeholder'));
+            if (val) el.placeholder = val;
         });
         
         document.querySelectorAll('[data-i18n-title]').forEach(el => {
-            const key = el.getAttribute('data-i18n-title');
-            if (TRANSLATIONS[this.lang][key]) {
-                el.title = TRANSLATIONS[this.lang][key];
-            }
+            const val = resolve(el.getAttribute('data-i18n-title'));
+            if (val) el.title = val;
+        });
+
+        document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+            const val = resolve(el.getAttribute('data-i18n-aria-label'));
+            if (val) el.setAttribute('aria-label', val);
         });
         
         // Dispatch event for other scripts

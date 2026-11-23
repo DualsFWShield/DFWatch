@@ -138,7 +138,7 @@ const ACHIEVEMENTS_DEFS = [
     // ═══════════════════════════════════════════
     { id: 'ms_import',     cat: 'milestones', name: 'Migrant',         icon: '📦', desc: 'Importer des données',              check: s => s.imported },
     { id: 'ms_1st_follow', cat: 'milestones', name: 'Abonné',          icon: '➕', desc: 'Suivre une première série',          check: s => s.shows >= 1 },
-    { id: 'ms_1st_movie',  cat: 'milestones', name: 'Ticket d\'Entrée',icon: '🎟️', desc: 'Ajouter un premier film',           check: s => s.movies >= 1 },
+    { id: 'ms_1st_movie',  cat: 'milestones', name: 'Ticket d\'Entrée',icon: '🎟️', desc: 'Ajouter un premier film',           check: s => s.totalMoviesLibrary >= 1 },
     { id: 'ms_poster50',   cat: 'milestones', name: 'Galerie',         icon: '🖼️', desc: '50 posters dans la collection',     check: s => s.postersCount >= 50 },
     { id: 'ms_poster100',  cat: 'milestones', name: 'Musée du Poster', icon: '🖼️', desc: '100 posters dans la collection',    check: s => s.postersCount >= 100 },
     { id: 'ms_poster250',  cat: 'milestones', name: 'Galerie Royale',  icon: '🖼️', desc: '250 posters dans la collection',    check: s => s.postersCount >= 250 },
@@ -153,59 +153,241 @@ const ACHIEVEMENTS_DEFS = [
 // Total: 20+15+12+15+26+8+10+15+12 = 133 achievements
 
 const ACH_CATEGORIES = [
-    { key: 'episodes',   name: 'Épisodes',       icon: '📺' },
-    { key: 'films',      name: 'Films',           icon: '🎬' },
-    { key: 'series',     name: 'Séries',          icon: '📖' },
-    { key: 'temps',      name: 'Temps',           icon: '⏰' },
-    { key: 'alphabet',   name: 'Alphabet',        icon: '🔤' },
-    { key: 'decades',    name: 'Décennies',       icon: '📼' },
-    { key: 'habitudes',  name: 'Habitudes',        icon: '🌙' },
-    { key: 'streaks',    name: 'Streaks',         icon: '🔥' },
-    { key: 'milestones', name: 'Milestones',      icon: '🏆' },
+    { key: 'episodes',   name: 'Épisodes', name_en: 'Episodes', icon: '📺' },
+    { key: 'films',      name: 'Films', name_en: 'Movies', icon: '🎬' },
+    { key: 'series',     name: 'Séries', name_en: 'Shows', icon: '📖' },
+    { key: 'temps',      name: 'Temps', name_en: 'Watch Time', icon: '⏰' },
+    { key: 'alphabet',   name: 'Alphabet', name_en: 'Alphabet', icon: '🔤' },
+    { key: 'decades',    name: 'Décennies', name_en: 'Decades', icon: '📼' },
+    { key: 'habitudes',  name: 'Habitudes', name_en: 'Habits', icon: '🌙' },
+    { key: 'streaks',    name: 'Streaks', name_en: 'Streaks', icon: '🔥' },
+    { key: 'milestones', name: 'Milestones', name_en: 'Milestones', icon: '🏆' },
 ];
 
+const ACH_EN_MAP = {
+    ep_1: ['First Episode', 'Watch 1 episode'],
+    ep_10: ['Beginner', 'Watch 10 episodes'],
+    ep_25: ['Viewer', 'Watch 25 episodes'],
+    ep_50: ['Regular', 'Watch 50 episodes'],
+    ep_100: ['Dedicated', 'Watch 100 episodes'],
+    ep_250: ['Passionate', 'Watch 250 episodes'],
+    ep_500: ['Binge Watcher', 'Watch 500 episodes'],
+    ep_750: ['Series Addict', 'Watch 750 episodes'],
+    ep_1000: ['Marathoner', 'Watch 1,000 episodes'],
+    ep_1500: ['Ultra-Marathoner', 'Watch 1,500 episodes'],
+    ep_2000: ['TV Junkie', 'Watch 2,000 episodes'],
+    ep_2500: ['Legend', 'Watch 2,500 episodes'],
+    ep_3000: ['Living Myth', 'Watch 3,000 episodes'],
+    ep_4000: ['Couch Deity', 'Watch 4,000 episodes'],
+    ep_5000: ['Absolute No-Life', 'Watch 5,000 episodes'],
+    ep_6000: ['Beyond Reality', 'Watch 6,000 episodes'],
+    ep_7500: ['Transcendence', 'Watch 7,500 episodes'],
+    ep_10000: ['The Chosen One', 'Watch 10,000 episodes'],
+    ep_15000: ['Parallel Dimension', 'Watch 15,000 episodes'],
+    ep_20000: ['Omniscient', 'Watch 20,000 episodes'],
+    mov_1: ['First Screening', 'Watch 1 movie'],
+    mov_5: ['Curious Cinephile', 'Watch 5 movies'],
+    mov_10: ['Movie Fan', 'Watch 10 movies'],
+    mov_25: ['Cinephile', 'Watch 25 movies'],
+    mov_50: ['Cinemaniac', 'Watch 50 movies'],
+    mov_75: ['Amateur Critic', 'Watch 75 movies'],
+    mov_100: ['Film Critic', 'Watch 100 movies'],
+    mov_150: ['Connoisseur', 'Watch 150 movies'],
+    mov_200: ['Projectionist', 'Watch 200 movies'],
+    mov_250: ['People\'s Oscar', 'Watch 250 movies'],
+    mov_300: ['Palme d\'Or', 'Watch 300 movies'],
+    mov_400: ['Living Cinematheque', 'Watch 400 movies'],
+    mov_500: ['Martin Scorsese', 'Watch 500 movies'],
+    mov_750: ['Steven Spielberg', 'Watch 750 movies'],
+    mov_1000: ['Stanley Kubrick', 'Watch 1,000 movies'],
+    show_1: ['First Show', 'Follow 1 show'],
+    show_5: ['Curious', 'Follow 5 shows'],
+    show_10: ['Explorer', 'Follow 10 shows'],
+    show_15: ['Collector', 'Follow 15 shows'],
+    show_25: ['Librarian', 'Follow 25 shows'],
+    show_35: ['Archivist', 'Follow 35 shows'],
+    show_50: ['Encyclopedia', 'Follow 50 shows'],
+    show_75: ['Living Memory', 'Follow 75 shows'],
+    show_100: ['Centurion', 'Follow 100 shows'],
+    show_125: ['Ultra-Fan', 'Follow 125 shows'],
+    show_150: ['Insatiable', 'Follow 150 shows'],
+    show_200: ['Infinite', 'Follow 200 shows'],
+    time_1h: ['First Hour', '1h of cumulative watch time'],
+    time_12h: ['Half-Day', '12h of watch time'],
+    time_24h: ['Full Day', '24h of watch time'],
+    time_48h: ['Full Weekend', '48h of watch time'],
+    time_168h: ['Non-Stop Week', '168h (1 week)'],
+    time_336h: ['Fortnight', '336h (2 weeks)'],
+    time_720h: ['Streaming Month', '720h (1 month)'],
+    time_1440h: ['Bimonthly', '1440h (2 months)'],
+    time_2160h: ['Binge Quarter', '2160h (3 months)'],
+    time_4320h: ['Half-Year', '4320h (6 months)'],
+    time_6480h: ['Nine Months', '6480h (9 months)'],
+    time_8760h: ['Streaming Year', '8760h (1 year)'],
+    time_17520: ['Two Years', '17520h (2 years)'],
+    time_26280: ['Three Years', '26280h (3 years)'],
+    time_43800: ['Half-Decade', '43800h (5 years)'],
+    dec_60s: ['The 60s', 'Watch content from the 1960s'],
+    dec_70s: ['The 70s', 'Watch content from the 1970s'],
+    dec_80s: ['The 80s', 'Watch content from the 1980s'],
+    dec_90s: ['The 90s', 'Watch content from the 1990s'],
+    dec_00s: ['The 2000s', 'Watch content from the 2000s'],
+    dec_10s: ['The 2010s', 'Watch content from the 2010s'],
+    dec_20s: ['The 2020s', 'Watch content from the 2020s'],
+    dec_all: ['Time Traveler', 'Content from 5 different decades'],
+    hab_night: ['Night Owl', 'Watch after midnight'],
+    hab_early: ['Early Bird', 'Watch before 7 AM'],
+    hab_weekend: ['Weekend Warrior', 'Watch on Saturday and Sunday'],
+    hab_lunch: ['Lunch Break', 'Watch between 12 PM and 2 PM'],
+    hab_alldays: ['Every Day', 'Watch on every day of the week'],
+    hab_5shows: ['Multitasker', 'Watch 5 different shows in 1 week'],
+    hab_10shows: ['Channel Hopper', 'Watch 10 different shows in 1 week'],
+    hab_speed: ['Speed Runner', 'Watch 3+ episodes within 1 hour'],
+    hab_variety: ['Eclectic', 'Watch 10+ different genres'],
+    hab_world: ['Globe-Trotter', 'Watch content from 5+ countries'],
+    streak_3: ['Mini-Streak', 'Watch 3 days in a row'],
+    streak_7: ['Perfect Week', 'Watch 7 days in a row'],
+    streak_14: ['Active Fortnight', 'Watch 14 days in a row'],
+    streak_30: ['Full Month', 'Watch 30 days in a row'],
+    streak_60: ['Two Months Non-Stop', 'Watch 60 days in a row'],
+    streak_100: ['Streak Centurion', 'Watch 100 days in a row'],
+    streak_365: ['Perfect Year', 'Watch 365 days in a row'],
+    binge_5: ['Mini-Binge', '5 episodes in 1 day'],
+    binge_10: ['Serious Binge', '10 episodes in 1 day'],
+    binge_15: ['Extreme Binge', '15 episodes in 1 day'],
+    binge_20: ['Ultimate Binge', '20 episodes in 1 day'],
+    rewatch_1: ['First Rewatch', 'Rewatch an episode or movie'],
+    rewatch_5: ['Nostalgic', '5 rewatches'],
+    rewatch_25: ['Incorrigible', '25 rewatches'],
+    rewatch_50: ['Permanent Deja-Vu', '50 rewatches'],
+    ms_import: ['Migrant', 'Import your watch data'],
+    ms_1st_follow: ['Subscriber', 'Follow your first show'],
+    ms_1st_movie: ['Admission Ticket', 'Add your first movie'],
+    ms_poster50: ['Gallery', '50 posters in your collection'],
+    ms_poster100: ['Poster Museum', '100 posters in your collection'],
+    ms_poster250: ['Royal Gallery', '250 posters in your collection'],
+    ms_complete_1: ['End of an Era', 'Finish 1 full show'],
+    ms_complete_5: ['Finisher', 'Finish 5 shows'],
+    ms_complete_10: ['Completionist', 'Finish 10 shows'],
+    ms_complete_25: ['Perfectionist', 'Finish 25 shows'],
+    ms_complete_50: ['Ultimate Legend', 'Finish 50 shows'],
+    ms_export: ['Archivist', 'Export a backup of your data'],
+};
+
 const Achievements = {
+    _localDateStr(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    },
+
+    _getLocalizedDef(def) {
+        const isEn = window.I18n && window.I18n.lang === 'en';
+        if (!isEn) return def;
+        if (def.id.startsWith('alpha_')) {
+            const letter = def.id.replace('alpha_', '');
+            return { ...def, name: `Letter ${letter}`, desc: `Follow a show starting with "${letter}"` };
+        }
+        const en = ACH_EN_MAP[def.id];
+        if (en) return { ...def, name: en[0], desc: en[1] };
+        return def;
+    },
+
+    _getProgress(def, stats) {
+        const id = def.id;
+        const num = (v) => Math.max(0, Number(v) || 0);
+        if (id.startsWith('ep_')) {
+            const target = parseInt(id.slice(3), 10);
+            return { current: Math.min(num(stats.episodes), target), target };
+        }
+        if (id.startsWith('mov_')) {
+            const target = parseInt(id.slice(4), 10);
+            return { current: Math.min(num(stats.movies), target), target };
+        }
+        if (id.startsWith('show_')) {
+            const target = parseInt(id.slice(5), 10);
+            return { current: Math.min(num(stats.shows), target), target };
+        }
+        if (id.startsWith('time_')) {
+            const target = parseInt(id.replace('time_', '').replace('h', ''), 10);
+            return { current: Math.min(num(stats.totalHours), target), target };
+        }
+        if (id.startsWith('streak_')) {
+            const target = parseInt(id.slice(7), 10);
+            return { current: Math.min(num(stats.maxStreak), target), target };
+        }
+        if (id.startsWith('binge_')) {
+            const target = parseInt(id.slice(6), 10);
+            return { current: Math.min(num(stats.maxDayEpisodes), target), target };
+        }
+        if (id.startsWith('rewatch_')) {
+            const target = parseInt(id.slice(8), 10);
+            return { current: Math.min(num(stats.totalRewatches), target), target };
+        }
+        if (id.startsWith('ms_poster')) {
+            const target = parseInt(id.replace('ms_poster', ''), 10);
+            return { current: Math.min(num(stats.postersCount), target), target };
+        }
+        if (id.startsWith('ms_complete_')) {
+            const target = parseInt(id.replace('ms_complete_', ''), 10);
+            return { current: Math.min(num(stats.completedShows), target), target };
+        }
+        if (id === 'dec_all') return { current: Math.min(stats.decades?.size || 0, 5), target: 5 };
+        if (id === 'hab_alldays') return { current: Math.min(stats.watchDays?.size || 0, 7), target: 7 };
+        if (id === 'hab_5shows') return { current: Math.min(num(stats.maxWeekShows), 5), target: 5 };
+        if (id === 'hab_10shows') return { current: Math.min(num(stats.maxWeekShows), 10), target: 10 };
+        if (id === 'hab_variety') return { current: Math.min(num(stats.uniqueGenres), 10), target: 10 };
+        if (id === 'hab_world') return { current: Math.min(num(stats.uniqueCountries), 5), target: 5 };
+        return null;
+    },
+
     async evaluate() {
         // ---- Gather all stats ----
         const seriesStats = await DB.getSeriesStats();
         const movieStats = await DB.getMovieStats();
-        const showCount = await db.shows.where('is_followed').equals(1).count();
+        const allShows = await db.shows.where('is_followed').equals(1).toArray();
+        const showCount = allShows.length;
         const seriesParts = DB.minutesToParts(seriesStats.totalMinutes);
         const movieParts = DB.minutesToParts(movieStats.totalMinutes);
 
-        // Show first letters
-        const allShows = await db.shows.where('is_followed').equals(1).toArray();
+        // Show first letters (normalized for French accents)
         const showFirstLetters = new Set();
         allShows.forEach(s => {
-            if (s.name && s.name.length > 0) {
-                const first = s.name[0].toUpperCase();
-                if (first >= 'A' && first <= 'Z') showFirstLetters.add(first);
+            if (s.name && s.name.trim().length > 0) {
+                const first = s.name.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '')[0]?.toUpperCase();
+                if (first && first >= 'A' && first <= 'Z') showFirstLetters.add(first);
             }
         });
 
-        // Decades from shows first_air_date or year
+        const history = await db.watch_history.toArray();
+        const movieWatches = await db.movie_watches.toArray();
+        const showsWithWatches = new Set(history.map(h => h.show_name).filter(Boolean));
+        const startedShows = allShows.filter(s => (s.nb_episodes_seen || 0) > 0 || showsWithWatches.has(s.name));
+
+        const allMovies = await db.movies.toArray();
+        const watchedMovies = allMovies.filter(m => m.status === 'watched');
+
+        // Decades from started shows and watched movies
         const decades = new Set();
-        allShows.forEach(s => {
+        startedShows.forEach(s => {
             const year = s.first_air_date?.substring(0, 3) || '';
             if (year) decades.add(year);
         });
-        const allMovies = await db.movies.toArray();
-        allMovies.forEach(m => {
+        watchedMovies.forEach(m => {
             const year = (m.release_date || '').substring(0, 3);
             if (year) decades.add(year);
         });
 
-        // Viewing habits & streaks from watch history
-        const history = await db.watch_history.toArray();
-        const movieWatches = await db.movie_watches.toArray();
+        // Viewing habits & streaks from watch history (using local calendar dates)
         const allDates = [];
         let hasWatchedLateNight = false;
         let hasWatchedEarlyMorning = false;
         let hasWeekendWatch = false;
         let hasLunchWatch = false;
         let hasSpeedRun = false;
-        const watchDays = new Set(); // 0=Sun..6=Sat
-        const weekShowMap = {}; // 'YYYY-WW' => Set of show names
+        const watchDays = new Set();
+        const weekShowMap = {};
         const satSeen = new Set();
         const sunSeen = new Set();
 
@@ -219,87 +401,85 @@ const Achievements = {
                 const day = d.getDay();
                 watchDays.add(day);
                 if (h >= 0 && h < 5) hasWatchedLateNight = true;
-                if (h >= 5 && h < 7) hasWatchedEarlyMorning = true;
+                if (h < 7) hasWatchedEarlyMorning = true;
                 if (h >= 12 && h < 14) hasLunchWatch = true;
-                if (day === 6) satSeen.add(d.toISOString().substring(0, 10));
-                if (day === 0) sunSeen.add(d.toISOString().substring(0, 10));
-                // Weekly show variety
+                const localKey = this._localDateStr(d);
+                if (day === 6) satSeen.add(localKey);
+                if (day === 0) sunSeen.add(localKey);
                 if (r.show_name) {
-                    const weekStart = new Date(d);
-                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-                    const weekKey = weekStart.toISOString().substring(0, 10);
+                    const weekStart = new Date(d.getFullYear(), d.getMonth(), d.getDate() - day);
+                    const weekKey = this._localDateStr(weekStart);
                     if (!weekShowMap[weekKey]) weekShowMap[weekKey] = new Set();
                     weekShowMap[weekKey].add(r.show_name);
                 }
             } catch (e) {}
         });
-        // Speed Run detection: 3+ episodes watched within a 1-hour window
+
+        // Speed Run detection: 3+ episodes watched within a 1-hour window (excluding identical bulk timestamps)
         const sortedDates = [...history]
             .filter(r => r.watched_at)
             .map(r => { try { return new Date(r.watched_at); } catch(e) { return null; } })
             .filter(d => d && !isNaN(d.getTime()))
             .sort((a, b) => a - b);
         for (let i = 0; i <= sortedDates.length - 3 && !hasSpeedRun; i++) {
-            // Check if 3 consecutive episodes fit within 1 hour
-            if (sortedDates[i + 2] - sortedDates[i] <= 3600000) {
+            const span = sortedDates[i + 2] - sortedDates[i];
+            if (span > 1000 && span <= 3600000) {
                 hasSpeedRun = true;
             }
         }
 
         // Weekend: watched on both sat and sun of the same weekend
         for (const sat of satSeen) {
-            const nextDay = new Date(sat);
-            nextDay.setDate(nextDay.getDate() + 1);
-            if (sunSeen.has(nextDay.toISOString().substring(0, 10))) hasWeekendWatch = true;
+            const [y, m, da] = sat.split('-').map(Number);
+            const nextDay = new Date(y, m - 1, da + 1);
+            if (sunSeen.has(this._localDateStr(nextDay))) hasWeekendWatch = true;
         }
-        const maxWeekShows = Math.max(0, ...Object.values(weekShowMap).map(s => s.size));
+        const maxWeekShows = Object.values(weekShowMap).reduce((mx, s) => (s.size > mx ? s.size : mx), 0);
 
-        // Max streak
-        const maxStreak = this._calcMaxStreak(allDates);
+        // Streaks
+        const streakInfo = this.getStreaksFromDates(allDates);
+        const maxStreak = streakInfo.maxStreak;
 
-        // Max episodes in one day
+        // Max episodes in one local day
         const dayMap = {};
         history.forEach(r => {
             if (!r.watched_at) return;
-            const day = r.watched_at.substring(0, 10);
+            const d = new Date(r.watched_at);
+            if (isNaN(d.getTime())) return;
+            const day = this._localDateStr(d);
             dayMap[day] = (dayMap[day] || 0) + 1;
         });
-        const maxDayEpisodes = Math.max(0, ...Object.values(dayMap));
+        const maxDayEpisodes = Object.values(dayMap).reduce((mx, v) => (v > mx ? v : mx), 0);
 
-        // Rewatches
-        const totalRewatches = history.filter(r => (r.rewatch_count || 0) > 0).length 
-            + movieWatches.filter(r => (r.rewatch_count || 0) > 0).length;
+        // Rewatches (sum rewatch_count)
+        const totalRewatches = history.reduce((sum, r) => sum + (parseInt(r.rewatch_count, 10) || 0), 0)
+            + movieWatches.reduce((sum, r) => sum + (parseInt(r.rewatch_count, 10) || 0), 0);
 
         // Poster count
         const postersCount = allShows.filter(s => s.poster_path).length + allMovies.filter(m => m.poster_path).length;
 
-        // Completed shows (nb_episodes_seen > 0 and marked as such)
-        const allDbShows = await db.shows.toArray();
-        const completedShows = allDbShows.filter(s => s.is_finished === 1 || s.status === 'completed').length;
+        // Completed followed shows
+        const completedShows = allShows.filter(s => s.is_finished === 1 || s.status === 'completed').length;
 
-        // Has exported
+        // Has exported / imported
         const hasExported = !!localStorage.getItem('dfwatch_has_exported');
+        const hasImported = !!localStorage.getItem('dfwatch_has_imported');
 
-        // Genre & country diversity (from stored TMDB data)
+        // Genre & country diversity (from started shows and watched movies)
         const uniqueGenres = new Set();
         const uniqueCountries = new Set();
-        // Populate genres from shows and movies
-        [...allShows, ...allMovies].forEach(item => {
+        [...startedShows, ...watchedMovies].forEach(item => {
             if (item.genres && Array.isArray(item.genres)) {
                 item.genres.forEach(g => {
                     const name = typeof g === 'string' ? g : (g ? g.name : null);
                     if (name && name !== 'null') uniqueGenres.add(name);
                 });
             }
-            // Populate countries from origin_country
             if (item.origin_country && Array.isArray(item.origin_country)) {
-                item.origin_country.forEach(c => {
-                    if (c) uniqueCountries.add(c);
-                });
+                item.origin_country.forEach(c => { if (c) uniqueCountries.add(c); });
             } else if (typeof item.origin_country === 'string' && item.origin_country) {
                 uniqueCountries.add(item.origin_country);
             }
-            // Also check production_countries for movies
             if (item.production_countries && Array.isArray(item.production_countries)) {
                 item.production_countries.forEach(c => {
                     const code = typeof c === 'string' ? c : (c ? c.iso_3166_1 : null);
@@ -310,10 +490,11 @@ const Achievements = {
 
         const stats = {
             episodes: seriesStats.count,
-            movies: movieStats.count,
+            movies: watchedMovies.length || movieStats.count,
+            totalMoviesLibrary: allMovies.length,
             shows: showCount,
             totalHours: seriesParts.totalHours + movieParts.totalHours,
-            imported: (seriesStats.count + movieStats.count) > 0,
+            imported: hasImported,
             showFirstLetters,
             decades,
             hasWatchedLateNight,
@@ -340,9 +521,10 @@ const Achievements = {
         const results = [];
         const newlyUnlocked = [];
 
-        for (const def of ACHIEVEMENTS_DEFS) {
+        for (const rawDef of ACHIEVEMENTS_DEFS) {
+            const def = this._getLocalizedDef(rawDef);
             let unlocked = false;
-            try { unlocked = Boolean(def.check(stats)); } catch (e) {}
+            try { unlocked = Boolean(rawDef.check(stats)); } catch (e) {}
 
             const existing = existingMap.get(def.id);
             let finalUnlocked = existing ? existing.unlocked : 0;
@@ -357,54 +539,116 @@ const Achievements = {
                 toPut.push({ id: def.id, unlocked: 0, unlocked_at: null });
             }
 
-            results.push({ ...def, unlocked: finalUnlocked, unlocked_at: finalUnlockedAt });
+            const progress = this._getProgress(rawDef, stats);
+            results.push({ ...def, unlocked: finalUnlocked, unlocked_at: finalUnlockedAt, progress });
         }
 
         if (toPut.length > 0) {
             await db.achievements.bulkPut(toPut);
         }
 
-        newlyUnlocked.forEach(def => {
-            if (window.showAchievementToast) window.showAchievementToast(def);
-        });
+        if (newlyUnlocked.length > 3) {
+            const isEn = window.I18n && window.I18n.lang === 'en';
+            if (window.showAchievementToast) {
+                window.showAchievementToast({
+                    icon: '🏆',
+                    name: isEn ? `+${newlyUnlocked.length} Achievements Unlocked!` : `+${newlyUnlocked.length} Succès débloqués !`,
+                    desc: newlyUnlocked.slice(0, 3).map(a => a.name).join(', ') + '...'
+                });
+            }
+        } else {
+            newlyUnlocked.forEach(def => {
+                if (window.showAchievementToast) window.showAchievementToast(def);
+            });
+        }
 
         return results;
     },
 
-    _calcMaxStreak(dates) {
-        if (dates.length === 0) return 0;
+    getStreaksFromDates(dates) {
+        if (!dates || dates.length === 0) return { currentStreak: 0, maxStreak: 0 };
         const days = new Set();
         dates.forEach(d => {
-            days.add(d.toISOString().substring(0, 10));
+            if (d instanceof Date && !isNaN(d.getTime())) {
+                days.add(this._localDateStr(d));
+            }
         });
         const sorted = [...days].sort();
-        let maxStreak = 1, current = 1;
+        if (sorted.length === 0) return { currentStreak: 0, maxStreak: 0 };
+        let maxStreak = 1, run = 1;
         for (let i = 1; i < sorted.length; i++) {
-            const prev = new Date(sorted[i - 1]);
-            const curr = new Date(sorted[i]);
-            const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+            const [py, pm, pd] = sorted[i - 1].split('-').map(Number);
+            const [cy, cm, cd] = sorted[i].split('-').map(Number);
+            const prev = Date.UTC(py, pm - 1, pd);
+            const curr = Date.UTC(cy, cm - 1, cd);
+            const diff = Math.round((curr - prev) / 86400000);
             if (diff === 1) {
-                current++;
-                if (current > maxStreak) maxStreak = current;
+                run++;
+                if (run > maxStreak) maxStreak = run;
             } else {
-                current = 1;
+                run = 1;
             }
         }
-        return maxStreak;
+
+        // Current streak (counting backward from today or yesterday)
+        const now = new Date();
+        const todayStr = this._localDateStr(now);
+        const yest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        const yestStr = this._localDateStr(yest);
+        let currentStreak = 0;
+        let checkDate = days.has(todayStr) ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : (days.has(yestStr) ? yest : null);
+        while (checkDate && days.has(this._localDateStr(checkDate))) {
+            currentStreak++;
+            checkDate = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate() - 1);
+        }
+
+        return { currentStreak, maxStreak };
+    },
+
+    _calcMaxStreak(dates) {
+        return this.getStreaksFromDates(dates).maxStreak;
     },
 
     renderCard(ach) {
         const div = document.createElement('div');
         div.className = `achievement-card ${ach.unlocked ? 'unlocked' : 'locked'}`;
-        div.innerHTML = `
-            <div class="ach-icon">${ach.icon}</div>
-            <div class="ach-name">${ach.name}</div>
-            <div class="ach-desc">${ach.desc}</div>
-            ${ach.unlocked && ach.unlocked_at ? `<div class="ach-date">${new Date(ach.unlocked_at).toLocaleDateString('fr-FR')}</div>` : ''}
-        `;
+        const locale = (window.I18n && window.I18n.lang === 'en') ? 'en-US' : 'fr-FR';
+
+        const iconEl = document.createElement('div');
+        iconEl.className = 'ach-icon';
+        iconEl.textContent = ach.icon;
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'ach-name';
+        nameEl.textContent = ach.name;
+
+        const descEl = document.createElement('div');
+        descEl.className = 'ach-desc';
+        descEl.textContent = ach.desc;
+
+        div.append(iconEl, nameEl, descEl);
+
+        if (ach.unlocked && ach.unlocked_at) {
+            const dateEl = document.createElement('div');
+            dateEl.className = 'ach-date';
+            dateEl.textContent = new Date(ach.unlocked_at).toLocaleDateString(locale);
+            div.appendChild(dateEl);
+        } else if (!ach.unlocked && ach.progress && ach.progress.target > 1) {
+            const pct = Math.min(100, Math.round((ach.progress.current / ach.progress.target) * 100));
+            const progWrap = document.createElement('div');
+            progWrap.className = 'ach-progress-wrap';
+            progWrap.innerHTML = `
+                <div class="ach-progress-track"><div class="ach-progress-bar" style="width:${pct}%"></div></div>
+                <div class="ach-progress-label">${ach.progress.current} / ${ach.progress.target}</div>
+            `;
+            div.appendChild(progWrap);
+        }
         return div;
     },
 
-    getCategories() { return ACH_CATEGORIES; },
+    getCategories() {
+        const isEn = window.I18n && window.I18n.lang === 'en';
+        return ACH_CATEGORIES.map(c => ({ ...c, displayName: isEn ? c.name_en : c.name }));
+    },
     getTotal() { return ACHIEVEMENTS_DEFS.length; }
 };

@@ -107,316 +107,381 @@
     "openers": {
       "excellent": {
         "withStats": [
-          "Après avoir passé au crible vos {total_drinks} visionnages, {title} de chez {creator} s'impose comme un match exceptionnel.",
-          "Votre profil est sans appel : avec vos références en {genre}, {title} ({score}) colle parfaitement à votre profil."
+          "After analyzing your {total_watches} logged watches, {title} {by_creator} stands out as an exceptional match.",
+          "Your profile leaves no doubt: given your affinity for {genre}, {title} ({score}) fits your taste seamlessly."
         ],
         "standard": [
-          "{title} ({score}) de chez {creator} est tout simplement l'une des correspondances les plus fortes que j'aie trouvées pour votre regard.",
-          "Recommandation assumée : {title} coche chacune des cases dessinées par votre historique de visionnage."
+          "{title} ({score}) {by_creator} is simply one of the strongest matches I have found for your profile.",
+          "Confident pick: {title} checks every box drawn by your watch history."
         ]
       },
       "positive": {
         "withStats": [
-          "Au vu de vos {total_drinks} visionnages consignées, {title} de chez {creator} s'impose comme une candidate très sérieuse.",
-          "Votre profil désigne directement {title} ({score})."
+          "Based on your {total_watches} recorded watches, {title} {by_creator} emerges as a very strong contender.",
+          "Your profile points directly toward {title} ({score})."
         ],
         "standard": [
-          "Si vous cherchez {un_genre} de grande qualité, {title} de chez {creator} s'impose d'elle-même.",
-          "D'après l'analyse de votre profil, {title} ({score}) est un choix remarquable pour votre regard."
+          "If you are in the mood for {un_genre} of real quality, {title} {by_creator} is a natural fit.",
+          "According to your profile analysis, {title} ({score}) is a remarkable pick for you."
         ]
       },
       "mixed": {
         "withStats": [
-          "Avec {total_drinks} visionnages au compteur, je peux être précis : {title} ({score}) se situe aux marges de votre zone de confort habituelle."
+          "With {total_watches} watches logged, I can be precise: {title} ({score}) sits near the edge of your usual comfort zone."
         ],
         "standard": [
-          "{title} ({creator}) est {un_genre} à {score} qui s'écarte quelque peu de vos favoris habituels.",
-          "Voici un pari calculé : {title} se tient à l'extérieur de vos préférences centrales, sans être pour autant dénuée d'intérêt."
+          "{title} ({creator}) is {un_genre} rated {score} that steps slightly outside your usual favorites.",
+          "A calculated detour: {title} lies beyond your core preferences, yet still holds genuine intrigue."
         ]
       },
       "negative": {
         "withStats": [
-          "J'ai confronté {title} à vos {total_drinks} visionnages consignées, et le verdict est net : cette œuvre n'est pas taillée pour vous."
+          "I tested {title} against your {total_watches} logged watches, and the verdict is clear: this title is not built for you."
         ],
         "standard": [
-          "Au vu de votre profil, je vous déconseille {title} de chez {creator}.",
-          "Je préfère être transparent : {title} ({score}) risque fort de décevoir vos attentes."
+          "Based on your profile, I would advise skipping {title} {by_creator}.",
+          "To be candid: {title} ({score}) is very likely to fall short of your expectations."
         ]
       }
     },
     "excellent": {
       "scenarios": [
-        "Autant le dire d'emblée : {title} est l'une des correspondances les plus nettes de votre profil. {reason_clause} Avec ses {score} et, {creator} semble avoir brassé sur mesure pour votre regard. {outro}",
-        "Si votre historique devait se résumer à une œuvre, ce serait celle-ci : {title} de chez {creator}. {reason_clause} {outro}"
+        "Let's not mince words: {title} is one of the clearest matches in your entire profile. {reason_clause} With a {score} rating, {creator} seems to have crafted something tailored for your taste. {outro}",
+        "If your watch history could be summed up in one pick, it would be {title} {by_creator}. {reason_clause} {outro}"
       ],
       "prestige_desc": {
         "industrial": {
           "positive": [
-            "un rapport qualité-prix qui surclasse sa catégorie"
+            "blockbuster execution that outclasses its category"
           ]
         },
         "standard": {
           "positive": [
-            "une recette d'une régularité remarquable"
+            "remarkably consistent storytelling and direction"
           ]
         },
         "craft": {
           "positive": [
-            "une vraie signature artisanale indépendante"
+            "an unmistakable independent filmmaking voice"
           ]
         },
         "prestige": {
           "positive": [
-            "un pedigree que bien des caves envieraient"
+            "a critical pedigree few productions can rival"
           ]
         }
       },
       "reason_clauses": {
         "similar": [
-          "Quiconque a vidé {loved_ref} {loved_ref_drinks} reconnaîtra l'air de famille dès la première scène."
+          "Anyone who enjoyed {loved_ref} will recognize the shared DNA from the opening scene."
         ],
         "genre": [
-          "Vous totalisez {genre_drinks} visionnages {de_genre} dans votre profil, et votre score moyen sur le style parle de lui-même."
+          "Your strong track record with {genre} speaks for itself."
         ],
         "repeat": [
-          "Ce style est devenu un pilier de votre historique : {genre_drinks} visionnages et toujours aucune lassitude."
+          "This style has become a cornerstone of your history with zero signs of fatigue."
         ],
         "creator": [
-          "Les {creator_drinks} œuvres de {creator} déjà passées par votre regard y ont toutes laissé une empreinte positive."
+          "Previous works by {creator} in your history have consistently left a strong impression."
         ],
         "score": [
-          "Ses {score} se logent pile dans la tranche d'intensité où se concentrent vos meilleures notes, autour de {score_pref}."
+          "Its {score} rating lands right in the sweet spot where your highest-rated picks live."
         ],
         "keyword": [
-          "Son profil aux notes {keywords} coche exactement les cases aromatiques que vous récompensez le plus."
+          "Its thematic profile ({keywords}) hits the exact narrative notes you reward most."
         ],
         "community": [
-          "La communauté des dégustateurs confirme le diagnostic avec des évaluations constamment élevées."
+          "Audiences confirm the diagnosis with consistently high ratings."
         ]
       },
       "outros": [
-        "Dégagez une soirée pour celle-ci : elle mérite votre attention entière.",
-        "Prenez-en deux, la première œuvre partira plus vite que prévu.",
-        "Ma recommandation la plus ferme de la session."
+        "Set aside an evening for this one: it deserves your full attention.",
+        "Start lining up what comes next — this one will fly by faster than you expect.",
+        "My strongest recommendation of this session."
       ]
     },
     "positive": {
       "scenarios": [
-        "Une recommandation assurée : {title} de chez {creator}. {reason_clause}, vous saurez sans doute l'apprécier. {outro}",
-        "Votre profil penche nettement vers {le_genre}, et {title} en est une belle incarnation. L'alchimie est là et, elle a tout pour vous plaire. {outro}",
-        "Le recoupement entre vos habitudes et {title} est tangible. {reason_clause} ne gâche rien. {outro}"
+        "A solid recommendation: {title} {by_creator}. {reason_clause} You are very likely to enjoy it. {outro}",
+        "Your profile leans clearly toward {genre}, and {title} is a fine example of it. The chemistry is right there. {outro}",
+        "The overlap between your habits and {title} is unmistakable. {reason_clause} {outro}"
       ],
       "prestige_desc": {
         "industrial": {
           "positive": [
-            "une recette directe et maîtrisée"
+            "direct, well-paced filmmaking"
           ]
         },
         "standard": {
           "positive": [
-            "un profil honnête et bien équilibré"
+            "an honest, well-balanced narrative"
           ]
         },
         "craft": {
           "positive": [
-            "une belle signature artisanale indépendante"
+            "a distinct indie artistic touch"
           ]
         },
         "prestige": {
           "positive": [
-            "une réputation amplement méritée auprès des connaisseurs"
+            "a well-earned reputation among cinephiles"
           ]
         }
       },
       "reason_clauses": {
         "similar": [
-          "Elle s'inscrit dans la même famille que {loved_ref}, que vous avez débouchée {loved_ref_drinks}."
+          "It follows naturally in the footsteps of {loved_ref}, which already won you over."
         ],
         "genre": [
-          "Avec {genre_drinks} visionnages {de_genre} au compteur, le style figure clairement parmi vos terres connues."
+          "Given your affinity for {genre}, this sits squarely in your wheelhouse."
         ],
         "creator": [
-          "Vos {creator_drinks} visionnages précédentes chez {creator} ont toutes laissé une impression positive."
+          "Your previous watches from {creator} left a distinctly positive mark."
         ],
         "score": [
-          "Son score à {score} se situe pile dans la tranche d'intensité que vos meilleures notes affectionnent, autour de {score_pref}."
+          "Its {score} score sits right in the quality band your favorite titles occupy."
         ],
         "keyword": [
-          "Son profil aux notes {keywords} correspond aux signatures aromatiques que vous notez le plus haut."
+          "Its themes ({keywords}) align closely with motifs you consistently rate highly."
         ],
         "community": [
-          "Les évaluations de la communauté confirment votre affinité personnelle sur ce coup."
+          "Community scores back up your personal affinity here."
         ]
       },
       "outros": [
-        "Je vous la recommande sans hésitation pour votre prochaine visionnage.",
-        "Une référence à ajouter à votre profil sans plus attendre.",
-        "Servez-la fraîche, sans précipitation : elle le mérite."
+        "I recommend this without hesitation for your next watch.",
+        "A worthy title to queue up right away.",
+        "Take your time and enjoy it comfortably — it earns it."
       ]
     },
     "mixed": {
       "scenarios": [
-        "{title} se tient à distance respectueuse de votre zone de confort. {reason_clause} Pour étirer votre regard sans trop vous éloigner, cette proposition de {creator} constitue un détour raisonnable. {outro}",
-        "Un détour calculé plutôt qu'un coup de cœur garanti : {title}.. {reason_clause} La variété a toutefois ses dividendes. {outro}"
+        "{title} keeps a respectful distance from your comfort zone. {reason_clause} To stretch your horizons without straying too far, this offering {by_creator} is a sensible detour. {outro}",
+        "A calculated detour rather than a guaranteed favorite: {title}. {reason_clause} Variety has its rewards, though. {outro}"
       ],
       "prestige_desc": {
         "industrial": {
           "positive": [
-            "C'est une œuvre commerciale très accessible"
+            "It is an accessible, mainstream crowd-pleaser"
           ]
         },
         "standard": {
           "positive": [
-            "Son profil reste classique et régulier"
+            "Its approach remains classic and steady"
           ]
         },
         "craft": {
           "positive": [
-            "Elle est portée par une approche artisanale originale"
+            "It is driven by an unconventional directorial style"
           ]
         },
         "prestige": {
           "positive": [
-            "Son étiquette est prestigieuse"
+            "It carries serious critical prestige"
           ]
         }
       },
       "reason_clauses": {
         "similar": [
-          "Elle partage une partie de son ADN avec {loved_ref}, que vous avez servie {loved_ref_drinks}, mais la recette s'aventure sur des terrains que vous contournez d'habitude."
+          "It shares part of its DNA with {loved_ref}, though it ventures into territory you usually bypass."
         ],
         "genre": [
-          "Avec {genre_drinks} visionnages {de_genre} au compteur, vous savez exactement ce que vous attendez du style — et celle-ci en infléchit les codes."
+          "With your experience in {genre}, you know what to expect — and this one bends the conventions."
         ],
         "creator": [
-          "Vos {creator_drinks} rencontres précédentes avec {creator} furent solides, sans être transcendantes."
+          "Your past encounters with {creator} were solid, if not transcendent."
         ],
         "score": [
-          "Ses {score} se tiennent juste à côté de votre zone habituelle autour de {score_pref}."
+          "Its {score} score hovers right near the border of your usual range."
         ],
         "keyword": [
-          "Les notes {keywords} naviguent à mi-chemin entre vos favoris et des territoires que vous notez plus froidement."
+          "Themes like {keywords} sit halfway between your favorites and colder territory."
         ],
         "community": [
-          "Les évaluations de la communauté évoquent une belle facture, même si l'affinité personnelle n'est que partielle."
+          "Community reviews praise its craft, even if personal affinity is only partial."
         ]
       },
       "outros": [
-        "Une expérience intéressante si vous souhaitez élargir votre carnet de visionnage.",
-        "Pourquoi ne pas lui laisser sa chance lors d'une séance découverte sans enjeu ?",
-        "Gardez-la en tête pour une soirée où l'envie de changer vous prendra."
+        "An intriguing pick if you want to broaden your watchlist.",
+        "Why not give it a low-stakes discovery watch?",
+        "Keep it in mind for a night when you want something different."
       ]
     },
     "negative": {
       "scenarios": [
-        "Je vais être franc : {title} est un mauvais match pour vous. {reason_clause} — elle restera en net décalage avec vos standards. {outro}",
-        "Votre profil et cette œuvre sont en désaccord de principe. {le_genre} de {creator} relève d'une école de réalisation que vous avez sanctionnée à maintes reprises. {outro}",
-        "Statistiquement, {title} fait partie des œuvres à écarter dans votre cas.. L'alchimie n'est simplement pas au rendez-vous. {outro}"
+        "I will be blunt: {title} is a poor match for you. {reason_clause} It falls noticeably out of step with your standards. {outro}",
+        "Your profile and this title disagree on principle. This style from {creator} reflects choices you have repeatedly rated down. {outro}",
+        "Statistically, {title} belongs on your skip list. The chemistry simply isn't there. {outro}"
       ],
       "prestige_desc": {
         "industrial": {
           "negative": [
-            "son profil grand public très standardisé manquera cruellement de relief"
+            "its overly formulaic mainstream tone will likely feel flat"
           ]
         },
         "standard": {
           "negative": [
-            "sa recette conventionnelle n'offre pas la profondeur de vos favorites"
+            "its conventional structure lacks the depth of your favorites"
           ]
         },
         "craft": {
           "negative": [
-            "sa direction aromatique va à contrecourant de vos notes passées"
+            "its artistic direction runs counter to your past ratings"
           ]
         },
         "prestige": {
           "negative": [
-            "son style ne convient tout simplement pas à votre regard, renommée mise à part"
+            "its style simply does not suit your taste, acclaim aside"
           ]
         }
       },
       "reason_clauses": {
         "genre": [
-          "Sur {genre_drinks} visionnages {de_genre}, vos verdicts pour cette direction sont restés régulièrement tièdes."
+          "With {genre}, your past verdicts in this direction have been lukewarm at best."
         ],
         "creator": [
-          "Vos {creator_drinks} visionnages précédentes chez {creator} vous avaient laissé nettement froid."
+          "Previous watches from {creator} left you noticeably cold."
         ],
         "score": [
-          "Son score à {score} s'éloigne nettement de la zone autour de {score_pref} où se sont forgés vos meilleurs souvenirs."
+          "Its {score} score drifts well away from the range where your favorite memories sit."
         ],
         "keyword": [
-          "Le profil aux notes {keywords} ressemble aux caractéristiques que vous avez régulièrement sanctionnées."
+          "Its themes ({keywords}) resemble traits you routinely score lower."
         ],
         "community": [
-          "Même des évaluations communautaires flatteuses ne compensent pas un tel décalage personnel."
+          "Even flattering community scores cannot make up for such a personal mismatch."
         ]
       },
       "outros": [
-        "Je vous orienterai volontiers vers une autre œuvre, sans hésiter.",
-        "Passez votre chemin : votre profil recèle bien plus adapté.",
-        "La vie est trop courte pour visionner à contresens de son regard."
+        "I would gladly steer you toward a better match instead.",
+        "Skip this one: your library has far stronger fits waiting.",
+        "Life is too short to watch against your own taste."
       ]
     },
     "reasons": {
       "genre": {
-        "strong_count": [],
-        "strong": [],
-        "standard_count": [],
-        "standard": []
+        "strong_count": [
+          "Your strong affinity for {genre} ({genre_watches} titles watched) works decisively in its favor.",
+          "With {genre_watches} {genre} watches logged, you are right in your element."
+        ],
+        "strong": [
+          "Your profile shows a clear preference for {genre}.",
+          "{genre} ranks among your safest bets."
+        ],
+        "standard_count": [
+          "You have explored {genre} {genre_watches} times with clear interest.",
+          "Your {genre_watches} {genre} watches support this match."
+        ],
+        "standard": [
+          "The {genre} tone blends naturally with your viewing history.",
+          "The {genre} style aligns well with your recent choices."
+        ]
       },
       "creator": {
-        "strong_count": [],
-        "strong": [],
-        "standard_count": [],
-        "standard": []
+        "strong_count": [
+          "The involvement of {creator} ({creator_watches} works already watched) boosts this match significantly.",
+          "You have shown consistent loyalty to {creator}'s work."
+        ],
+        "strong": [
+          "The signature style of {creator} is a major plus for your profile.",
+          "{creator}'s vision fits your expectations well."
+        ],
+        "standard_count": [
+          "You are already familiar with {creator} ({creator_watches} titles)."
+        ],
+        "standard": [
+          "{creator}'s direction brings solid craft to the project."
+        ]
       },
       "keyword": {
-        "strong_count": [],
-        "strong": [],
-        "standard_count": [],
-        "standard": []
+        "strong_count": [
+          "Themes like {keywords} show up frequently among your top picks.",
+          "High-affinity motifs detected: {keywords}."
+        ],
+        "strong": [
+          "Its thematic DNA ({keywords}) matches what you actively seek out."
+        ],
+        "standard_count": [
+          "Motifs such as {keywords} tend to resonate with you."
+        ],
+        "standard": [
+          "The themes ({keywords}) add real appeal for your profile."
+        ]
       },
       "score": {
-        "strong": [],
-        "standard": []
+        "strong": [
+          "Its exceptional critical reception ({score}/10) reinforces the quality here."
+        ],
+        "standard": [
+          "Its community rating of {score}/10 is very solid."
+        ]
       },
       "repeat": {
-        "strong": [],
-        "standard": []
+        "strong": [
+          "A style you consistently enjoy across your library."
+        ],
+        "standard": [
+          "This format fits naturally into your viewing rhythm."
+        ]
       },
       "community": {
-        "strong_count": [],
-        "strong": [],
-        "standard": []
+        "strong_count": [
+          "Praised by {community_count} viewers with an average of {community_rating}/10."
+        ],
+        "strong": [
+          "Strong audience consensus ({community_rating}/10)."
+        ],
+        "standard": [
+          "Audience reception ({community_rating}/10) is broadly positive."
+        ]
       },
       "genre_mismatch": {
-        "strong_count": [],
-        "strong": [],
-        "standard_count": [],
-        "standard": []
+        "strong_count": [
+          "Heads up: {genre} rarely appears positively in your recent choices."
+        ],
+        "strong": [
+          "The {genre} direction diverges from your favorite genres."
+        ],
+        "standard_count": [
+          "You seldom gravitate toward {genre}."
+        ],
+        "standard": [
+          "This {genre} slant steps outside your usual habits."
+        ]
       },
       "creator_mismatch": {
-        "strong": [],
-        "standard": []
+        "strong": [
+          "Previous titles by {creator} failed to win you over."
+        ],
+        "standard": [
+          "{creator}'s approach looks risky given your history."
+        ]
       },
       "keyword_mismatch": {
-        "strong": [],
-        "standard": []
+        "strong": [
+          "Themes like {keywords} are ones you usually avoid."
+        ],
+        "standard": [
+          "The mood ({keywords}) drifts away from your preferred motifs."
+        ]
       },
       "score_mismatch": {
-        "strong": [],
-        "standard": []
+        "strong": [
+          "Its score ({score}/10) sits below your usual quality bar."
+        ],
+        "standard": [
+          "Critical reception is modest compared to your usual standards."
+        ]
       }
     },
     "alreadyWatched": {
       "once": [
-        "Cela étant, vous l'avez déjà dégustée : votre propre regard demeure le juge final.",
-        "Notez qu'elle figure déjà dans votre profil, vous savez donc exactement à quoi vous en tenir."
+        "That said, you have already watched this: your own judgment remains the final word.",
+        "Note that it is already in your history, so you know exactly what to expect."
       ],
       "multiple": [
-        "Cela étant, vous l'avez déjà vue {count} fois — à ce stade, vous la connaissez mieux que moi !",
-        "Elle figure déjà dans votre profil avec {count} visionnages au compteur : votre verdict est déjà bien établi."
+        "That said, you have already watched it {count} times — by now you know it better than I do!",
+        "It is already in your history with {count} watches logged: your verdict is well established."
       ]
     }
   }

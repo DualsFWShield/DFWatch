@@ -1,8 +1,12 @@
-const CACHE_NAME = 'dfwatch-v8';
+const CACHE_NAME = 'dfwatch-v9';
+const IMAGE_CACHE_NAME = 'dfwatch-images-v1';
+const IMAGE_CORS_CACHE_NAME = 'dfwatch-images-cors-v1';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './nlp_fr.json',
+  './nlp_en.json',
   './app/css/style.css',
   './app/css/driver.css',
   './app/js/app.js',
@@ -14,6 +18,8 @@ const CORE_ASSETS = [
   './app/js/i18n.js',
   './app/js/profile-card.js',
   './app/js/vendor/bigbrother.js',
+  './app/js/vendor/bigbrother_nlp.js',
+  './app/js/vendor/notscare.js',
   './app/js/tutorial.js',
   './app/js/vendor/panoptic.js',
   './app/js/panoptic-ui.js',
@@ -52,10 +58,11 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('activate', event => {
+  const keepCaches = new Set([CACHE_NAME, IMAGE_CACHE_NAME, IMAGE_CORS_CACHE_NAME]);
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
+        cacheNames.filter(name => !keepCaches.has(name)).map(name => caches.delete(name))
       );
     })
   );
@@ -63,20 +70,29 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.url.includes('api.themoviedb.org') || event.request.url.includes('api4.thetvdb.com')) {
+  if (event.request.method !== 'GET') return;
+
+  const url = event.request.url;
+  if (url.includes('api.themoviedb.org') || url.includes('api4.thetvdb.com') || url.includes('notscare')) {
     // API calls bypass cache
     return;
   }
 
-  // Cache-First for TMDB images (posters, backdrops)
-  if (event.request.url.includes('image.tmdb.org')) {
+  // Cache-First for TMDB images & YouTube thumbnails, keeping CORS separate from opaque responses
+  if (url.includes('image.tmdb.org') || url.includes('i.ytimg.com')) {
+    const isCors = event.request.mode === 'cors';
+    const targetCacheName = isCors ? IMAGE_CORS_CACHE_NAME : IMAGE_CACHE_NAME;
     event.respondWith(
-      caches.open('dfwatch-images-v1').then(async cache => {
+      caches.open(targetCacheName).then(async cache => {
         const cached = await cache.match(event.request);
-        if (cached) return cached;
+        if (cached && (!isCors || cached.type !== 'opaque')) {
+          return cached;
+        }
         try {
           const response = await fetch(event.request);
-          if (response.ok) cache.put(event.request, response.clone());
+          if (response.ok && (!isCors || response.type !== 'opaque')) {
+            cache.put(event.request, response.clone());
+          }
           return response;
         } catch {
           return new Response('', { status: 408 });
@@ -86,19 +102,18 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache-First for YouTube thumbnails
-  if (event.request.url.includes('i.ytimg.com')) {
+  // Network-First for same-origin app assets so updates arrive cleanly while preserving offline support
+  if (url.startsWith(self.location.origin)) {
     event.respondWith(
-      caches.open('dfwatch-images-v1').then(async cache => {
-        const cached = await cache.match(event.request);
-        if (cached) return cached;
-        try {
-          const response = await fetch(event.request);
-          if (response.ok) cache.put(event.request, response.clone());
-          return response;
-        } catch {
-          return new Response('', { status: 408 });
+      fetch(event.request).then(response => {
+        if (response && response.ok && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
+        return response;
+      }).catch(async () => {
+        const cached = await caches.match(event.request);
+        return cached || (event.request.mode === 'navigate' ? caches.match('./index.html') : new Response('', { status: 503 }));
       })
     );
     return;
